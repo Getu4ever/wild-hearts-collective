@@ -1,0 +1,35 @@
+export type HeroImageKey =
+  | "home"
+  | "about"
+  | "classes"
+  | "pole"
+  | "aerial-hoop"
+  | "aerial-silks"
+  | "community"
+  | "parties"
+  | "hire"
+  | "contact"
+  | "faqs"
+  | "terms";
+
+export const heroImages: Record<HeroImageKey, string> = {
+  home: "/hero/hero-home.jpg",
+  about: "/hero/hero-about.jpg",
+  classes: "/hero/hero-classes.jpg",
+  pole: "/hero/hero-pole.jpg",
+  "aerial-hoop": "/hero/hero-aerial-hoop.jpg",
+  "aerial-silks": "/hero/hero-aerial-silks.jpg",
+  community: "/hero/hero-community.jpg",
+  parties: "/hero/hero-parties.jpg",
+  hire: "/hero/hero-hire.jpg",
+  contact: "/hero/hero-contact.jpg",
+  faqs: "/hero/hero-faqs.jpg",
+  terms: "/hero/hero-terms.jpg",
+};
+
+export const classSlugToHero: Record<string, HeroImageKey> = {
+  pole: "pole",
+  "aerial-hoop": "aerial-hoop",
+  "aerial-silks": "aerial-silks",
+  "creative-arts-workshops": "community",
+};

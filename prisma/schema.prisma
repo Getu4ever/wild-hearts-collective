@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Class {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  description String
+  duration    Int       @default(60)
+  sessions    Session[]
+  createdAt   DateTime  @default(now())
+}
+
+model Session {
+  id             String          @id @default(cuid())
+  classId        String
+  class          Class           @relation(fields: [classId], references: [id], onDelete: Cascade)
+  startsAt       DateTime
+  capacity       Int             @default(12)
+  bookings       Booking[]
+  waitlist       WaitlistEntry[]
+  createdAt      DateTime        @default(now())
+
+  @@index([startsAt])
+  @@index([classId])
+}
+
+model User {
+  id                   String             @id @default(cuid())
+  email                String             @unique
+  passwordHash         String?
+  name                 String
+  phone                String?
+  image                String?
+  emailVerifiedAt      DateTime?
+  phoneVerifiedAt      DateTime?
+  stripeCustomerId     String?            @unique
+  membershipPlan       String             @default("account")
+  membershipStatus     String             @default("active")
+  stripeSubscriptionId String?            @unique
+  membershipRenewsAt   DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  bookings             Booking[]
+  waitlist             WaitlistEntry[]
+  oauthAccounts        OAuthAccount[]
+  verificationCodes    VerificationCode[]
+
+  @@index([email])
+  @@index([membershipStatus])
+}
+
+model OAuthAccount {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider          String
+  providerAccountId String
+  createdAt         DateTime @default(now())
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model VerificationCode {
+  id        String    @id @default(cuid())
+  userId    String?
+  user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email     String?
+  phone     String?
+  codeHash  String
+  purpose   String
+  channel   String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email, purpose])
+  @@index([userId, purpose])
+}
+
+model Booking {
+  id              String   @id @default(cuid())
+  sessionId       String
+  session         Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name            String
+  email           String
+  phone           String?
+  notes           String?
+  status          String   @default("pending")
+  stripeSessionId String?  @unique
+  stripePaymentId String?
+  amountPaid      Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
+
+  @@index([sessionId])
+  @@index([email])
+  @@index([userId])
+  @@index([status])
+}
+
+model WaitlistEntry {
+  id        String   @id @default(cuid())
+  sessionId String
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name      String
+  email     String
+  phone     String?
+  notes     String?
+  status    String   @default("waiting")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([sessionId])
+  @@index([email])
+  @@index([userId])
+  @@index([status])
+}

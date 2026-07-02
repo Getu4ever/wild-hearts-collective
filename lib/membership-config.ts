@@ -1,0 +1,75 @@
+import { formatMoneyFromPence } from "@/lib/booking-config";
+
+export const MEMBERSHIP_PLAN = {
+  account: "account",
+  monthly: "monthly",
+} as const;
+
+export const MEMBERSHIP_STATUS = {
+  active: "active",
+  inactive: "inactive",
+  cancelled: "cancelled",
+} as const;
+
+export function getMonthlyMembershipPricePence() {
+  const raw = process.env.STRIPE_MEMBERSHIP_PRICE ?? "4500";
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 4500;
+}
+
+export function monthlyMembershipLabel() {
+  return formatMoneyFromPence(getMonthlyMembershipPricePence());
+}
+
+export const membershipPlans = [
+  {
+    id: MEMBERSHIP_PLAN.account,
+    name: "Studio Member",
+    price: "Free",
+    priceNote: "Create your account",
+    description:
+      "Your personal Wild Hearts account — book classes, track bookings, and manage your details in one place.",
+    features: [
+      "Book classes online with secure deposit payment",
+      "View upcoming and past bookings",
+      "Join waitlists when sessions are full",
+      "Update your profile anytime",
+    ],
+    cta: "Create free account",
+    href: "/register",
+    highlighted: false,
+  },
+  {
+    id: MEMBERSHIP_PLAN.monthly,
+    name: "Monthly Membership",
+    price: monthlyMembershipLabel(),
+    priceNote: "per month",
+    description:
+      "For regular flyers — unlimited access to selected drop-in classes and member-only perks.",
+    features: [
+      "Everything in Studio Member",
+      "Unlimited drop-in classes (selected timetable)",
+      "Priority waitlist notifications",
+      "Member events and early booking windows",
+    ],
+    cta: "Subscribe monthly",
+    href: "/register?plan=monthly",
+    highlighted: true,
+  },
+] as const;
+
+export function membershipPlanLabel(plan: string) {
+  if (plan === MEMBERSHIP_PLAN.monthly) return "Monthly Membership";
+  return "Studio Member";
+}
+
+export function membershipStatusLabel(status: string) {
+  switch (status) {
+    case MEMBERSHIP_STATUS.active:
+      return "Active";
+    case MEMBERSHIP_STATUS.cancelled:
+      return "Cancelled";
+    default:
+      return "Inactive";
+  }
+}
