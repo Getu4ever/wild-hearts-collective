@@ -55,10 +55,26 @@ export async function POST(request: Request) {
 
   const confirmedCount = await countConfirmedBookings(sessionId);
   const spotsLeft = session.capacity - confirmedCount;
-  const normalizedEmail = email.trim().toLowerCase();
-  const normalizedName = name.trim();
   const memberSession = await getMemberSession();
-  const userId = memberSession?.userId ?? null;
+
+  let userId = memberSession?.userId ?? null;
+  let normalizedName = name.trim();
+  let normalizedEmail = email.trim().toLowerCase();
+  let normalizedPhone = phone?.trim() || null;
+
+  if (memberSession) {
+    const member = await db.user.findUnique({
+      where: { id: memberSession.userId },
+      select: { id: true, name: true, email: true, phone: true },
+    });
+
+    if (member) {
+      userId = member.id;
+      normalizedName = member.name;
+      normalizedEmail = member.email.toLowerCase();
+      normalizedPhone = member.phone?.trim() || normalizedPhone;
+    }
+  }
 
   if (spotsLeft <= 0) {
     if (!joinWaitlist) {

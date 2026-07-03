@@ -46,6 +46,19 @@ type BookingResult = {
   paymentSkipped?: boolean;
 };
 
+type MemberProfile = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+};
+
+type ContactDetails = {
+  name: string;
+  email: string;
+  phone: string;
+};
+
 const classFilters = [
   { value: "all", label: "All classes" },
   { value: "pole", label: "Pole" },
@@ -93,6 +106,14 @@ export function BookingForm() {
   );
   const [selectedSessionId, setSelectedSessionId] = useState("");
   const [joinWaitlist, setJoinWaitlist] = useState(false);
+  const [member, setMember] = useState<MemberProfile | null>(null);
+  const [memberLoaded, setMemberLoaded] = useState(false);
+  const [contact, setContact] = useState<ContactDetails>({
+    name: "",
+    email: "",
+    phone: "",
+  });
+  const [notes, setNotes] = useState("");
 
   const cancelled = searchParams.get("cancelled") === "1";
   const selectedSession =
@@ -101,6 +122,31 @@ export function BookingForm() {
   const hasSelectableSession = sessions.some(
     (session) => !session.isFull || joinWaitlist,
   );
+
+  useEffect(() => {
+    async function loadMember() {
+      try {
+        const response = await fetch("/api/members/me");
+        if (!response.ok) return;
+
+        const data = (await response.json()) as { user: MemberProfile | null };
+        if (!data.user) return;
+
+        setMember(data.user);
+        setContact({
+          name: data.user.name,
+          email: data.user.email,
+          phone: data.user.phone ?? "",
+        });
+      } catch {
+        // Guest booking remains available if the session check fails.
+      } finally {
+        setMemberLoaded(true);
+      }
+    }
+
+    loadMember();
+  }, []);
 
   useEffect(() => {
     async function loadConfig() {
@@ -153,7 +199,16 @@ export function BookingForm() {
     setSubmitting(true);
     setError("");
 
-    const formData = new FormData(event.currentTarget);
+    const trimmedName = contact.name.trim();
+    const trimmedEmail = contact.email.trim();
+    const trimmedPhone = contact.phone.trim();
+    const trimmedNotes = notes.trim();
+
+    if (!trimmedName || !trimmedEmail) {
+      setError("Name and email are required.");
+      setSubmitting(false);
+      return;
+    }
 
     try {
       const response = await fetch("/api/bookings", {
@@ -161,10 +216,10 @@ export function BookingForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sessionId: selectedSessionId,
-          name: formData.get("name"),
-          email: formData.get("email"),
-          phone: formData.get("phone"),
-          notes: formData.get("notes"),
+          name: trimmedName,
+          email: trimmedEmail,
+          phone: trimmedPhone || undefined,
+          notes: trimmedNotes || undefined,
           joinWaitlist: selectedSession?.isFull || joinWaitlist,
         }),
       });
@@ -190,7 +245,10 @@ export function BookingForm() {
       }
 
       setResult(data as BookingResult);
-      event.currentTarget.reset();
+      setNotes("");
+      if (!member) {
+        setContact({ name: "", email: "", phone: "" });
+      }
       setSelectedSessionId("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Booking failed.");
@@ -336,6 +394,14 @@ export function BookingForm() {
   const selectedDate = selectedSession
     ? formatSessionDate(selectedSession.startsAt)
     : null;
+  const isSignedIn = Boolean(member);
+  const visibleSteps = isSignedIn
+    ? [
+        bookingSteps[0],
+        { title: "Confirm your details", detail: "Using your member profile" },
+        bookingSteps[2],
+      ]
+    : bookingSteps;
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
@@ -474,66 +540,120 @@ export function BookingForm() {
               </span>
               <div>
                 <h3 id="booking-step-2" className="text-lg font-semibold text-plum">
-                  Your details
+                  {isSignedIn ? "Your member details" : "Your details"}
                 </h3>
                 <p className="text-sm text-muted">
-                  We will use these to confirm your booking by email.
+                  {isSignedIn
+                    ? "We will use the details from your signed-in account."
+                    : "We will use these to confirm your booking by email."}
                 </p>
               </div>
             </div>
 
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <div className="sm:col-span-2 sm:max-w-md">
-                <label htmlFor="name" className="text-sm font-medium text-foreground">
-                  Full name <span className="text-brand">*</span>
-                </label>
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  required
-                  autoComplete="name"
-                  className={fieldClassName()}
-                />
+            {isSignedIn && member ? (
+              <div className="mt-4 space-y-4">
+                <div className="rounded-xl border border-plum/10 bg-pink-soft/40 px-5 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand">
+                    Signed in as
+                  </p>
+                  <p className="mt-2 font-semibold text-plum">{member.name}</p>
+                  <p className="mt-1 text-sm text-muted">{member.email}</p>
+                  {member.phone && (
+                    <p className="mt-1 text-sm text-muted">{member.phone}</p>
+                  )}
+                  <Link
+                    href="/account/profile"
+                    className="mt-3 inline-block text-sm font-semibold text-brand hover:underline"
+                  >
+                    Update in your profile
+                  </Link>
+                </div>
+
+                <div>
+                  <label htmlFor="notes" className="text-sm font-medium text-foreground">
+                    Notes <span className="text-muted">(optional)</span>
+                  </label>
+                  <input
+                    id="notes"
+                    name="notes"
+                    type="text"
+                    value={notes}
+                    onChange={(event) => setNotes(event.target.value)}
+                    placeholder="First time, injuries, access needs, etc."
+                    className={fieldClassName()}
+                  />
+                </div>
               </div>
-              <div>
-                <label htmlFor="email" className="text-sm font-medium text-foreground">
-                  Email <span className="text-brand">*</span>
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  autoComplete="email"
-                  className={fieldClassName()}
-                />
+            ) : memberLoaded ? (
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2 sm:max-w-md">
+                  <label htmlFor="name" className="text-sm font-medium text-foreground">
+                    Full name <span className="text-brand">*</span>
+                  </label>
+                  <input
+                    id="name"
+                    name="name"
+                    type="text"
+                    required
+                    autoComplete="name"
+                    value={contact.name}
+                    onChange={(event) =>
+                      setContact((current) => ({ ...current, name: event.target.value }))
+                    }
+                    className={fieldClassName()}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="email" className="text-sm font-medium text-foreground">
+                    Email <span className="text-brand">*</span>
+                  </label>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    required
+                    autoComplete="email"
+                    value={contact.email}
+                    onChange={(event) =>
+                      setContact((current) => ({ ...current, email: event.target.value }))
+                    }
+                    className={fieldClassName()}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="phone" className="text-sm font-medium text-foreground">
+                    Phone <span className="text-muted">(optional)</span>
+                  </label>
+                  <input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    autoComplete="tel"
+                    value={contact.phone}
+                    onChange={(event) =>
+                      setContact((current) => ({ ...current, phone: event.target.value }))
+                    }
+                    className={fieldClassName()}
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label htmlFor="notes" className="text-sm font-medium text-foreground">
+                    Notes <span className="text-muted">(optional)</span>
+                  </label>
+                  <input
+                    id="notes"
+                    name="notes"
+                    type="text"
+                    value={notes}
+                    onChange={(event) => setNotes(event.target.value)}
+                    placeholder="First time, injuries, access needs, etc."
+                    className={fieldClassName()}
+                  />
+                </div>
               </div>
-              <div>
-                <label htmlFor="phone" className="text-sm font-medium text-foreground">
-                  Phone <span className="text-muted">(optional)</span>
-                </label>
-                <input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  autoComplete="tel"
-                  className={fieldClassName()}
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <label htmlFor="notes" className="text-sm font-medium text-foreground">
-                  Notes <span className="text-muted">(optional)</span>
-                </label>
-                <input
-                  id="notes"
-                  name="notes"
-                  type="text"
-                  placeholder="First time, injuries, access needs, etc."
-                  className={fieldClassName()}
-                />
-              </div>
-            </div>
+            ) : (
+              <p className="mt-4 text-sm text-muted">Loading your details…</p>
+            )}
           </section>
 
           {selectedSession && selectedDate && (
@@ -564,7 +684,13 @@ export function BookingForm() {
 
           <button
             type="submit"
-            disabled={submitting || loading || !hasSelectableSession || !selectedSessionId}
+            disabled={
+              submitting ||
+              loading ||
+              !memberLoaded ||
+              !hasSelectableSession ||
+              !selectedSessionId
+            }
             className="w-full rounded-lg bg-plum px-6 py-4 text-sm font-semibold uppercase tracking-[0.12em] text-white shadow-md shadow-plum/20 transition hover:bg-plum-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting
@@ -587,7 +713,7 @@ export function BookingForm() {
             How booking works
           </h3>
           <ol className="mt-5 space-y-4">
-            {bookingSteps.map((step, index) => (
+            {visibleSteps.map((step, index) => (
               <li key={step.title} className="flex gap-3">
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-pink-soft text-xs font-bold text-plum">
                   {index + 1}
