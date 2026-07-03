@@ -1,3 +1,4 @@
+import { ensureSeededDatabase } from "@/lib/seed-database";
 import { NextResponse } from "next/server";
 import { BOOKING_STATUS } from "@/lib/booking-config";
 import { db } from "@/lib/db";
@@ -6,6 +7,19 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const classSlug = searchParams.get("class");
 
+  try {
+    await ensureSeededDatabase();
+    return NextResponse.json(await loadSessions(classSlug));
+  } catch (error) {
+    console.error("Failed to load sessions:", error);
+    return NextResponse.json(
+      { error: "Unable to load sessions. Check the database connection." },
+      { status: 503 },
+    );
+  }
+}
+
+async function loadSessions(classSlug: string | null) {
   const sessions = await db.session.findMany({
     where: {
       startsAt: { gte: new Date() },
@@ -25,7 +39,7 @@ export async function GET(request: Request) {
     orderBy: { startsAt: "asc" },
   });
 
-  const available = sessions.map((session) => {
+  return sessions.map((session) => {
     const confirmedCount = session.bookings.length;
     const spotsLeft = session.capacity - confirmedCount;
 
@@ -41,6 +55,4 @@ export async function GET(request: Request) {
       waitlistCount: session.waitlist.length,
     };
   });
-
-  return NextResponse.json(available);
 }

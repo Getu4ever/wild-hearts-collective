@@ -120,7 +120,10 @@ export function BookingForm() {
       try {
         const query = classFilter === "all" ? "" : `?class=${classFilter}`;
         const response = await fetch(`/api/sessions${query}`);
-        if (!response.ok) throw new Error("Could not load sessions.");
+        if (!response.ok) {
+          const data = (await response.json().catch(() => ({}))) as { error?: string };
+          throw new Error(data.error ?? "Could not load sessions.");
+        }
         const data = (await response.json()) as SessionOption[];
         setSessions(data);
         setSelectedSessionId((current) => {
