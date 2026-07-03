@@ -39,6 +39,7 @@ export async function createBookingCheckoutSession(booking: CheckoutBooking) {
   const baseUrl = getAppBaseUrl();
 
   return stripe.checkout.sessions.create({
+    ui_mode: "embedded_page",
     mode: "payment",
     customer_email: booking.email,
     client_reference_id: booking.id,
@@ -58,8 +59,7 @@ export async function createBookingCheckoutSession(booking: CheckoutBooking) {
         },
       },
     ],
-    success_url: `${baseUrl}/book/success?booking=${booking.id}`,
-    cancel_url: `${baseUrl}/book?cancelled=1`,
+    return_url: `${baseUrl}/book/success?booking=${booking.id}&session_id={CHECKOUT_SESSION_ID}`,
   });
 }
 

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { isStripeConfigured } from "@/lib/booking-config";
 import { getMemberSession } from "@/lib/member-auth";
-import { createMembershipCheckoutSession } from "@/lib/membership-stripe";
+import { createMemberSubscriptionIntent } from "@/lib/membership-billing";
 import { db } from "@/lib/db";
 
 export async function POST() {
@@ -10,7 +10,7 @@ export async function POST() {
     return NextResponse.json({ error: "You must be signed in." }, { status: 401 });
   }
 
-  if (!isStripeConfigured()) {
+  if (!isStripeConfigured() || !process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
     return NextResponse.json(
       { error: "Online membership payments are not configured yet." },
       { status: 503 },
@@ -20,10 +20,6 @@ export async function POST() {
   const user = await db.user.findUnique({
     where: { id: session.userId },
     select: {
-      id: true,
-      email: true,
-      name: true,
-      stripeCustomerId: true,
       membershipPlan: true,
       membershipStatus: true,
     },
@@ -40,7 +36,15 @@ export async function POST() {
     );
   }
 
-  const checkout = await createMembershipCheckoutSession(user);
-
-  return NextResponse.json({ checkoutUrl: checkout.url });
+  try {
+    const result = await createMemberSubscriptionIntent(session.userId);
+    return NextResponse.json({
+      clientSecret: result.clientSecret,
+      subscriptionId: result.subscriptionId,
+      embedded: true,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to start membership payment.";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
 }

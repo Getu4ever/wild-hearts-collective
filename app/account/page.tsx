@@ -6,6 +6,10 @@ import { BOOKING_URL } from "@/lib/constants";
 import { formatSessionDateTime } from "@/lib/booking-config";
 import { getCurrentMember } from "@/lib/member-auth";
 import {
+  calculateProfileCompletion,
+  profileSelectFields,
+} from "@/lib/member-profile-service";
+import {
   membershipPlanLabel,
   membershipStatusLabel,
   MEMBERSHIP_PLAN,
@@ -29,7 +33,7 @@ export default async function AccountPage({
   const params = await searchParams;
   const showMembershipSuccess = params.membership === "success";
 
-  const [upcomingBookings, recentBookings] = await Promise.all([
+  const [upcomingBookings, recentBookings, profileRecord] = await Promise.all([
     db.booking.findMany({
       where: {
         userId: member.id,
@@ -50,7 +54,15 @@ export default async function AccountPage({
         session: { include: { class: true } },
       },
     }),
+    db.user.findUnique({
+      where: { id: member.id },
+      select: profileSelectFields,
+    }),
   ]);
+
+  const profileCompletion = profileRecord
+    ? calculateProfileCompletion(profileRecord)
+    : { percent: 0, missingSteps: [] as string[] };
 
   const isMonthlyActive =
     member.membershipPlan === MEMBERSHIP_PLAN.monthly &&
@@ -62,6 +74,38 @@ export default async function AccountPage({
         <div className="mb-8 rounded-sm border border-sage/30 bg-sage-light px-4 py-3 text-sm text-plum">
           Welcome to Monthly Membership! Your subscription is being activated — it may take a
           moment to appear below.
+        </div>
+      )}
+
+      {profileCompletion.percent < 100 && (
+        <div className="mb-8 rounded-sm border border-pink/30 bg-pink-soft/40 px-5 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-plum">Complete your profile</p>
+              <p className="mt-1 text-sm text-muted">
+                {profileCompletion.percent}% complete — help us keep you safe and tailor your
+                studio experience.
+              </p>
+            </div>
+            <Link
+              href="/account/profile"
+              className="rounded-sm bg-plum px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-plum-hover"
+            >
+              Continue profile
+            </Link>
+          </div>
+          {profileCompletion.missingSteps.length > 0 && (
+            <ul className="mt-3 flex flex-wrap gap-2">
+              {profileCompletion.missingSteps.slice(0, 3).map((step) => (
+                <li
+                  key={step}
+                  className="rounded-full border border-plum/10 bg-white px-3 py-1 text-xs text-muted"
+                >
+                  {step}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 

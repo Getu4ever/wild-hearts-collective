@@ -1,14 +1,51 @@
 import { NextResponse } from "next/server";
-import { getCurrentMember, getMemberSession, toPublicMember } from "@/lib/member-auth";
+import { getMemberSession } from "@/lib/member-auth";
+import {
+  profileSelectFields,
+  serializeDisciplineInterests,
+  serializeNotificationPreferences,
+  toMemberProfile,
+} from "@/lib/member-profile-service";
+import type { NotificationPreferences } from "@/lib/profile-config";
 import { db } from "@/lib/db";
 import { hashPassword, verifyPassword } from "@/lib/password";
 
 type ProfileBody = {
   name?: string;
   phone?: string;
+  image?: string;
+  dateOfBirth?: string | null;
+  emergencyContactName?: string;
+  emergencyContactRelationship?: string;
+  emergencyContactPhone?: string;
+  medicalNotes?: string;
+  injuriesLimitations?: string;
+  allergiesSafetyAlerts?: string;
+  safetyConsent?: boolean;
+  experienceLevel?: string | null;
+  disciplineInterests?: string[];
+  notificationPreferences?: NotificationPreferences;
   currentPassword?: string;
   newPassword?: string;
 };
+
+export async function GET() {
+  const session = await getMemberSession();
+  if (!session) {
+    return NextResponse.json({ error: "You must be signed in." }, { status: 401 });
+  }
+
+  const user = await db.user.findUnique({
+    where: { id: session.userId },
+    select: profileSelectFields,
+  });
+
+  if (!user) {
+    return NextResponse.json({ error: "Account not found." }, { status: 404 });
+  }
+
+  return NextResponse.json({ profile: toMemberProfile(user) });
+}
 
 export async function PATCH(request: Request) {
   const session = await getMemberSession();
@@ -29,18 +66,41 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Account not found." }, { status: 404 });
   }
 
-  const data: {
-    name?: string;
-    phone?: string | null;
-    passwordHash?: string;
-  } = {};
+  const data: Record<string, unknown> = {};
 
-  if (body.name?.trim()) {
-    data.name = body.name.trim();
+  if (body.name?.trim()) data.name = body.name.trim();
+  if (body.phone !== undefined) data.phone = body.phone.trim() || null;
+  if (body.image !== undefined) data.image = body.image.trim() || null;
+  if (body.dateOfBirth !== undefined) {
+    data.dateOfBirth = body.dateOfBirth ? new Date(body.dateOfBirth) : null;
   }
-
-  if (body.phone !== undefined) {
-    data.phone = body.phone.trim() || null;
+  if (body.emergencyContactName !== undefined) {
+    data.emergencyContactName = body.emergencyContactName.trim() || null;
+  }
+  if (body.emergencyContactRelationship !== undefined) {
+    data.emergencyContactRelationship = body.emergencyContactRelationship.trim() || null;
+  }
+  if (body.emergencyContactPhone !== undefined) {
+    data.emergencyContactPhone = body.emergencyContactPhone.trim() || null;
+  }
+  if (body.medicalNotes !== undefined) data.medicalNotes = body.medicalNotes.trim() || null;
+  if (body.injuriesLimitations !== undefined) {
+    data.injuriesLimitations = body.injuriesLimitations.trim() || null;
+  }
+  if (body.allergiesSafetyAlerts !== undefined) {
+    data.allergiesSafetyAlerts = body.allergiesSafetyAlerts.trim() || null;
+  }
+  if (body.safetyConsent !== undefined) {
+    data.safetyConsentAt = body.safetyConsent ? new Date() : null;
+  }
+  if (body.experienceLevel !== undefined) {
+    data.experienceLevel = body.experienceLevel || null;
+  }
+  if (body.disciplineInterests !== undefined) {
+    data.disciplineInterests = serializeDisciplineInterests(body.disciplineInterests);
+  }
+  if (body.notificationPreferences !== undefined) {
+    data.notificationPreferences = serializeNotificationPreferences(body.notificationPreferences);
   }
 
   if (body.newPassword) {
@@ -53,7 +113,7 @@ export async function PATCH(request: Request) {
 
     if (!user.passwordHash) {
       return NextResponse.json(
-        { error: "Set a password using Google account settings or contact support." },
+        { error: "This account uses Google sign-in. Password changes are not available." },
         { status: 400 },
       );
     }
@@ -67,27 +127,14 @@ export async function PATCH(request: Request) {
   }
 
   if (Object.keys(data).length === 0) {
-    const member = await getCurrentMember();
-    return NextResponse.json({ user: member });
+    return NextResponse.json({ error: "No changes submitted." }, { status: 400 });
   }
 
   const updated = await db.user.update({
     where: { id: user.id },
     data,
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      phone: true,
-      image: true,
-      emailVerifiedAt: true,
-      phoneVerifiedAt: true,
-      membershipPlan: true,
-      membershipStatus: true,
-      membershipRenewsAt: true,
-      createdAt: true,
-    },
+    select: profileSelectFields,
   });
 
-  return NextResponse.json({ user: toPublicMember(updated) });
+  return NextResponse.json({ profile: toMemberProfile(updated) });
 }

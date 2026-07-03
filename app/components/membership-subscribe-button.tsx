@@ -1,57 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 export function MembershipSubscribeButton() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
 
-  async function handleSubscribe() {
-    setError("");
-    setLoading(true);
+  useEffect(() => {
+    fetch("/api/members/me")
+      .then((response) => response.json())
+      .then((data) => setSignedIn(Boolean(data.user)))
+      .catch(() => setSignedIn(false));
+  }, []);
 
-    try {
-      const meResponse = await fetch("/api/members/me");
-      const meData = await meResponse.json();
+  if (signedIn === null) {
+    return (
+      <div className="rounded-sm bg-plum/60 px-4 py-3 text-sm font-semibold uppercase tracking-wider text-white">
+        Loading…
+      </div>
+    );
+  }
 
-      if (!meData.user) {
-        window.location.href = "/register?plan=monthly";
-        return;
-      }
-
-      const response = await fetch("/api/members/subscribe", { method: "POST" });
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error ?? "Unable to start checkout.");
-        return;
-      }
-
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
-      }
-    } catch {
-      setError("Unable to start checkout. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+  if (!signedIn) {
+    return (
+      <Link
+        href="/register?plan=monthly"
+        className="block w-full rounded-sm bg-plum px-4 py-3 text-center text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-plum-hover"
+      >
+        Subscribe monthly
+      </Link>
+    );
   }
 
   return (
-    <div>
-      <button
-        type="button"
-        onClick={handleSubscribe}
-        disabled={loading}
-        className="w-full rounded-sm bg-plum px-4 py-3 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-plum-hover disabled:opacity-60"
-      >
-        {loading ? "Redirecting…" : "Subscribe monthly"}
-      </button>
-      {error && (
-        <p className="mt-3 text-sm text-brand" role="alert">
-          {error}
-        </p>
-      )}
-    </div>
+    <Link
+      href="/account/profile#billing"
+      className="block w-full rounded-sm bg-plum px-4 py-3 text-center text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-plum-hover"
+    >
+      Subscribe monthly
+    </Link>
   );
 }

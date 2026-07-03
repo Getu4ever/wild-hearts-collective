@@ -408,7 +408,7 @@ export const faqs = [
   {
     question: "Do I need to book in advance?",
     answer:
-      "Yes. All classes must be booked in advance through TeamUp. Some courses and private lessons require a deposit.",
+      "Yes. All classes must be booked in advance through this website. Some courses and private lessons require a deposit.",
   },
   {
     question: "What should I wear?",

@@ -63,6 +63,7 @@ export async function POST(request: Request) {
   }
 
   if (
+    event.type === "customer.subscription.created" ||
     event.type === "customer.subscription.updated" ||
     event.type === "customer.subscription.deleted"
   ) {

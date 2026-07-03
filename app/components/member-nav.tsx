@@ -6,8 +6,8 @@ import type { PublicMember } from "@/lib/member-auth";
 
 const links = [
   { href: "/account", label: "Overview", exact: true },
-  { href: "/account/bookings", label: "My bookings", exact: false },
   { href: "/account/profile", label: "Profile", exact: false },
+  { href: "/account/bookings", label: "Bookings", exact: false },
 ];
 
 export function MemberNav({ member }: { member: PublicMember }) {

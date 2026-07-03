@@ -1,7 +1,12 @@
 import Link from "next/link";
 
-export function AdminNav({ active }: { active: "bookings" | "members" }) {
+export function AdminNav({
+  active,
+}: {
+  active: "dashboard" | "bookings" | "members";
+}) {
   const links = [
+    { href: "/admin", label: "Dashboard", id: "dashboard" as const },
     { href: "/admin/bookings", label: "Bookings", id: "bookings" as const },
     { href: "/admin/members", label: "Members", id: "members" as const },
   ];

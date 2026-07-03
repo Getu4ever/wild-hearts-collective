@@ -32,28 +32,51 @@ model Session {
 }
 
 model User {
-  id                   String             @id @default(cuid())
-  email                String             @unique
-  passwordHash         String?
-  name                 String
-  phone                String?
-  image                String?
-  emailVerifiedAt      DateTime?
-  phoneVerifiedAt      DateTime?
-  stripeCustomerId     String?            @unique
-  membershipPlan       String             @default("account")
-  membershipStatus     String             @default("active")
-  stripeSubscriptionId String?            @unique
-  membershipRenewsAt   DateTime?
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
-  bookings             Booking[]
-  waitlist             WaitlistEntry[]
-  oauthAccounts        OAuthAccount[]
-  verificationCodes    VerificationCode[]
+  id                           String             @id @default(cuid())
+  email                        String             @unique
+  passwordHash                 String?
+  name                         String
+  phone                        String?
+  image                        String?
+  emailVerifiedAt              DateTime?
+  phoneVerifiedAt              DateTime?
+  dateOfBirth                  DateTime?
+  emergencyContactName         String?
+  emergencyContactRelationship String?
+  emergencyContactPhone        String?
+  medicalNotes                 String?
+  injuriesLimitations          String?
+  allergiesSafetyAlerts        String?
+  safetyConsentAt              DateTime?
+  experienceLevel              String?
+  disciplineInterests          String?
+  notificationPreferences      String?
+  stripeCustomerId             String?            @unique
+  membershipPlan               String             @default("account")
+  membershipStatus             String             @default("active")
+  accountStatus                String             @default("active")
+  stripeSubscriptionId         String?            @unique
+  membershipStartedAt          DateTime?
+  membershipRenewsAt           DateTime?
+  membershipPausedAt           DateTime?
+  membershipResumeAt           DateTime?
+  membershipCancelledAt        DateTime?
+  cancellationReason           String?
+  creditsRemaining             Int                @default(0)
+  internalNotes                String?
+  createdAt                    DateTime           @default(now())
+  updatedAt                    DateTime           @updatedAt
+  bookings                     Booking[]
+  waitlist                     WaitlistEntry[]
+  oauthAccounts                OAuthAccount[]
+  verificationCodes            VerificationCode[]
+  membershipEvents             MembershipEvent[]
+  auditLogs                    AdminAuditLog[]    @relation("AuditTarget")
 
   @@index([email])
   @@index([membershipStatus])
+  @@index([accountStatus])
+  @@index([experienceLevel])
 }
 
 model OAuthAccount {
@@ -85,6 +108,33 @@ model VerificationCode {
   @@index([userId, purpose])
 }
 
+model MembershipEvent {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String
+  note        String?
+  effectiveAt DateTime
+  endsAt      DateTime?
+  createdBy   String    @default("member")
+  createdAt   DateTime  @default(now())
+
+  @@index([userId, effectiveAt])
+}
+
+model AdminAuditLog {
+  id           String   @id @default(cuid())
+  action       String
+  targetUserId String?
+  targetUser   User?    @relation("AuditTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+  adminLabel   String   @default("admin")
+  details      String?
+  createdAt    DateTime @default(now())
+
+  @@index([targetUserId])
+  @@index([createdAt])
+}
+
 model Booking {
   id              String   @id @default(cuid())
   sessionId       String
@@ -96,6 +146,7 @@ model Booking {
   phone           String?
   notes           String?
   status          String   @default("pending")
+  attendance      String?
   stripeSessionId String?  @unique
   stripePaymentId String?
   amountPaid      Int?

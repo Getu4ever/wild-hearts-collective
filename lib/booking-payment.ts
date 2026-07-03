@@ -35,11 +35,15 @@ export async function finalizeBookingPayment(bookingId: string) {
     return booking;
   }
 
+  const paymentIntent = (
+    checkoutSession as {
+      payment_intent?: string | { id?: string } | null;
+    }
+  ).payment_intent;
+
   return confirmBooking(bookingId, {
     stripePaymentId:
-      typeof checkoutSession.payment_intent === "string"
-        ? checkoutSession.payment_intent
-        : checkoutSession.payment_intent?.id,
+      typeof paymentIntent === "string" ? paymentIntent : paymentIntent?.id,
     amountPaid: checkoutSession.amount_total ?? undefined,
   });
 }

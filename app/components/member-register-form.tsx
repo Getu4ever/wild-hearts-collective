@@ -42,15 +42,9 @@ export function MemberRegisterForm() {
       }
 
       if (plan === "monthly") {
-        const subscribeResponse = await fetch("/api/members/subscribe", {
-          method: "POST",
-        });
-        const subscribeData = await subscribeResponse.json();
-
-        if (subscribeResponse.ok && subscribeData.checkoutUrl) {
-          window.location.href = subscribeData.checkoutUrl;
-          return;
-        }
+        router.push("/account/profile#billing");
+        router.refresh();
+        return;
       }
 
       router.push("/account");
@@ -67,11 +61,11 @@ export function MemberRegisterForm() {
       {plan === "monthly" && (
         <p className="rounded-sm border border-pink/40 bg-pink-soft px-4 py-3 text-sm text-plum">
           You&apos;re signing up for a <strong>Monthly Membership</strong>. After verifying
-          your account, you&apos;ll be taken to secure checkout.
+          your account, you&apos;ll complete payment securely on your profile page.
         </p>
       )}
 
-      <GoogleSignInButton nextPath={plan === "monthly" ? "/account" : "/account"} />
+      <GoogleSignInButton nextPath={plan === "monthly" ? "/account/profile#billing" : "/account"} />
       <AuthDivider />
 
       <form onSubmit={handleSubmit} className="space-y-4">

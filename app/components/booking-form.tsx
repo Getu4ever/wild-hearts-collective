@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { BookingEmbeddedCheckout } from "@/app/components/booking-embedded-checkout";
 import { siteConfig } from "@/lib/site-data";
 
 type SessionOption = {
@@ -18,7 +19,20 @@ type SessionOption = {
 type BookingConfig = {
   depositLabel: string;
   stripeEnabled: boolean;
+  stripePublishableKey: string;
   emailEnabled: boolean;
+};
+
+type PendingPayment = {
+  clientSecret: string;
+  booking: {
+    id: string;
+    name: string;
+    email: string;
+    classTitle: string;
+    startsAt: string;
+    depositLabel: string;
+  };
 };
 
 type BookingResult = {
@@ -42,7 +56,7 @@ const classFilters = [
 const bookingSteps = [
   { title: "Choose a session", detail: "Pick your class and time" },
   { title: "Enter your details", detail: "Name, email and optional notes" },
-  { title: "Pay deposit online", detail: "Secure checkout confirms your place" },
+  { title: "Pay deposit online", detail: "Pay securely on this page" },
 ];
 
 function formatSessionDate(startsAt: string) {
@@ -73,6 +87,7 @@ export function BookingForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<BookingResult | null>(null);
+  const [pendingPayment, setPendingPayment] = useState<PendingPayment | null>(null);
   const [classFilter, setClassFilter] = useState(
     searchParams.get("class") ?? "all",
   );
@@ -156,8 +171,18 @@ export function BookingForm() {
         throw new Error(data.error || "Booking failed.");
       }
 
-      if (data.type === "booking" && data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
+      if (data.type === "booking" && data.clientSecret) {
+        setPendingPayment({
+          clientSecret: data.clientSecret,
+          booking: {
+            id: data.id,
+            name: data.name,
+            email: data.email,
+            classTitle: data.classTitle,
+            startsAt: data.startsAt,
+            depositLabel: data.depositLabel ?? depositNote,
+          },
+        });
         return;
       }
 
@@ -169,6 +194,82 @@ export function BookingForm() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (pendingPayment) {
+    const date = formatSessionDate(pendingPayment.booking.startsAt);
+
+    return (
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
+        <div className="overflow-hidden rounded-2xl border border-plum/10 bg-surface shadow-lg ring-1 ring-plum/5">
+          <div className="border-b border-plum/8 bg-gradient-to-r from-pink-soft/50 to-surface px-6 py-6 sm:px-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand">
+              Step 3 of 3
+            </p>
+            <h2 className="mt-2 font-display text-3xl text-plum sm:text-4xl">
+              Pay your deposit
+            </h2>
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
+              Complete payment below to secure your place. Your booking stays on this page —
+              no redirect to another site.
+            </p>
+          </div>
+
+          <div className="space-y-6 px-6 py-8 sm:px-8">
+            <div className="rounded-xl border border-plum/10 bg-pink-soft/40 px-5 py-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand">
+                Your booking
+              </p>
+              <p className="mt-2 font-semibold text-plum">{pendingPayment.booking.classTitle}</p>
+              <p className="mt-1 text-sm text-muted">
+                {date.weekday}, {date.shortDate} · {date.time}
+              </p>
+              <p className="mt-2 text-sm text-muted">
+                Deposit:{" "}
+                <strong className="text-foreground">{pendingPayment.booking.depositLabel}</strong>
+              </p>
+            </div>
+
+            <BookingEmbeddedCheckout
+              clientSecret={pendingPayment.clientSecret}
+              publishableKey={config?.stripePublishableKey ?? ""}
+            />
+
+            {error && (
+              <p
+                className="rounded-lg border border-brand/20 bg-pink-light px-4 py-3 text-sm text-plum"
+                role="alert"
+              >
+                {error}
+              </p>
+            )}
+
+            <button
+              type="button"
+              onClick={() => {
+                setPendingPayment(null);
+                setError("");
+              }}
+              className="rounded-lg border border-plum/15 px-6 py-3 text-sm font-semibold uppercase tracking-wider text-plum transition hover:bg-pink-soft"
+            >
+              Back to booking details
+            </button>
+          </div>
+        </div>
+
+        <aside className="space-y-4 lg:sticky lg:top-28">
+          <div className="rounded-2xl border border-plum/10 bg-surface p-6 shadow-sm ring-1 ring-plum/5">
+            <h3 className="text-sm font-bold uppercase tracking-[0.14em] text-plum">
+              Secure payment
+            </h3>
+            <p className="mt-4 text-sm leading-relaxed text-muted">
+              Cards, Apple Pay, Google Pay, and other methods appear automatically. We never
+              store your full card details.
+            </p>
+          </div>
+        </aside>
+      </div>
+    );
   }
 
   if (result) {
@@ -258,8 +359,8 @@ export function BookingForm() {
               className="rounded-lg border border-pink/30 bg-pink-light px-4 py-3 text-sm text-plum"
               role="status"
             >
-              Payment was cancelled. Your booking is still pending until the deposit
-              is paid. Choose your session again and complete checkout.
+              Payment was cancelled. Your booking is still pending until the deposit is paid.
+              Choose your session again and complete payment below.
             </p>
           )}
 

@@ -12,11 +12,11 @@ export const metadata: Metadata = {
 };
 
 type SuccessPageProps = {
-  searchParams: Promise<{ booking?: string }>;
+  searchParams: Promise<{ booking?: string; session_id?: string }>;
 };
 
 export default async function BookingSuccessPage({ searchParams }: SuccessPageProps) {
-  const { booking: bookingId } = await searchParams;
+  const { booking: bookingId, session_id: sessionId } = await searchParams;
 
   let booking = bookingId
     ? await db.booking.findUnique({
@@ -26,6 +26,13 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
     : null;
 
   if (booking && booking.status === BOOKING_STATUS.pending) {
+    if (sessionId && booking.stripeSessionId !== sessionId) {
+      await db.booking.update({
+        where: { id: booking.id },
+        data: { stripeSessionId: sessionId },
+      });
+    }
+
     booking = await finalizeBookingPayment(booking.id);
   }
 

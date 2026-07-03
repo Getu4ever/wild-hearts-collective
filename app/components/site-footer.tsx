@@ -195,9 +195,25 @@ export function SiteFooter() {
         </div>
       </div>
 
-      <div className="relative border-t border-white/10 bg-black/20 py-5 text-center text-[11px] tracking-wide text-white/50 backdrop-blur-[1px]">
-        &copy; {new Date().getFullYear()} {siteConfig.name}. All rights
-        reserved.
+      <div className="relative border-t border-white/10 bg-black/20 px-6 py-5 text-[11px] tracking-wide text-white/50 backdrop-blur-[1px] lg:px-8">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-2 sm:grid-cols-3">
+          <p className="text-left">
+            Website by –{" "}
+            <a
+              href="https://www.karoldigital.co.uk/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition hover:text-pink-light hover:underline"
+            >
+              Karol Digital
+            </a>
+          </p>
+          <p className="text-center">
+            &copy; {new Date().getFullYear()} {siteConfig.name}. All rights
+            reserved.
+          </p>
+          <div aria-hidden="true" className="hidden sm:block" />
+        </div>
       </div>
     </footer>
   );

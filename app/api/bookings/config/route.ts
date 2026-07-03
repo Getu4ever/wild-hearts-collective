@@ -9,6 +9,7 @@ export async function GET() {
     depositAmountPence: getDepositAmountPence(),
     depositLabel: depositLabel(),
     stripeEnabled: isStripeConfigured(),
+    stripePublishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "",
     emailEnabled: isEmailConfigured(),
   });
 }

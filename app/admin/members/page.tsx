@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { AdminLogoutButton } from "@/app/components/admin-logout-button";
+import { AdminMemberFilters } from "@/app/components/admin-member-filters";
 import { AdminNav } from "@/app/components/admin-nav";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 import {
   membershipPlanLabel,
   membershipStatusLabel,
+  membershipStatusTone,
+  MEMBERSHIP_STATUS,
 } from "@/lib/membership-config";
 import { db } from "@/lib/db";
 
@@ -25,29 +30,51 @@ function formatDateTime(value: Date) {
   }).format(value);
 }
 
-export default async function AdminMembersPage() {
-  const authed = await isAdminAuthenticated();
+type PageProps = {
+  searchParams: Promise<{
+    q?: string;
+    status?: string;
+    plan?: string;
+  }>;
+};
 
-  if (!authed) {
-    redirect("/admin/login");
-  }
+export default async function AdminMembersPage({ searchParams }: PageProps) {
+  const authed = await isAdminAuthenticated();
+  if (!authed) redirect("/admin/login");
+
+  const params = await searchParams;
+  const query = params.q?.trim() ?? "";
+  const statusFilter = params.status?.trim() ?? "";
+  const planFilter = params.plan?.trim() ?? "";
 
   const members = await db.user.findMany({
+    where: {
+      AND: [
+        query
+          ? {
+              OR: [
+                { name: { contains: query } },
+                { email: { contains: query } },
+                { phone: { contains: query } },
+              ],
+            }
+          : {},
+        statusFilter ? { membershipStatus: statusFilter } : {},
+        planFilter ? { membershipPlan: planFilter } : {},
+      ],
+    },
     orderBy: { createdAt: "desc" },
     include: {
-      oauthAccounts: {
-        select: { provider: true },
-      },
-      _count: {
-        select: { bookings: true },
-      },
+      oauthAccounts: { select: { provider: true } },
+      _count: { select: { bookings: true } },
     },
   });
 
-  const newThisWeek = members.filter((member) => {
-    const weekAgo = Date.now() - 1000 * 60 * 60 * 24 * 7;
-    return member.createdAt.getTime() >= weekAgo;
-  }).length;
+  const weekAgo = Date.now() - 1000 * 60 * 60 * 24 * 7;
+  const newThisWeek = members.filter((member) => member.createdAt.getTime() >= weekAgo).length;
+  const activeCount = members.filter(
+    (member) => member.membershipStatus === MEMBERSHIP_STATUS.active,
+  ).length;
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-16 lg:px-8 lg:py-20">
@@ -56,8 +83,8 @@ export default async function AdminMembersPage() {
           <div className="mb-5 h-px w-12 bg-pink" />
           <h1 className="font-display text-4xl text-plum sm:text-5xl">Members</h1>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
-            Track new sign-ups, verification status, and membership plans. You also
-            receive an email at your studio address whenever someone registers.
+            Search, filter, and manage member profiles. Click a member to view safety details
+            and membership controls.
           </p>
           <AdminNav active="members" />
         </div>
@@ -66,30 +93,30 @@ export default async function AdminMembersPage() {
 
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
         <div className="rounded-lg border border-plum/10 bg-surface px-5 py-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-brand">
-            Total members
-          </p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-brand">Showing</p>
           <p className="mt-2 font-display text-3xl text-plum">{members.length}</p>
         </div>
         <div className="rounded-lg border border-plum/10 bg-surface px-5 py-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-brand">
-            New this week
-          </p>
-          <p className="mt-2 font-display text-3xl text-plum">{newThisWeek}</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-brand">Active (filtered)</p>
+          <p className="mt-2 font-display text-3xl text-plum">{activeCount}</p>
         </div>
         <div className="rounded-lg border border-plum/10 bg-surface px-5 py-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-brand">
-            Pending verification
-          </p>
-          <p className="mt-2 font-display text-3xl text-plum">
-            {members.filter((member) => !member.emailVerifiedAt).length}
-          </p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-brand">New this week</p>
+          <p className="mt-2 font-display text-3xl text-plum">{newThisWeek}</p>
         </div>
       </div>
 
-      <div className="mt-10 overflow-hidden rounded-lg border border-plum/10 bg-surface shadow-sm">
+      <Suspense fallback={<div className="mt-8 h-16 rounded-lg border border-plum/10 bg-surface" />}>
+        <AdminMemberFilters
+          initialQuery={query}
+          initialStatus={statusFilter}
+          initialPlan={planFilter}
+        />
+      </Suspense>
+
+      <div className="mt-6 overflow-hidden rounded-lg border border-plum/10 bg-surface shadow-sm">
         {members.length === 0 ? (
-          <p className="px-6 py-10 text-sm text-muted">No members yet.</p>
+          <p className="px-6 py-10 text-sm text-muted">No members match your filters.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
@@ -98,11 +125,10 @@ export default async function AdminMembersPage() {
                   <th className="px-4 py-3 font-semibold">Registered</th>
                   <th className="px-4 py-3 font-semibold">Name</th>
                   <th className="px-4 py-3 font-semibold">Email</th>
-                  <th className="px-4 py-3 font-semibold">Phone</th>
-                  <th className="px-4 py-3 font-semibold">Sign-up</th>
-                  <th className="px-4 py-3 font-semibold">Verified</th>
+                  <th className="px-4 py-3 font-semibold">Status</th>
                   <th className="px-4 py-3 font-semibold">Plan</th>
                   <th className="px-4 py-3 font-semibold">Bookings</th>
+                  <th className="px-4 py-3 font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -121,7 +147,15 @@ export default async function AdminMembersPage() {
                       <td className="px-4 py-4 whitespace-nowrap text-muted">
                         {formatDateTime(member.createdAt)}
                       </td>
-                      <td className="px-4 py-4 font-medium text-plum">{member.name}</td>
+                      <td className="px-4 py-4 font-medium text-plum">
+                        <Link
+                          href={`/admin/members/${member.id}`}
+                          className="hover:text-brand hover:underline"
+                        >
+                          {member.name}
+                        </Link>
+                        <p className="mt-1 text-xs text-muted">{signupMethod}</p>
+                      </td>
                       <td className="px-4 py-4">
                         <a
                           href={`mailto:${member.email}`}
@@ -130,28 +164,25 @@ export default async function AdminMembersPage() {
                           {member.email}
                         </a>
                       </td>
-                      <td className="px-4 py-4 text-muted">{member.phone ?? "—"}</td>
-                      <td className="px-4 py-4 text-muted">{signupMethod}</td>
                       <td className="px-4 py-4">
                         <span
-                          className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider ${
-                            member.emailVerifiedAt
-                              ? "bg-sage-light text-plum"
-                              : "bg-pink-soft text-brand"
-                          }`}
+                          className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider ${membershipStatusTone(member.membershipStatus)}`}
                         >
-                          {member.emailVerifiedAt ? "Verified" : "Pending"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 text-muted">
-                        <span className="block font-medium text-plum">
-                          {membershipPlanLabel(member.membershipPlan)}
-                        </span>
-                        <span className="text-xs">
                           {membershipStatusLabel(member.membershipStatus)}
                         </span>
                       </td>
+                      <td className="px-4 py-4 text-muted">
+                        {membershipPlanLabel(member.membershipPlan)}
+                      </td>
                       <td className="px-4 py-4 text-muted">{member._count.bookings}</td>
+                      <td className="px-4 py-4">
+                        <Link
+                          href={`/admin/members/${member.id}`}
+                          className="text-sm font-semibold text-brand hover:underline"
+                        >
+                          View profile
+                        </Link>
+                      </td>
                     </tr>
                   );
                 })}

@@ -7,8 +7,10 @@ export const MEMBERSHIP_PLAN = {
 
 export const MEMBERSHIP_STATUS = {
   active: "active",
+  paused: "paused",
   inactive: "inactive",
   cancelled: "cancelled",
+  expired: "expired",
 } as const;
 
 export function getMonthlyMembershipPricePence() {
@@ -67,9 +69,27 @@ export function membershipStatusLabel(status: string) {
   switch (status) {
     case MEMBERSHIP_STATUS.active:
       return "Active";
+    case MEMBERSHIP_STATUS.paused:
+      return "Paused";
     case MEMBERSHIP_STATUS.cancelled:
       return "Cancelled";
+    case MEMBERSHIP_STATUS.expired:
+      return "Expired";
     default:
       return "Inactive";
+  }
+}
+
+export function membershipStatusTone(status: string) {
+  switch (status) {
+    case MEMBERSHIP_STATUS.active:
+      return "bg-sage-light text-plum";
+    case MEMBERSHIP_STATUS.paused:
+      return "bg-pink-soft text-brand";
+    case MEMBERSHIP_STATUS.cancelled:
+    case MEMBERSHIP_STATUS.expired:
+      return "bg-plum/10 text-plum";
+    default:
+      return "bg-pink-soft text-brand";
   }
 }

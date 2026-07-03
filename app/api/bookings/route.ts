@@ -156,6 +156,13 @@ export async function POST(request: Request) {
     startsAt: booking.session.startsAt,
   });
 
+  if (!checkout.client_secret) {
+    return NextResponse.json(
+      { error: "Unable to start embedded checkout. Please try again." },
+      { status: 503 },
+    );
+  }
+
   await db.booking.update({
     where: { id: booking.id },
     data: { stripeSessionId: checkout.id },
@@ -177,7 +184,7 @@ export async function POST(request: Request) {
     status: booking.status,
     classTitle: booking.session.class.title,
     startsAt: booking.session.startsAt.toISOString(),
-    checkoutUrl: checkout.url,
+    clientSecret: checkout.client_secret,
     depositLabel: depositLabel(),
   });
 }

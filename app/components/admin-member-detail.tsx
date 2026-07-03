@@ -1,0 +1,428 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import {
+  ACCOUNT_STATUS,
+  DISCIPLINE_INTERESTS,
+  EXPERIENCE_LEVELS,
+} from "@/lib/profile-config";
+import {
+  MEMBERSHIP_PLAN,
+  MEMBERSHIP_STATUS,
+  membershipPlanLabel,
+  membershipStatusLabel,
+  membershipStatusTone,
+} from "@/lib/membership-config";
+import type { MemberProfile } from "@/lib/member-profile-service";
+
+type AdminMemberDetailProps = {
+  memberId: string;
+  initialMember: MemberProfile & {
+    internalNotes: string | null;
+    signupMethod: string;
+    bookingCount: number;
+  };
+  timeline: {
+    id: string;
+    type: string;
+    note: string | null;
+    effectiveAt: string;
+    endsAt: string | null;
+    createdBy: string;
+  }[];
+  recentBookings: {
+    id: string;
+    status: string;
+    attendance: string | null;
+    classTitle: string;
+    startsAt: string;
+  }[];
+  auditLogs: {
+    id: string;
+    action: string;
+    details: string | null;
+    createdAt: string;
+  }[];
+};
+
+const inputClass =
+  "w-full rounded-sm border border-plum/15 px-4 py-3 text-sm outline-none ring-pink focus:border-pink focus:ring-1";
+
+function formatDate(value: string | null) {
+  if (!value) return "—";
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+export function AdminMemberDetail({
+  memberId,
+  initialMember,
+  timeline,
+  recentBookings,
+  auditLogs,
+}: AdminMemberDetailProps) {
+  const router = useRouter();
+  const [member, setMember] = useState(initialMember);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const [form, setForm] = useState({
+    name: member.name,
+    phone: member.phone ?? "",
+    dateOfBirth: member.dateOfBirth ?? "",
+    emergencyContactName: member.emergencyContact.name ?? "",
+    emergencyContactRelationship: member.emergencyContact.relationship ?? "",
+    emergencyContactPhone: member.emergencyContact.phone ?? "",
+    medicalNotes: member.healthSafety.medicalNotes ?? "",
+    injuriesLimitations: member.healthSafety.injuriesLimitations ?? "",
+    allergiesSafetyAlerts: member.healthSafety.allergiesSafetyAlerts ?? "",
+    experienceLevel: member.experienceLevel ?? "",
+    disciplineInterests: member.disciplineInterests,
+    internalNotes: member.internalNotes ?? "",
+    membershipPlan: member.membership.plan,
+    membershipStatus: member.membership.status,
+    creditsRemaining: member.membership.creditsRemaining,
+    accountStatus: member.membership.accountStatus,
+  });
+
+  const [pauseStart, setPauseStart] = useState("");
+  const [resumeAt, setResumeAt] = useState("");
+  const [actionReason, setActionReason] = useState("");
+
+  async function saveMember(payload: Record<string, unknown>) {
+    setLoading(true);
+    setMessage("");
+    setError("");
+
+    try {
+      const response = await fetch(`/api/admin/members/${memberId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Save failed.");
+      setMember((current) => ({ ...current, ...data.member, internalNotes: form.internalNotes }));
+      setMessage("Member updated.");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save failed.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function runMembershipAction(action: "pause" | "resume" | "cancel" | "terminate") {
+    if (action === "cancel" || action === "terminate") {
+      const label = action === "terminate" ? "terminate immediately" : "cancel at period end";
+      if (!window.confirm(`Confirm you want to ${label} this membership?`)) return;
+    }
+
+    setLoading(true);
+    setMessage("");
+    setError("");
+
+    try {
+      const response = await fetch(`/api/admin/members/${memberId}/membership`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action,
+          pauseStart: pauseStart || undefined,
+          resumeAt: resumeAt || null,
+          reason: actionReason || undefined,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Action failed.");
+      if (data.membership) {
+        setMember((current) => ({
+          ...current,
+          membership: { ...current.membership, ...data.membership },
+        }));
+      }
+      setMessage(`Membership ${action} completed.`);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Action failed.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="space-y-8">
+      {(message || error) && (
+        <div
+          className={`rounded-sm px-4 py-3 text-sm ${
+            error ? "border border-red-200 bg-red-50 text-red-800" : "border border-sage/30 bg-sage-light text-plum"
+          }`}
+        >
+          {error || message}
+        </div>
+      )}
+
+      <section className="rounded-lg border border-plum/10 bg-surface p-6 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-brand">Member profile</p>
+            <h2 className="mt-2 font-display text-3xl text-plum">{member.name}</h2>
+            <p className="mt-1 text-sm text-muted">{member.email}</p>
+            <p className="mt-2 text-xs text-muted">
+              Joined {formatDate(member.createdAt)} · {member.signupMethod} ·{" "}
+              {member.bookingCount} booking{member.bookingCount === 1 ? "" : "s"}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <span
+              className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider ${membershipStatusTone(member.membership.status)}`}
+            >
+              {membershipStatusLabel(member.membership.status)}
+            </span>
+            {member.membership.accountStatus !== ACCOUNT_STATUS.active && (
+              <span className="inline-flex rounded-full bg-red-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-red-800">
+                {member.membership.accountStatus}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <dl className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 text-sm">
+          <div>
+            <dt className="text-muted">Plan</dt>
+            <dd className="font-semibold text-plum">{membershipPlanLabel(member.membership.plan)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted">Started</dt>
+            <dd className="font-semibold text-plum">{formatDate(member.membership.startedAt)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted">Renews</dt>
+            <dd className="font-semibold text-plum">{formatDate(member.membership.renewsAt)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted">Credits</dt>
+            <dd className="font-semibold text-plum">{member.membership.creditsRemaining}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <form
+        className="grid gap-8 lg:grid-cols-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          saveMember(form);
+        }}
+      >
+        <section className="rounded-lg border border-plum/10 bg-surface p-6 shadow-sm">
+          <h3 className="font-display text-2xl text-plum">Personal & contact</h3>
+          <div className="mt-4 space-y-4">
+            <input className={inputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Full name" />
+            <input className={inputClass} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Phone" />
+            <input className={inputClass} type="date" value={form.dateOfBirth} onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })} />
+          </div>
+        </section>
+
+        <section className="rounded-lg border border-plum/10 bg-surface p-6 shadow-sm">
+          <h3 className="font-display text-2xl text-plum">Emergency contact</h3>
+          <div className="mt-4 space-y-4">
+            <input className={inputClass} value={form.emergencyContactName} onChange={(e) => setForm({ ...form, emergencyContactName: e.target.value })} placeholder="Name" />
+            <input className={inputClass} value={form.emergencyContactRelationship} onChange={(e) => setForm({ ...form, emergencyContactRelationship: e.target.value })} placeholder="Relationship" />
+            <input className={inputClass} value={form.emergencyContactPhone} onChange={(e) => setForm({ ...form, emergencyContactPhone: e.target.value })} placeholder="Phone" />
+          </div>
+        </section>
+
+        <section className="rounded-lg border border-amber-200 bg-amber-50/50 p-6 shadow-sm lg:col-span-2">
+          <h3 className="font-display text-2xl text-plum">Health & safety (staff only)</h3>
+          <p className="mt-2 text-sm text-muted">
+            Sensitive information for instructor safety. Never share outside the studio team.
+          </p>
+          <div className="mt-4 grid gap-4 lg:grid-cols-3">
+            <textarea className={`${inputClass} min-h-28`} value={form.medicalNotes} onChange={(e) => setForm({ ...form, medicalNotes: e.target.value })} placeholder="Medical notes" />
+            <textarea className={`${inputClass} min-h-28`} value={form.injuriesLimitations} onChange={(e) => setForm({ ...form, injuriesLimitations: e.target.value })} placeholder="Injuries / limitations" />
+            <textarea className={`${inputClass} min-h-28`} value={form.allergiesSafetyAlerts} onChange={(e) => setForm({ ...form, allergiesSafetyAlerts: e.target.value })} placeholder="Allergies / safety alerts" />
+          </div>
+        </section>
+
+        <section className="rounded-lg border border-plum/10 bg-surface p-6 shadow-sm">
+          <h3 className="font-display text-2xl text-plum">Skills & interests</h3>
+          <div className="mt-4 space-y-4">
+            <select className={inputClass} value={form.experienceLevel} onChange={(e) => setForm({ ...form, experienceLevel: e.target.value })}>
+              <option value="">Experience level</option>
+              {EXPERIENCE_LEVELS.map((level) => (
+                <option key={level.id} value={level.id}>{level.label}</option>
+              ))}
+            </select>
+            <div className="flex flex-wrap gap-2">
+              {DISCIPLINE_INTERESTS.map((discipline) => {
+                const selected = form.disciplineInterests.includes(discipline.id);
+                return (
+                  <button
+                    key={discipline.id}
+                    type="button"
+                    onClick={() =>
+                      setForm({
+                        ...form,
+                        disciplineInterests: selected
+                          ? form.disciplineInterests.filter((item) => item !== discipline.id)
+                          : [...form.disciplineInterests, discipline.id],
+                      })
+                    }
+                    className={`rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition ${
+                      selected ? "bg-plum text-white" : "border border-plum/15 bg-white text-plum"
+                    }`}
+                  >
+                    {discipline.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-lg border border-plum/10 bg-surface p-6 shadow-sm">
+          <h3 className="font-display text-2xl text-plum">Membership & account controls</h3>
+          <div className="mt-4 space-y-4">
+            <select className={inputClass} value={form.membershipPlan} onChange={(e) => setForm({ ...form, membershipPlan: e.target.value })}>
+              <option value={MEMBERSHIP_PLAN.account}>Studio Member</option>
+              <option value={MEMBERSHIP_PLAN.monthly}>Monthly Membership</option>
+            </select>
+            <select className={inputClass} value={form.membershipStatus} onChange={(e) => setForm({ ...form, membershipStatus: e.target.value })}>
+              {Object.values(MEMBERSHIP_STATUS).map((status) => (
+                <option key={status} value={status}>{membershipStatusLabel(status)}</option>
+              ))}
+            </select>
+            <input className={inputClass} type="number" min={0} value={form.creditsRemaining} onChange={(e) => setForm({ ...form, creditsRemaining: Number(e.target.value) })} placeholder="Credits remaining" />
+            <select className={inputClass} value={form.accountStatus} onChange={(e) => setForm({ ...form, accountStatus: e.target.value })}>
+              {Object.values(ACCOUNT_STATUS).map((status) => (
+                <option key={status} value={status}>{status}</option>
+              ))}
+            </select>
+            <textarea className={`${inputClass} min-h-28`} value={form.internalNotes} onChange={(e) => setForm({ ...form, internalNotes: e.target.value })} placeholder="Internal admin notes (staff only)" />
+          </div>
+        </section>
+
+        <div className="lg:col-span-2">
+          <button
+            type="submit"
+            disabled={loading}
+            className="rounded-sm bg-plum px-6 py-3 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-plum-hover disabled:opacity-60"
+          >
+            Save member details
+          </button>
+        </div>
+      </form>
+
+      <section className="rounded-lg border border-plum/10 bg-surface p-6 shadow-sm">
+        <h3 className="font-display text-2xl text-plum">Membership actions</h3>
+        <p className="mt-2 text-sm text-muted">
+          Destructive actions are logged with timestamp. Stripe subscriptions sync when configured.
+        </p>
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <div className="space-y-3 rounded-sm border border-plum/10 p-4">
+            <p className="text-sm font-semibold text-plum">Pause membership</p>
+            <input className={inputClass} type="date" value={pauseStart} onChange={(e) => setPauseStart(e.target.value)} />
+            <input className={inputClass} type="date" value={resumeAt} onChange={(e) => setResumeAt(e.target.value)} placeholder="Resume date (optional)" />
+            <button type="button" disabled={loading} onClick={() => runMembershipAction("pause")} className="rounded-sm border border-plum/20 px-4 py-2 text-sm font-semibold text-plum hover:border-pink">
+              Pause
+            </button>
+          </div>
+          <div className="space-y-3 rounded-sm border border-plum/10 p-4">
+            <p className="text-sm font-semibold text-plum">Resume membership</p>
+            <button type="button" disabled={loading} onClick={() => runMembershipAction("resume")} className="rounded-sm border border-plum/20 px-4 py-2 text-sm font-semibold text-plum hover:border-pink">
+              Resume now
+            </button>
+          </div>
+          <div className="space-y-3 rounded-sm border border-amber-200 bg-amber-50/40 p-4">
+            <p className="text-sm font-semibold text-plum">Cancel at period end</p>
+            <input className={inputClass} value={actionReason} onChange={(e) => setActionReason(e.target.value)} placeholder="Reason (optional)" />
+            <button type="button" disabled={loading} onClick={() => runMembershipAction("cancel")} className="rounded-sm border border-amber-300 px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-100">
+              Cancel membership
+            </button>
+          </div>
+          <div className="space-y-3 rounded-sm border border-red-200 bg-red-50/40 p-4">
+            <p className="text-sm font-semibold text-red-900">Terminate immediately</p>
+            <p className="text-xs text-red-800">Immediate access removal. No refund unless handled manually in Stripe.</p>
+            <button type="button" disabled={loading} onClick={() => runMembershipAction("terminate")} className="rounded-sm bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800">
+              Terminate now
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <div className="grid gap-8 lg:grid-cols-2">
+        <section className="rounded-lg border border-plum/10 bg-surface p-6 shadow-sm">
+          <h3 className="font-display text-2xl text-plum">Membership timeline</h3>
+          {timeline.length === 0 ? (
+            <p className="mt-4 text-sm text-muted">No membership events yet.</p>
+          ) : (
+            <ul className="mt-4 divide-y divide-plum/10">
+              {timeline.map((event) => (
+                <li key={event.id} className="py-3 text-sm">
+                  <p className="font-semibold capitalize text-plum">{event.type.replaceAll("_", " ")}</p>
+                  <p className="text-muted">{formatDateTime(event.effectiveAt)} · {event.createdBy}</p>
+                  {event.note && <p className="mt-1 text-xs text-muted">{event.note}</p>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="rounded-lg border border-plum/10 bg-surface p-6 shadow-sm">
+          <h3 className="font-display text-2xl text-plum">Recent bookings</h3>
+          {recentBookings.length === 0 ? (
+            <p className="mt-4 text-sm text-muted">No bookings yet.</p>
+          ) : (
+            <ul className="mt-4 divide-y divide-plum/10">
+              {recentBookings.map((booking) => (
+                <li key={booking.id} className="py-3 text-sm">
+                  <p className="font-semibold text-plum">{booking.classTitle}</p>
+                  <p className="text-muted">{formatDateTime(booking.startsAt)}</p>
+                  <p className="mt-1 text-xs uppercase tracking-wider text-brand">{booking.status}{booking.attendance ? ` · ${booking.attendance}` : ""}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Link href="/admin/bookings" className="mt-4 inline-block text-sm font-semibold text-brand hover:underline">
+            View all bookings
+          </Link>
+        </section>
+      </div>
+
+      <section className="rounded-lg border border-plum/10 bg-surface p-6 shadow-sm">
+        <h3 className="font-display text-2xl text-plum">Audit log</h3>
+        {auditLogs.length === 0 ? (
+          <p className="mt-4 text-sm text-muted">No audit entries for this member.</p>
+        ) : (
+          <ul className="mt-4 divide-y divide-plum/10">
+            {auditLogs.map((entry) => (
+              <li key={entry.id} className="flex flex-wrap items-start justify-between gap-2 py-3 text-sm">
+                <div>
+                  <p className="font-semibold text-plum">{entry.action}</p>
+                  {entry.details && <p className="text-xs text-muted">{entry.details}</p>}
+                </div>
+                <time className="text-xs text-muted">{formatDateTime(entry.createdAt)}</time>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
+  );
+}

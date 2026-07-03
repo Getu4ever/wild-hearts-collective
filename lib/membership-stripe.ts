@@ -102,6 +102,14 @@ export async function activateMembershipFromSubscription(
       membershipRenewsAt: subscription.currentPeriodEnd
         ? new Date(subscription.currentPeriodEnd * 1000)
         : null,
+      membershipStartedAt: active
+        ? (
+            await db.user.findUnique({
+              where: { id: userId },
+              select: { membershipStartedAt: true },
+            })
+          )?.membershipStartedAt ?? new Date()
+        : undefined,
     },
   });
 }
