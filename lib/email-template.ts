@@ -21,7 +21,7 @@ function escapeHtml(value: string) {
 
 export function buildBrandedEmail(content: EmailContent) {
   const baseUrl = getAppBaseUrl();
-  const logoUrl = `${baseUrl}/wild-hearts-logo.jpeg`;
+  const logoUrl = `${baseUrl}/logo3.jpg`;
   const studioEmail = getStudioEmail();
   const phone = contact.phone;
   const address = contact.address;
