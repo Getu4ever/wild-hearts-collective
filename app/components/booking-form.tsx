@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BookingEmbeddedCheckout } from "@/app/components/booking-embedded-checkout";
+import { formatSessionDateParts } from "@/lib/booking-config";
 import { siteConfig } from "@/lib/site-data";
 
 type SessionOption = {
@@ -73,19 +74,7 @@ const bookingSteps = [
 ];
 
 function formatSessionDate(startsAt: string) {
-  const date = new Date(startsAt);
-  return {
-    weekday: date.toLocaleDateString("en-GB", { weekday: "long" }),
-    shortDate: date.toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    }),
-    time: date.toLocaleTimeString("en-GB", {
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
-  };
+  return formatSessionDateParts(startsAt);
 }
 
 function fieldClassName() {

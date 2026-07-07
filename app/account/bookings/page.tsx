@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { formatSessionDateTime } from "@/lib/booking-config";
+import { formatSessionDateTime, formatUkDateTimeShort } from "@/lib/booking-config";
 import { getCurrentMember } from "@/lib/member-auth";
 import { db } from "@/lib/db";
 
@@ -9,16 +9,6 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-function formatDateTime(value: Date) {
-  return new Intl.DateTimeFormat("en-GB", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(value);
-}
 
 export default async function AccountBookingsPage() {
   const member = await getCurrentMember();
@@ -81,7 +71,7 @@ export default async function AccountBookingsPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-muted">
-                      {formatDateTime(booking.createdAt)}
+                      {formatUkDateTimeShort(booking.createdAt)}
                     </td>
                   </tr>
                 ))}

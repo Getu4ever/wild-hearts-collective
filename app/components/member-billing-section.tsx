@@ -3,14 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { StripePaymentForm } from "@/app/components/stripe-payment-form";
+import { formatUkDateShort } from "@/lib/booking-config";
+
 import type { MemberBillingSummary } from "@/lib/membership-billing";
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(value));
+  return formatUkDateShort(value);
 }
 
 function brandLabel(brand: string) {

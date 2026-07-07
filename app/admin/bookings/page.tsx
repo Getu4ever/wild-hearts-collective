@@ -6,7 +6,7 @@ import { AdminLogoutButton } from "@/app/components/admin-logout-button";
 import { AdminNav } from "@/app/components/admin-nav";
 import { AdminWaitlistActions } from "@/app/components/admin-waitlist-actions";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
-import { formatSessionDateTime } from "@/lib/booking-config";
+import { formatSessionDateTime, formatUkDateTimeShort } from "@/lib/booking-config";
 import { db } from "@/lib/db";
 
 export const metadata: Metadata = {
@@ -14,16 +14,6 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-function formatDateTime(value: Date) {
-  return new Intl.DateTimeFormat("en-GB", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(value);
-}
 
 export default async function AdminBookingsPage() {
   const authed = await isAdminAuthenticated();
@@ -93,7 +83,7 @@ export default async function AdminBookingsPage() {
                     className="border-b border-plum/8 align-top last:border-b-0"
                   >
                     <td className="px-4 py-4 whitespace-nowrap text-muted">
-                      {formatDateTime(booking.createdAt)}
+                      {formatUkDateTimeShort(booking.createdAt)}
                     </td>
                     <td className="px-4 py-4 font-medium text-plum">
                       {booking.session.class.title}
@@ -165,7 +155,7 @@ export default async function AdminBookingsPage() {
                       className="border-b border-plum/8 align-top last:border-b-0"
                     >
                       <td className="px-4 py-4 whitespace-nowrap text-muted">
-                        {formatDateTime(entry.createdAt)}
+                        {formatUkDateTimeShort(entry.createdAt)}
                       </td>
                       <td className="px-4 py-4 font-medium text-plum">
                         {entry.session.class.title}

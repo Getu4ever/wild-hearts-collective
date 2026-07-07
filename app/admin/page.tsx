@@ -5,7 +5,7 @@ import { AdminLogoutButton } from "@/app/components/admin-logout-button";
 import { AdminNav } from "@/app/components/admin-nav";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 import { getAdminDashboardStats } from "@/lib/admin-dashboard-service";
-import { formatSessionDateTime } from "@/lib/booking-config";
+import { formatSessionDateTime, formatUkDateShort, formatUkDateTimeShort } from "@/lib/booking-config";
 import {
   membershipPlanLabel,
   membershipStatusLabel,
@@ -16,23 +16,6 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-function formatDate(value: Date) {
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(value);
-}
-
-function formatDateTime(value: Date) {
-  return new Intl.DateTimeFormat("en-GB", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(value);
-}
 
 export default async function AdminDashboardPage() {
   const authed = await isAdminAuthenticated();
@@ -159,7 +142,7 @@ export default async function AdminDashboardPage() {
                   <div className="text-right text-sm">
                     <p className="font-medium text-plum">
                       {member.membershipRenewsAt
-                        ? formatDate(member.membershipRenewsAt)
+                        ? formatUkDateShort(member.membershipRenewsAt)
                         : "—"}
                     </p>
                     <p className="text-xs text-muted">
@@ -210,7 +193,7 @@ export default async function AdminDashboardPage() {
                     </Link>
                   )}
                 </div>
-                <time className="text-xs text-muted">{formatDateTime(entry.createdAt)}</time>
+                <time className="text-xs text-muted">{formatUkDateTimeShort(entry.createdAt)}</time>
               </li>
             ))}
           </ul>

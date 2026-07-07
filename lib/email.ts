@@ -60,14 +60,19 @@ async function sendEmail({
     return { ok: false as const, skipped: true as const };
   }
 
-  await resend.emails.send({
-    from: getFromAddress(),
-    to,
-    subject,
-    html,
-  });
+  try {
+    await resend.emails.send({
+      from: getFromAddress(),
+      to,
+      subject,
+      html,
+    });
 
-  return { ok: true as const, skipped: false as const };
+    return { ok: true as const, skipped: false as const };
+  } catch (error) {
+    console.error("[email:send]", subject, to, error);
+    return { ok: false as const, skipped: false as const };
+  }
 }
 
 export async function sendBookingReceivedEmails(

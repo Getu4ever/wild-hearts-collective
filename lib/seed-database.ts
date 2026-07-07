@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import { UK_TIMEZONE, ukLocalToUtc } from "@/lib/booking-config";
 import { db } from "@/lib/db";
 
 const classSeed = [
@@ -29,16 +30,65 @@ const sessionTemplates = [
   { day: 6, hour: 10, minute: 0, classSlug: "aerial-hoop" },
 ];
 
+function getUkYmd(date: Date) {
+  const [year, month, day] = new Intl.DateTimeFormat("en-CA", {
+    timeZone: UK_TIMEZONE,
+  })
+    .format(date)
+    .split("-")
+    .map(Number);
+
+  return { year, month, day };
+}
+
+function getUkWeekday(date: Date) {
+  const weekday = new Intl.DateTimeFormat("en-GB", {
+    timeZone: UK_TIMEZONE,
+    weekday: "short",
+  }).format(date);
+  const map: Record<string, number> = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  };
+
+  return map[weekday] ?? 0;
+}
+
+function getUkMinutes(date: Date) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: UK_TIMEZONE,
+      hour: "numeric",
+      minute: "numeric",
+      hour12: false,
+    })
+      .formatToParts(date)
+      .map((part) => [part.type, part.value]),
+  ) as Record<string, string>;
+
+  return Number(parts.hour) * 60 + Number(parts.minute);
+}
+
 function nextDateForWeekday(day: number, hour: number, minute: number, weeksAhead: number) {
-  const date = new Date();
-  date.setHours(hour, minute, 0, 0);
-  const currentDay = date.getDay();
+  const now = new Date();
+  const { year, month, day: todayDay } = getUkYmd(now);
+  const currentDay = getUkWeekday(now);
+
   let daysUntil = (day - currentDay + 7) % 7;
-  if (daysUntil === 0 && date <= new Date()) {
+  if (daysUntil === 0 && getUkMinutes(now) >= hour * 60 + minute) {
     daysUntil = 7;
   }
-  date.setDate(date.getDate() + daysUntil + weeksAhead * 7);
-  return date;
+
+  const totalDays = daysUntil + weeksAhead * 7;
+  const target = new Date(Date.UTC(year, month - 1, todayDay + totalDays, 12));
+  const { year: targetYear, month: targetMonth, day: targetDay } = getUkYmd(target);
+
+  return ukLocalToUtc(targetYear, targetMonth, targetDay, hour, minute);
 }
 
 export async function seedDatabaseIfEmpty(client: PrismaClient) {

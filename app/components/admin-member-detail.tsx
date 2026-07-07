@@ -15,6 +15,10 @@ import {
   membershipStatusLabel,
   membershipStatusTone,
 } from "@/lib/membership-config";
+import {
+  formatUkDateShort,
+  formatUkDateTimeShort,
+} from "@/lib/booking-config";
 import type { MemberProfile } from "@/lib/member-profile-service";
 
 type AdminMemberDetailProps = {
@@ -52,21 +56,7 @@ const inputClass =
 
 function formatDate(value: string | null) {
   if (!value) return "—";
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(value));
-}
-
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("en-GB", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
+  return formatUkDateShort(value);
 }
 
 export function AdminMemberDetail({
@@ -376,7 +366,7 @@ export function AdminMemberDetail({
               {timeline.map((event) => (
                 <li key={event.id} className="py-3 text-sm">
                   <p className="font-semibold capitalize text-plum">{event.type.replaceAll("_", " ")}</p>
-                  <p className="text-muted">{formatDateTime(event.effectiveAt)} · {event.createdBy}</p>
+                  <p className="text-muted">{formatUkDateTimeShort(event.effectiveAt)} · {event.createdBy}</p>
                   {event.note && <p className="mt-1 text-xs text-muted">{event.note}</p>}
                 </li>
               ))}
@@ -393,7 +383,7 @@ export function AdminMemberDetail({
               {recentBookings.map((booking) => (
                 <li key={booking.id} className="py-3 text-sm">
                   <p className="font-semibold text-plum">{booking.classTitle}</p>
-                  <p className="text-muted">{formatDateTime(booking.startsAt)}</p>
+                  <p className="text-muted">{formatUkDateTimeShort(booking.startsAt)}</p>
                   <p className="mt-1 text-xs uppercase tracking-wider text-brand">{booking.status}{booking.attendance ? ` · ${booking.attendance}` : ""}</p>
                 </li>
               ))}
@@ -417,7 +407,7 @@ export function AdminMemberDetail({
                   <p className="font-semibold text-plum">{entry.action}</p>
                   {entry.details && <p className="text-xs text-muted">{entry.details}</p>}
                 </div>
-                <time className="text-xs text-muted">{formatDateTime(entry.createdAt)}</time>
+                <time className="text-xs text-muted">{formatUkDateTimeShort(entry.createdAt)}</time>
               </li>
             ))}
           </ul>

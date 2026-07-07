@@ -3,7 +3,7 @@ import Link from "next/link";
 import { MemberLogoutButton } from "@/app/components/member-logout-button";
 import { MembershipSubscribeButton } from "@/app/components/membership-subscribe-button";
 import { BOOKING_URL } from "@/lib/constants";
-import { formatSessionDateTime } from "@/lib/booking-config";
+import { formatSessionDateTime, formatUkDateLong } from "@/lib/booking-config";
 import { getCurrentMember } from "@/lib/member-auth";
 import {
   calculateProfileCompletion,
@@ -162,11 +162,7 @@ export default async function AccountPage({
                 <div>
                   <dt className="text-muted">Renews</dt>
                   <dd className="font-semibold text-plum">
-                    {new Intl.DateTimeFormat("en-GB", {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    }).format(member.membershipRenewsAt)}
+                    {formatUkDateLong(member.membershipRenewsAt)}
                   </dd>
                 </div>
               )}

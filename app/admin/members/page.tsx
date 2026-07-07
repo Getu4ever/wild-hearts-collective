@@ -12,23 +12,13 @@ import {
   membershipStatusTone,
   MEMBERSHIP_STATUS,
 } from "@/lib/membership-config";
+import { formatUkDateTimeShort } from "@/lib/booking-config";
 import { db } from "@/lib/db";
 
 export const metadata: Metadata = {
   title: "Admin Members",
   robots: { index: false, follow: false },
 };
-
-function formatDateTime(value: Date) {
-  return new Intl.DateTimeFormat("en-GB", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(value);
-}
 
 type PageProps = {
   searchParams: Promise<{
@@ -145,7 +135,7 @@ export default async function AdminMembersPage({ searchParams }: PageProps) {
                       className="border-b border-plum/8 align-top last:border-b-0"
                     >
                       <td className="px-4 py-4 whitespace-nowrap text-muted">
-                        {formatDateTime(member.createdAt)}
+                        {formatUkDateTimeShort(member.createdAt)}
                       </td>
                       <td className="px-4 py-4 font-medium text-plum">
                         <Link

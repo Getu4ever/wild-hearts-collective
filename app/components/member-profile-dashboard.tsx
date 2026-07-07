@@ -17,6 +17,10 @@ import {
   membershipStatusLabel,
   membershipStatusTone,
 } from "@/lib/membership-config";
+import {
+  formatUkDateLong,
+  formatUkDateTimeShort,
+} from "@/lib/booking-config";
 import type { MemberProfile } from "@/lib/member-profile-service";
 
 type ActivityBooking = {
@@ -266,7 +270,7 @@ export function MemberProfileDashboard({
                     <dt className="text-muted">Member since</dt>
                     <dd className="font-medium text-plum">
                       {profile.membership.startedAt
-                        ? new Date(profile.membership.startedAt).toLocaleDateString("en-GB")
+                        ? formatUkDateLong(profile.membership.startedAt)
                         : "—"}
                     </dd>
                   </div>
@@ -274,7 +278,7 @@ export function MemberProfileDashboard({
                     <dt className="text-muted">Next renewal</dt>
                     <dd className="font-medium text-plum">
                       {profile.membership.renewsAt
-                        ? new Date(profile.membership.renewsAt).toLocaleDateString("en-GB")
+                        ? formatUkDateLong(profile.membership.renewsAt)
                         : "—"}
                     </dd>
                   </div>
@@ -485,7 +489,7 @@ export function MemberProfileDashboard({
                           });
                           const data = await response.json();
                           if (response.ok) {
-                            setMessage(`Membership cancelled. Final access: ${new Date(data.finalAccessDate).toLocaleDateString("en-GB")}`);
+                            setMessage(`Membership cancelled. Final access: ${formatUkDateLong(data.finalAccessDate)}`);
                             setShowCancelConfirm(false);
                             router.refresh();
                           } else {
@@ -514,7 +518,7 @@ export function MemberProfileDashboard({
                   timeline.map((event) => (
                     <li key={event.id} className="rounded-lg border border-plum/10 px-4 py-3 text-sm">
                       <p className="font-semibold capitalize text-plum">{event.type.replace("_", " ")}</p>
-                      <p className="text-muted">{new Date(event.effectiveAt).toLocaleString("en-GB")}</p>
+                      <p className="text-muted">{formatUkDateTimeShort(event.effectiveAt)}</p>
                       {event.note && <p className="mt-1 text-plum">{event.note}</p>}
                     </li>
                   ))
@@ -543,7 +547,7 @@ export function MemberProfileDashboard({
                     upcomingBookings.map((booking) => (
                       <li key={booking.id} className="rounded-lg border border-plum/10 px-3 py-2 text-sm">
                         <p className="font-medium text-plum">{booking.classTitle}</p>
-                        <p className="text-muted">{new Date(booking.startsAt).toLocaleString("en-GB")}</p>
+                        <p className="text-muted">{formatUkDateTimeShort(booking.startsAt)}</p>
                       </li>
                     ))
                   )}
@@ -557,7 +561,7 @@ export function MemberProfileDashboard({
                   <li key={booking.id} className="flex items-center justify-between py-3 text-sm">
                     <div>
                       <p className="font-medium text-plum">{booking.classTitle}</p>
-                      <p className="text-muted">{new Date(booking.startsAt).toLocaleString("en-GB")}</p>
+                      <p className="text-muted">{formatUkDateTimeShort(booking.startsAt)}</p>
                     </div>
                     <span className="text-xs font-semibold uppercase tracking-wider text-brand">
                       {booking.attendance ?? booking.status}

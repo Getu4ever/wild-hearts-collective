@@ -48,15 +48,61 @@ export function getAppBaseUrl() {
   return "http://localhost:3000";
 }
 
+export const UK_TIMEZONE = "Europe/London";
+
 export function getStudioEmail() {
-  return process.env.STUDIO_EMAIL ?? "hello@wildheartscollective.co.uk";
+  return process.env.STUDIO_EMAIL ?? "info@karoldigital.co.uk";
+}
+
+function toDate(value: Date | string | number) {
+  return value instanceof Date ? value : new Date(value);
+}
+
+export function ukLocalToUtc(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+) {
+  let utcMs = Date.UTC(year, month - 1, day, hour, minute, 0);
+
+  for (let i = 0; i < 3; i += 1) {
+    const parts = Object.fromEntries(
+      new Intl.DateTimeFormat("en-GB", {
+        timeZone: UK_TIMEZONE,
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+        hour: "numeric",
+        minute: "numeric",
+        second: "numeric",
+        hour12: false,
+      })
+        .formatToParts(new Date(utcMs))
+        .map((part) => [part.type, part.value]),
+    ) as Record<string, string>;
+
+    const shown = Date.UTC(
+      Number(parts.year),
+      Number(parts.month) - 1,
+      Number(parts.day),
+      Number(parts.hour) % 24,
+      Number(parts.minute),
+      Number(parts.second),
+    );
+    const desired = Date.UTC(year, month - 1, day, hour, minute, 0);
+    utcMs += desired - shown;
+  }
+
+  return new Date(utcMs);
 }
 
 export function isStripeConfigured() {
   return Boolean(process.env.STRIPE_SECRET_KEY);
 }
 
-export function formatSessionDateTime(value: Date) {
+export function formatSessionDateTime(value: Date | string | number) {
   return new Intl.DateTimeFormat("en-GB", {
     weekday: "long",
     day: "numeric",
@@ -64,5 +110,58 @@ export function formatSessionDateTime(value: Date) {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(value);
+    timeZone: UK_TIMEZONE,
+  }).format(toDate(value));
+}
+
+export function formatUkDateTimeShort(value: Date | string | number) {
+  return new Intl.DateTimeFormat("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: UK_TIMEZONE,
+  }).format(toDate(value));
+}
+
+export function formatUkDateShort(value: Date | string | number) {
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: UK_TIMEZONE,
+  }).format(toDate(value));
+}
+
+export function formatUkDateLong(value: Date | string | number) {
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: UK_TIMEZONE,
+  }).format(toDate(value));
+}
+
+export function formatSessionDateParts(startsAt: string | Date) {
+  const date = toDate(startsAt);
+
+  return {
+    weekday: new Intl.DateTimeFormat("en-GB", {
+      weekday: "long",
+      timeZone: UK_TIMEZONE,
+    }).format(date),
+    shortDate: new Intl.DateTimeFormat("en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      timeZone: UK_TIMEZONE,
+    }).format(date),
+    time: new Intl.DateTimeFormat("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: UK_TIMEZONE,
+    }).format(date),
+  };
 }

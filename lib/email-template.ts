@@ -1,4 +1,4 @@
-import { getAppBaseUrl, getStudioEmail } from "@/lib/booking-config";
+import { formatSessionDateTime, getAppBaseUrl, getStudioEmail } from "@/lib/booking-config";
 import { contact, siteConfig } from "@/lib/site-data";
 
 type EmailContent = {
@@ -106,14 +106,7 @@ export function buildBrandedEmail(content: EmailContent) {
 }
 
 export function sessionDetailBlock(classTitle: string, startsAt: Date) {
-  const formatted = new Intl.DateTimeFormat("en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(startsAt);
+  const formatted = formatSessionDateTime(startsAt);
 
   return `
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:20px 0;background:#FAF6F8;border:1px solid #eadde6;border-radius:6px;">
