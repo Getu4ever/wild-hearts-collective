@@ -64,7 +64,7 @@ export default function ContactPage() {
         </div>
       </ContentSection>
 
-      <ContentSection className="bg-background">
+      <ContentSection className="bg-white">
         <SectionHeading
           title="Find us"
           subtitle="Visit our studio at Old Mill Lane Industrial Estate, Mansfield."
