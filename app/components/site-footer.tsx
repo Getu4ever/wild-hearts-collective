@@ -130,7 +130,7 @@ export function SiteFooter() {
                 alt={siteConfig.name}
                 width={646}
                 height={493}
-                className="h-8 w-auto object-contain"
+                className="h-10 w-auto object-contain"
               />
             </Link>
             <p className="mt-3 text-[13px] leading-relaxed text-white/70">
