@@ -14,10 +14,14 @@ export default async function AccountProfilePage() {
   const session = await getMemberSession();
   if (!session) return null;
 
-  const [user, upcomingBookings, pastBookings, timeline] = await Promise.all([
+  const [user, oauthAccounts, upcomingBookings, pastBookings, timeline] = await Promise.all([
     db.user.findUnique({
       where: { id: session.userId },
       select: profileSelectFields,
+    }),
+    db.oAuthAccount.findMany({
+      where: { userId: session.userId },
+      select: { provider: true },
     }),
     db.booking.findMany({
       where: {
@@ -43,9 +47,12 @@ export default async function AccountProfilePage() {
 
   if (!user) return null;
 
+  const isGoogleAccount = oauthAccounts.some((account) => account.provider === "google");
+
   return (
     <MemberProfileDashboard
       initialProfile={toMemberProfile(user)}
+      isGoogleAccount={isGoogleAccount}
       upcomingBookings={upcomingBookings.map((booking) => ({
         id: booking.id,
         status: booking.status,

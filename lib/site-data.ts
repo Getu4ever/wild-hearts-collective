@@ -11,9 +11,23 @@ export const siteConfig = {
 
 export const contact = {
   name: "Wild Hearts Collective",
-  phone: "Phone coming soon",
+  phone: "0115 8453325",
   email: "hello@wildheartscollective.co.uk",
-  address: "Address coming soon",
+  addressLines: [
+    "Unit 25,",
+    "Block 7 Hallam Way",
+    "Old Mill Lane Industrial Estate",
+    "Mansfield",
+    "NG19 9BG",
+  ],
+  address:
+    "Unit 25, Block 7 Hallam Way, Old Mill Lane Industrial Estate, Mansfield, NG19 9BG",
+  mapsQuery:
+    "Unit 25, Block 7 Hallam Way, Old Mill Lane Industrial Estate, Mansfield NG19 9BG",
+  mapsUrl:
+    "https://www.google.com/maps/search/?api=1&query=Unit+25%2C+Block+7+Hallam+Way%2C+Old+Mill+Lane+Industrial+Estate%2C+Mansfield%2C+NG19+9BG",
+  mapsEmbedUrl:
+    "https://www.google.com/maps?q=Unit+25%2C+Block+7+Hallam+Way%2C+Old+Mill+Lane+Industrial+Estate%2C+Mansfield%2C+NG19+9BG&output=embed",
 };
 
 export const navLinks = [

@@ -3,12 +3,14 @@ import Link from "next/link";
 export function AdminNav({
   active,
 }: {
-  active: "dashboard" | "bookings" | "members";
+  active: "dashboard" | "schedule" | "bookings" | "members" | "analytics";
 }) {
   const links = [
     { href: "/admin", label: "Dashboard", id: "dashboard" as const },
+    { href: "/admin/schedule", label: "Schedule", id: "schedule" as const },
     { href: "/admin/bookings", label: "Bookings", id: "bookings" as const },
     { href: "/admin/members", label: "Members", id: "members" as const },
+    { href: "/admin/analytics", label: "Analytics", id: "analytics" as const },
   ];
 
   return (

@@ -221,6 +221,34 @@ export async function sendBookingCancelledEmail(
   });
 }
 
+export async function sendSessionCancelledEmail(
+  customer: CustomerDetails,
+  session: SessionDetails & { reason?: string },
+) {
+  await sendEmail({
+    to: customer.email,
+    subject: "Your Wild Hearts class has been cancelled",
+    html: buildBrandedEmail({
+      previewText: `${session.classTitle} on ${formatSessionDateTime(session.startsAt)} has been cancelled.`,
+      heading: "Class cancelled",
+      bodyHtml: `
+        <p>Hi ${customer.name},</p>
+        <p>
+          We are sorry to let you know that the following class has been cancelled
+          by the studio.
+        </p>
+        ${sessionDetailBlock(session.classTitle, session.startsAt)}
+        <p>${session.reason ?? "Any class credits used for this booking have been returned to your account."}</p>
+        <p>Please contact us if you would like help rebooking into another session.</p>
+      `,
+      cta: {
+        label: "View available classes",
+        href: `${getAppBaseUrl()}/book`,
+      },
+    }),
+  });
+}
+
 export async function sendWaitlistJoinedEmails(
   customer: CustomerDetails,
   session: SessionDetails,
@@ -371,4 +399,81 @@ export function isEmailConfigured() {
 
 export function getDefaultDepositPence() {
   return getDepositAmountPence();
+}
+
+type VoucherEmailDetails = {
+  code: string;
+  type: string;
+  discountPercent: number;
+  expiresAt: Date;
+  bookUrl: string;
+  milestone?: number;
+};
+
+export async function sendVoucherEmail(
+  customer: CustomerDetails,
+  voucher: VoucherEmailDetails,
+) {
+  const title =
+    voucher.type === "birthday"
+      ? "Happy birthday from Wild Hearts!"
+      : voucher.milestone
+        ? `Congratulations on ${voucher.milestone} classes!`
+        : "A special reward from Wild Hearts Collective";
+
+  await sendEmail({
+    to: customer.email,
+    subject: title,
+    html: buildBrandedEmail({
+      previewText: `Your voucher code: ${voucher.code}`,
+      heading: title,
+      bodyHtml: `
+        <p>Hi ${customer.name},</p>
+        <p>
+          Here is your voucher code:
+          <strong style="font-size: 18px; letter-spacing: 0.08em;">${voucher.code}</strong>
+        </p>
+        <p>
+          This voucher gives you ${voucher.discountPercent}% off your next class booking.
+          It expires on ${voucher.expiresAt.toLocaleDateString("en-GB")}.
+        </p>
+      `,
+      cta: {
+        label: "Book a class",
+        href: voucher.bookUrl,
+      },
+    }),
+  });
+}
+
+export async function sendEngagementEmail(
+  customer: CustomerDetails,
+  payload: { type: string; message: string; voucherCode?: string },
+) {
+  const subject =
+    payload.type === "no_show"
+      ? "We missed you in class"
+      : "We have missed you at Wild Hearts";
+
+  await sendEmail({
+    to: customer.email,
+    subject,
+    html: buildBrandedEmail({
+      previewText: payload.message,
+      heading: subject,
+      bodyHtml: `
+        <p>Hi ${customer.name},</p>
+        <p>${payload.message}</p>
+        ${
+          payload.voucherCode
+            ? `<p>Your comeback code: <strong>${payload.voucherCode}</strong></p>`
+            : ""
+        }
+      `,
+      cta: {
+        label: "Book a class",
+        href: `${getAppBaseUrl()}/book`,
+      },
+    }),
+  });
 }

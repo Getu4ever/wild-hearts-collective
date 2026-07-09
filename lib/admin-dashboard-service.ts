@@ -60,7 +60,11 @@ export async function getAdminDashboardStats() {
       orderBy: { startsAt: "asc" },
       include: {
         class: true,
-        _count: { select: { bookings: true } },
+        tutor: { select: { id: true, name: true } },
+        bookings: {
+          where: { status: "confirmed" },
+          select: { id: true },
+        },
       },
     }),
     db.booking.findMany({

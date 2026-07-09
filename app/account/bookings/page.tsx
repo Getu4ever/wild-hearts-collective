@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CancelBookingButton } from "@/app/components/cancel-booking-button";
 import { formatSessionDateTime, formatUkDateTimeShort } from "@/lib/booking-config";
 import { getCurrentMember } from "@/lib/member-auth";
 import { db } from "@/lib/db";
@@ -54,6 +55,7 @@ export default async function AccountBookingsPage() {
                   <th className="px-4 py-3 font-semibold">Session</th>
                   <th className="px-4 py-3 font-semibold">Status</th>
                   <th className="px-4 py-3 font-semibold">Booked</th>
+                  <th className="px-4 py-3 font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-plum/10">
@@ -72,6 +74,13 @@ export default async function AccountBookingsPage() {
                     </td>
                     <td className="px-4 py-3 text-muted">
                       {formatUkDateTimeShort(booking.createdAt)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <CancelBookingButton
+                        bookingId={booking.id}
+                        sessionStartsAt={booking.session.startsAt.toISOString()}
+                        status={booking.status}
+                      />
                     </td>
                   </tr>
                 ))}

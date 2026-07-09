@@ -8,6 +8,8 @@ const links = [
   { href: "/account", label: "Overview", exact: true },
   { href: "/account/profile", label: "Profile", exact: false },
   { href: "/account/bookings", label: "Bookings", exact: false },
+  { href: "/account/parq", label: "PAR-Q", exact: false },
+  { href: "/account/credits", label: "Credits", exact: false },
 ];
 
 export function MemberNav({ member }: { member: PublicMember }) {

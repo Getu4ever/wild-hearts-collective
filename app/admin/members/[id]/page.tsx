@@ -6,6 +6,7 @@ import { AdminMemberDetail } from "@/app/components/admin-member-detail";
 import { AdminNav } from "@/app/components/admin-nav";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 import { profileSelectFields, toMemberProfile } from "@/lib/member-profile-service";
+import { getParQStatus } from "@/lib/parq-service";
 import { db } from "@/lib/db";
 
 export const metadata: Metadata = {
@@ -35,7 +36,7 @@ export default async function AdminMemberDetailPage({ params }: PageProps) {
 
   if (!user) notFound();
 
-  const [timeline, recentBookings, auditLogs] = await Promise.all([
+  const [timeline, recentBookings, auditLogs, parQStatus] = await Promise.all([
     db.membershipEvent.findMany({
       where: { userId: id },
       orderBy: { effectiveAt: "desc" },
@@ -52,6 +53,7 @@ export default async function AdminMemberDetailPage({ params }: PageProps) {
       orderBy: { createdAt: "desc" },
       take: 20,
     }),
+    getParQStatus(id),
   ]);
 
   return (
@@ -103,6 +105,11 @@ export default async function AdminMemberDetailPage({ params }: PageProps) {
             details: entry.details,
             createdAt: entry.createdAt.toISOString(),
           }))}
+          parQStatus={{
+            completed: parQStatus?.completed ?? false,
+            completedAt: parQStatus?.completedAt ?? null,
+            data: (parQStatus?.data as Record<string, unknown> | null) ?? null,
+          }}
         />
       </div>
     </div>

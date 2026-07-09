@@ -1,15 +1,17 @@
 import { PrismaClient } from "@prisma/client";
-import { seedDatabaseIfEmpty } from "../lib/seed-database";
+import { seedDatabaseIfEmpty, seedClassPacks } from "../lib/seed-database";
 
 const db = new PrismaClient();
 
 async function main() {
   const result = await seedDatabaseIfEmpty(db);
+  await seedClassPacks(db);
   if (result.seeded) {
     console.log("Database seeded with classes and upcoming sessions.");
   } else {
     console.log(`Database ready — ${result.futureSessionCount} upcoming session(s) already exist.`);
   }
+  console.log("Class packs seeded.");
 }
 
 main()

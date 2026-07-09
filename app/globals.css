@@ -12,6 +12,9 @@
   --surface: #ffffff;
   --brand: #aa336a;
   --brand-hover: #922d5c;
+  --header-bg: #e8d8c9;
+  --header-accent: #6b232e;
+  --header-accent-hover: #5a1d26;
 }
 
 @theme inline {
@@ -26,6 +29,9 @@
   --color-surface: var(--surface);
   --color-brand: var(--brand);
   --color-brand-hover: var(--brand-hover);
+  --color-header-bg: var(--header-bg);
+  --color-header-accent: var(--header-accent);
+  --color-header-accent-hover: var(--header-accent-hover);
   --font-sans: var(--font-raleway);
   --font-display: var(--font-satisfy);
 }
@@ -63,4 +69,58 @@ body {
   .animate-page-enter {
     animation: none;
   }
+}
+
+/* Tint header logo to match burgundy nav on beige header */
+.logo-header-accent {
+  filter: brightness(0) saturate(100%) invert(14%) sepia(35%) saturate(3200%)
+    hue-rotate(318deg) brightness(88%) contrast(96%);
+}
+
+/* Legacy alias */
+.logo-plum {
+  filter: brightness(0) saturate(100%) invert(14%) sepia(35%) saturate(3200%)
+    hue-rotate(318deg) brightness(88%) contrast(96%);
+}
+
+.classes-dropdown-panel {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(59, 31, 56, 0.16);
+  background: linear-gradient(
+    155deg,
+    #ffffff 0%,
+    #f4ece5 24%,
+    #eadacb 50%,
+    #d9c4b6 78%,
+    rgba(59, 31, 56, 0.32) 100%
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.65) inset,
+    0 18px 42px rgba(59, 31, 56, 0.18);
+}
+
+.classes-dropdown-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    125deg,
+    rgba(59, 31, 56, 0.16) 0%,
+    transparent 42%,
+    transparent 68%,
+    rgba(170, 51, 106, 0.1) 100%
+  );
+  pointer-events: none;
+}
+
+.classes-dropdown-panel::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #6b232e 0%, #7a2f38 45%, #aa336a 100%);
+  pointer-events: none;
 }

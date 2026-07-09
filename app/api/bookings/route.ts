@@ -4,13 +4,16 @@ import {
   countConfirmedBookings,
   confirmBooking,
 } from "@/lib/booking-service";
+import { deductCreditForBooking, getUserCreditBalance } from "@/lib/credit-service";
 import { db } from "@/lib/db";
 import {
   sendBookingReceivedEmails,
   sendWaitlistJoinedEmails,
 } from "@/lib/email";
 import { getMemberSession } from "@/lib/member-auth";
+import { assertParQCompleteForSession, ParQRequiredError } from "@/lib/parq-service";
 import { createBookingCheckoutSession, depositLabel } from "@/lib/stripe";
+import { redeemVoucherForBooking } from "@/lib/voucher-service";
 
 type BookingBody = {
   sessionId?: string;
@@ -19,6 +22,8 @@ type BookingBody = {
   phone?: string;
   notes?: string;
   joinWaitlist?: boolean;
+  useCredit?: boolean;
+  voucherCode?: string;
 };
 
 export async function POST(request: Request) {
@@ -30,7 +35,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const { sessionId, name, email, phone, notes, joinWaitlist } = body;
+  const { sessionId, name, email, phone, notes, joinWaitlist, useCredit, voucherCode } = body;
 
   if (!sessionId || !name?.trim() || !email?.trim()) {
     return NextResponse.json(
@@ -72,8 +77,27 @@ export async function POST(request: Request) {
       userId = member.id;
       normalizedName = member.name;
       normalizedEmail = member.email.toLowerCase();
-      normalizedPhone = member.phone?.trim() || normalizedPhone;
+      normalizedPhone = phone?.trim() || member.phone?.trim() || null;
     }
+  }
+
+  if (!normalizedPhone) {
+    return NextResponse.json(
+      { error: "Telephone number is required." },
+      { status: 400 },
+    );
+  }
+
+  try {
+    await assertParQCompleteForSession(userId, sessionId);
+  } catch (error) {
+    if (error instanceof ParQRequiredError) {
+      return NextResponse.json(
+        { error: error.message, parQRequired: true },
+        { status: 403 },
+      );
+    }
+    throw error;
   }
 
   if (spotsLeft <= 0) {
@@ -108,7 +132,7 @@ export async function POST(request: Request) {
         userId,
         name: normalizedName,
         email: normalizedEmail,
-        phone: phone?.trim() || null,
+        phone: normalizedPhone,
         notes: notes?.trim() || null,
       },
       include: {
@@ -140,7 +164,7 @@ export async function POST(request: Request) {
       userId,
       name: normalizedName,
       email: normalizedEmail,
-      phone: phone?.trim() || null,
+      phone: normalizedPhone,
       notes: notes?.trim() || null,
       status: BOOKING_STATUS.pending,
     },
@@ -148,6 +172,62 @@ export async function POST(request: Request) {
       session: { include: { class: true } },
     },
   });
+
+  if (useCredit) {
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Please sign in to pay with class credits." },
+        { status: 401 },
+      );
+    }
+
+    const balance = await getUserCreditBalance(userId);
+    if (balance < 1) {
+      return NextResponse.json(
+        { error: "You do not have enough class credits." },
+        { status: 402 },
+      );
+    }
+
+    await deductCreditForBooking(userId, booking.id);
+    const confirmed = await confirmBooking(booking.id, { amountPaid: 0 });
+
+    return NextResponse.json({
+      type: "booking",
+      id: confirmed.id,
+      name: confirmed.name,
+      email: confirmed.email,
+      status: confirmed.status,
+      classTitle: confirmed.session.class.title,
+      startsAt: confirmed.session.startsAt.toISOString(),
+      paidWithCredit: true,
+    });
+  }
+
+  if (voucherCode?.trim() && userId) {
+    try {
+      const voucher = await redeemVoucherForBooking(userId, voucherCode, booking.id);
+
+      if (voucher.discountPercent >= 100) {
+        const confirmed = await confirmBooking(booking.id, { amountPaid: 0 });
+
+        return NextResponse.json({
+          type: "booking",
+          id: confirmed.id,
+          name: confirmed.name,
+          email: confirmed.email,
+          status: confirmed.status,
+          classTitle: confirmed.session.class.title,
+          startsAt: confirmed.session.startsAt.toISOString(),
+          voucherApplied: true,
+        });
+      }
+    } catch (error) {
+      await db.booking.delete({ where: { id: booking.id } });
+      const message = error instanceof Error ? error.message : "Invalid voucher code.";
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+  }
 
   if (!isStripeConfigured()) {
     const confirmed = await confirmBooking(booking.id);

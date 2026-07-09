@@ -8,18 +8,28 @@ const classSeed = [
     title: "Pole Dancing",
     description:
       "Build strength, flow, and confidence in a supportive studio environment for all levels.",
+    maxCapacity: 12,
   },
   {
     slug: "aerial-hoop",
     title: "Aerial Hoop",
     description:
       "Learn beautiful poses, spins, and transitions on the hoop with fully qualified instructors.",
+    maxCapacity: 10,
   },
   {
     slug: "aerial-silks",
     title: "Aerial Silks",
     description:
       "Climb, wrap, and create stunning lines with step-by-step instruction from certified teachers.",
+    maxCapacity: 10,
+  },
+  {
+    slug: "creative-arts-workshops",
+    title: "Creative Arts Workshops",
+    description:
+      "Expressive workshops blending movement, creativity, and community in a welcoming studio space.",
+    maxCapacity: 15,
   },
 ];
 
@@ -98,6 +108,7 @@ export async function seedDatabaseIfEmpty(client: PrismaClient) {
       update: {
         title: item.title,
         description: item.description,
+        maxCapacity: item.maxCapacity,
       },
       create: item,
     });
@@ -137,11 +148,57 @@ export async function seedDatabaseIfEmpty(client: PrismaClient) {
   return { seeded: true, futureSessionCount: sessionTemplates.length * 6 };
 }
 
+const classPackSeed = [
+  {
+    slug: "5-class-pack",
+    name: "5-Class Pack",
+    description: "Ideal for regular movers who want a flexible bundle of studio credits.",
+    credits: 5,
+    pricePence: 4500,
+    validDays: 90,
+    sortOrder: 1,
+  },
+  {
+    slug: "10-class-pack",
+    name: "10-Class Pack",
+    description: "Best value for committed students booking multiple classes each month.",
+    credits: 10,
+    pricePence: 8500,
+    validDays: 120,
+    sortOrder: 2,
+  },
+];
+
+export async function seedClassPacks(client: PrismaClient) {
+  for (const pack of classPackSeed) {
+    await client.classPack.upsert({
+      where: { slug: pack.slug },
+      update: {
+        name: pack.name,
+        description: pack.description,
+        credits: pack.credits,
+        pricePence: pack.pricePence,
+        validDays: pack.validDays,
+        sortOrder: pack.sortOrder,
+        active: true,
+      },
+      create: pack,
+    });
+  }
+}
+
 let seedPromise: Promise<void> | null = null;
 
 export async function ensureSeededDatabase() {
   if (!seedPromise) {
-    seedPromise = seedDatabaseIfEmpty(db).then(() => undefined);
+    seedPromise = seedDatabaseIfEmpty(db)
+      .then(async () => {
+        await seedClassPacks(db);
+      })
+      .catch((error) => {
+        seedPromise = null;
+        throw error;
+      });
   }
 
   await seedPromise;

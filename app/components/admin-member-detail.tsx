@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AdminParQPanel } from "@/app/components/admin-parq-panel";
 import {
   ACCOUNT_STATUS,
   DISCIPLINE_INTERESTS,
@@ -49,6 +50,11 @@ type AdminMemberDetailProps = {
     details: string | null;
     createdAt: string;
   }[];
+  parQStatus: {
+    completed: boolean;
+    completedAt: string | null;
+    data: Record<string, unknown> | null;
+  };
 };
 
 const inputClass =
@@ -65,6 +71,7 @@ export function AdminMemberDetail({
   timeline,
   recentBookings,
   auditLogs,
+  parQStatus,
 }: AdminMemberDetailProps) {
   const router = useRouter();
   const [member, setMember] = useState(initialMember);
@@ -212,6 +219,12 @@ export function AdminMemberDetail({
           </div>
         </dl>
       </section>
+
+      <AdminParQPanel
+        completed={parQStatus.completed}
+        completedAt={parQStatus.completedAt}
+        data={parQStatus.data}
+      />
 
       <form
         className="grid gap-8 lg:grid-cols-2"

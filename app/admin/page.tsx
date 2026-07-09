@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { AdminCapacityBadge } from "@/app/components/admin-capacity-badge";
 import { AdminLogoutButton } from "@/app/components/admin-logout-button";
 import { AdminNav } from "@/app/components/admin-nav";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
@@ -55,26 +56,42 @@ export default async function AdminDashboardPage() {
         <section className="rounded-lg border border-plum/10 bg-surface p-6 shadow-sm">
           <div className="flex items-center justify-between gap-4">
             <h2 className="font-display text-2xl text-plum">Today&apos;s classes</h2>
-            <Link href="/admin/bookings" className="text-sm font-semibold text-brand hover:underline">
-              All bookings
+            <Link href="/admin/schedule" className="text-sm font-semibold text-brand hover:underline">
+              Full schedule
             </Link>
           </div>
           {stats.todaysSessions.length === 0 ? (
             <p className="mt-4 text-sm text-muted">No classes scheduled today.</p>
           ) : (
             <ul className="mt-4 divide-y divide-plum/10">
-              {stats.todaysSessions.map((session) => (
-                <li key={session.id} className="py-4">
-                  <p className="font-semibold text-plum">{session.class.title}</p>
-                  <p className="mt-1 text-sm text-muted">
-                    {formatSessionDateTime(session.startsAt)}
-                  </p>
-                  <p className="mt-2 text-xs text-muted">
-                    {session._count.bookings} booking
-                    {session._count.bookings === 1 ? "" : "s"} · capacity {session.capacity}
-                  </p>
-                </li>
-              ))}
+              {stats.todaysSessions.map((session) => {
+                const confirmed = session.bookings.length;
+                return (
+                  <li key={session.id} className="py-4">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <Link
+                          href={`/admin/sessions/${session.id}`}
+                          className="font-semibold text-plum hover:text-brand hover:underline"
+                        >
+                          {session.class.title}
+                        </Link>
+                        <p className="mt-1 text-sm text-muted">
+                          {formatSessionDateTime(session.startsAt)}
+                        </p>
+                        <p className="mt-2 text-xs text-muted">
+                          Tutor: {session.tutor?.name ?? "Unassigned"}
+                        </p>
+                      </div>
+                      <AdminCapacityBadge
+                        confirmed={confirmed}
+                        capacity={session.capacity}
+                        status={session.status ?? "scheduled"}
+                      />
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>

@@ -49,8 +49,9 @@ export default async function AdminBookingsPage() {
           <div className="mb-5 h-px w-12 bg-pink" />
           <h1 className="font-display text-4xl text-plum sm:text-5xl">Bookings</h1>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
-            Manage confirmed, pending, and cancelled bookings. Update statuses, review
-            deposits, and monitor the waitlist.
+            Manage confirmed, pending, and cancelled bookings. Use the status dropdown to
+            cancel, or <strong>Delete</strong> to permanently remove test entries (no email
+            sent).
           </p>
           <AdminNav active="bookings" />
         </div>
@@ -115,6 +116,7 @@ export default async function AdminBookingsPage() {
                       <AdminBookingActions
                         bookingId={booking.id}
                         currentStatus={booking.status}
+                        currentAttendance={booking.attendance}
                       />
                     </td>
                   </tr>

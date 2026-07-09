@@ -15,6 +15,14 @@ type GoogleUserResult = {
   isNew: boolean;
 };
 
+function resolveProfileImage(currentImage: string | null, googlePicture?: string) {
+  if (currentImage?.startsWith("data:")) {
+    return currentImage;
+  }
+
+  return googlePicture ?? currentImage;
+}
+
 export async function findOrCreateGoogleUser(profile: GoogleProfile): Promise<GoogleUserResult> {
   const email = profile.email.trim().toLowerCase();
 
@@ -33,10 +41,18 @@ export async function findOrCreateGoogleUser(profile: GoogleProfile): Promise<Go
       where: { id: existingAccount.userId },
       data: {
         name: profile.name || existingAccount.user.name,
-        image: profile.picture ?? existingAccount.user.image,
+        image: resolveProfileImage(existingAccount.user.image, profile.picture),
         emailVerifiedAt: existingAccount.user.emailVerifiedAt ?? new Date(),
       },
     });
+
+    if (profile.picture) {
+      await db.oAuthAccount.update({
+        where: { id: existingAccount.id },
+        data: { profileImageUrl: profile.picture },
+      });
+    }
+
     return { user, isNew: false };
   }
 
@@ -48,6 +64,7 @@ export async function findOrCreateGoogleUser(profile: GoogleProfile): Promise<Go
         userId: existingUser.id,
         provider: "google",
         providerAccountId: profile.id,
+        profileImageUrl: profile.picture ?? null,
       },
     });
 
@@ -55,10 +72,17 @@ export async function findOrCreateGoogleUser(profile: GoogleProfile): Promise<Go
       where: { id: existingUser.id },
       data: {
         name: profile.name || existingUser.name,
-        image: profile.picture ?? existingUser.image,
+        image: resolveProfileImage(existingUser.image, profile.picture),
         emailVerifiedAt: existingUser.emailVerifiedAt ?? new Date(),
       },
     });
+
+    if (profile.picture) {
+      await db.oAuthAccount.updateMany({
+        where: { userId: existingUser.id, provider: "google" },
+        data: { profileImageUrl: profile.picture },
+      });
+    }
 
     return { user, isNew: false };
   }
@@ -75,6 +99,7 @@ export async function findOrCreateGoogleUser(profile: GoogleProfile): Promise<Go
         create: {
           provider: "google",
           providerAccountId: profile.id,
+          profileImageUrl: profile.picture ?? null,
         },
       },
     },

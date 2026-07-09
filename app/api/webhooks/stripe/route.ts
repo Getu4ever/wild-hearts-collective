@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { BOOKING_STATUS } from "@/lib/booking-config";
 import { confirmBooking } from "@/lib/booking-service";
+import { fulfillPendingClassPackPurchase } from "@/lib/credit-service";
 import { db } from "@/lib/db";
 import {
   activateMembershipFromSubscription,
@@ -41,6 +42,18 @@ export async function POST(request: Request) {
           id: subscriptionId,
           status: "active",
         });
+      }
+    } else if (session.metadata?.type === "class_pack") {
+      const purchaseId = session.metadata.purchaseId ?? session.client_reference_id;
+
+      if (purchaseId) {
+        await fulfillPendingClassPackPurchase(
+          purchaseId,
+          typeof session.payment_intent === "string"
+            ? session.payment_intent
+            : session.payment_intent?.id,
+          session.id,
+        );
       }
     } else {
       const bookingId =

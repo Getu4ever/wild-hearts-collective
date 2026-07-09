@@ -16,7 +16,7 @@ import { FooterMemberLinks } from "./member-top-bar";
 function FooterHeading({ children }: { children: React.ReactNode }) {
   return (
     <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] text-white">
-      <span className="inline-block h-4 w-0.5 shrink-0 rounded-full bg-pink" aria-hidden="true" />
+      <span className="inline-block h-4 w-0.5 shrink-0 rounded-full bg-header-bg" aria-hidden="true" />
       {children}
     </h3>
   );
@@ -33,9 +33,9 @@ function FooterLinkList({
         <li key={link.href}>
           <Link
             href={link.href}
-            className="group inline-flex text-[13px] leading-snug text-white/75 transition hover:text-pink-light"
+            className="group inline-flex text-[13px] leading-snug text-white/75 transition hover:text-header-bg"
           >
-            <span className="mr-1.5 text-pink/0 transition group-hover:text-pink">›</span>
+            <span className="mr-1.5 text-header-bg/0 transition group-hover:text-header-bg">›</span>
             {link.label}
           </Link>
         </li>
@@ -66,24 +66,29 @@ export function ContactBlock() {
       <h3 className="font-display text-2xl text-white">Contact us</h3>
       <ul className="mt-4 space-y-2 text-sm leading-relaxed text-white/85">
         <li>
-          <span className="font-medium text-white">Contact:</span>{" "}
-          {contact.name}
+          <span className="font-bold text-white">Address</span>
+          <br />
+          {contact.addressLines.map((line) => (
+            <span key={line}>
+              {line}
+              <br />
+            </span>
+          ))}
         </li>
         <li>
-          <span className="font-medium text-white">Phone:</span> {contact.phone}
+          <span className="font-bold text-white">Phone</span>
+          <br />
+          {contact.phone}
         </li>
         <li>
-          <span className="font-medium text-white">Email:</span>{" "}
+          <span className="font-bold text-white">Email</span>
+          <br />
           <a
             href={`mailto:${contact.email}`}
-            className="underline-offset-2 hover:text-pink-light hover:underline"
+            className="underline-offset-2 hover:text-header-bg hover:underline"
           >
             {contact.email}
           </a>
-        </li>
-        <li>
-          <span className="font-medium text-white">Address:</span>{" "}
-          {contact.address}
         </li>
       </ul>
     </div>
@@ -113,7 +118,7 @@ export function SiteFooter() {
       </div>
       <div
         aria-hidden="true"
-        className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-pink to-transparent"
+        className="absolute inset-x-0 top-0 h-1 bg-header-bg"
       />
 
       <div className="relative mx-auto max-w-7xl px-6 py-12 lg:px-8 lg:py-14">
@@ -153,29 +158,40 @@ export function SiteFooter() {
             <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-white">
               Let&apos;s Connect
             </h3>
-            <ul className="mt-4 space-y-1.5 text-[13px] text-white/75">
-              <li>{contact.address}</li>
-              <li>
-                <a href={phoneHref} className="transition hover:text-pink-light">
-                  {contact.phone}
-                </a>
-              </li>
-              <li>
-                <a
-                  href={`mailto:${contact.email}`}
-                  className="break-all transition hover:text-pink-light"
-                >
-                  {contact.email}
-                </a>
-              </li>
-            </ul>
-            <p className="mt-3 text-[12px] leading-relaxed text-white/55">
-              Friendly advice and a welcoming space for your next step in
-              movement.
-            </p>
+            <dl className="mt-4 space-y-4 text-[13px] text-white/75">
+              <div>
+                <dt className="font-bold text-white">Address</dt>
+                <dd className="mt-1 leading-relaxed">
+                  {contact.addressLines.map((line) => (
+                    <span key={line} className="block">
+                      {line}
+                    </span>
+                  ))}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-bold text-white">Phone</dt>
+                <dd className="mt-1">
+                  <a href={phoneHref} className="transition hover:text-header-bg">
+                    {contact.phone}
+                  </a>
+                </dd>
+              </div>
+              <div>
+                <dt className="font-bold text-white">Email</dt>
+                <dd className="mt-1">
+                  <a
+                    href={`mailto:${contact.email}`}
+                    className="break-all transition hover:text-header-bg"
+                  >
+                    {contact.email}
+                  </a>
+                </dd>
+              </div>
+            </dl>
             <Link
               href={BOOKING_URL}
-              className="mt-4 inline-flex rounded-full bg-pink px-4 py-2 text-xs font-bold uppercase tracking-wide text-plum shadow-lg shadow-pink/20 transition hover:bg-pink-light hover:shadow-pink/30"
+              className="mt-4 inline-flex rounded-full bg-header-bg px-4 py-2 text-xs font-bold uppercase tracking-wide text-plum shadow-lg shadow-black/10 transition hover:opacity-90"
             >
               Book a Class
             </Link>
@@ -185,7 +201,7 @@ export function SiteFooter() {
                   key={link.label}
                   href={link.href}
                   aria-label={link.label}
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:border-pink hover:bg-pink hover:text-plum"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:border-header-bg hover:bg-header-bg hover:text-plum"
                 >
                   <SocialIcon label={link.label} />
                 </a>
@@ -203,7 +219,7 @@ export function SiteFooter() {
               href="https://www.karoldigital.co.uk/"
               target="_blank"
               rel="noopener noreferrer"
-              className="transition hover:text-pink-light hover:underline"
+              className="transition hover:text-header-bg hover:underline"
             >
               Karol Digital
             </a>

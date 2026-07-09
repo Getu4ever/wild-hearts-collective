@@ -52,6 +52,8 @@ type MemberProfile = {
   name: string;
   email: string;
   phone: string | null;
+  creditsRemaining?: number;
+  parQCompleted?: boolean;
 };
 
 type ContactDetails = {
@@ -69,7 +71,7 @@ const classFilters = [
 
 const bookingSteps = [
   { title: "Choose a session", detail: "Pick your class and time" },
-  { title: "Enter your details", detail: "Name, email and optional notes" },
+  { title: "Enter your details", detail: "Name, email, telephone and optional notes" },
   { title: "Pay deposit online", detail: "Pay securely on this page" },
 ];
 
@@ -103,6 +105,8 @@ export function BookingForm() {
     phone: "",
   });
   const [notes, setNotes] = useState("");
+  const [useCredit, setUseCredit] = useState(false);
+  const [voucherCode, setVoucherCode] = useState("");
 
   const cancelled = searchParams.get("cancelled") === "1";
   const selectedSession =
@@ -199,6 +203,12 @@ export function BookingForm() {
       return;
     }
 
+    if (!trimmedPhone) {
+      setError("Telephone number is required.");
+      setSubmitting(false);
+      return;
+    }
+
     try {
       const response = await fetch("/api/bookings", {
         method: "POST",
@@ -207,14 +217,21 @@ export function BookingForm() {
           sessionId: selectedSessionId,
           name: trimmedName,
           email: trimmedEmail,
-          phone: trimmedPhone || undefined,
+          phone: trimmedPhone,
           notes: trimmedNotes || undefined,
           joinWaitlist: selectedSession?.isFull || joinWaitlist,
+          useCredit: useCredit && Boolean(member),
+          voucherCode: voucherCode.trim() || undefined,
         }),
       });
 
       const data = await response.json();
       if (!response.ok) {
+        if (data.parQRequired) {
+          throw new Error(
+            `${data.error} Complete your PAR-Q form at /account/parq before booking.`,
+          );
+        }
         throw new Error(data.error || "Booking failed.");
       }
 
@@ -540,22 +557,143 @@ export function BookingForm() {
             </div>
 
             {isSignedIn && member ? (
-              <div className="mt-4 space-y-4">
-                <div className="rounded-xl border border-plum/10 bg-pink-soft/40 px-5 py-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand">
-                    Signed in as
-                  </p>
-                  <p className="mt-2 font-semibold text-plum">{member.name}</p>
-                  <p className="mt-1 text-sm text-muted">{member.email}</p>
-                  {member.phone && (
-                    <p className="mt-1 text-sm text-muted">{member.phone}</p>
+              <div className="mt-4 space-y-5">
+                <div className="rounded-xl border border-plum/10 bg-gradient-to-br from-pink-soft/50 to-white px-5 py-5">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand">
+                        Signed in as
+                      </p>
+                      <p className="mt-2 font-semibold text-plum">{member.name}</p>
+                      <p className="mt-1 text-sm text-muted">{member.email}</p>
+                      {member.phone && (
+                        <p className="mt-1 text-sm text-muted">{member.phone}</p>
+                      )}
+                    </div>
+                    <Link
+                      href="/account/profile"
+                      className="text-sm font-semibold text-brand hover:underline"
+                    >
+                      Edit profile
+                    </Link>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-plum/10 bg-surface px-5 py-5 shadow-sm">
+                  <label htmlFor="member-phone" className="text-sm font-medium text-foreground">
+                    Telephone <span className="text-brand">*</span>
+                  </label>
+                  <input
+                    id="member-phone"
+                    name="phone"
+                    type="tel"
+                    required
+                    autoComplete="tel"
+                    value={contact.phone}
+                    onChange={(event) =>
+                      setContact((current) => ({ ...current, phone: event.target.value }))
+                    }
+                    className={fieldClassName()}
+                  />
+                  {!member.phone && (
+                    <p className="mt-2 text-xs text-muted">
+                      Add your telephone number to complete your booking. It will be saved to your
+                      profile.
+                    </p>
                   )}
-                  <Link
-                    href="/account/profile"
-                    className="mt-3 inline-block text-sm font-semibold text-brand hover:underline"
-                  >
-                    Update in your profile
-                  </Link>
+                </div>
+
+                <div className="rounded-xl border border-plum/10 bg-surface px-5 py-5 shadow-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand">
+                        PAR-Q health form
+                      </p>
+                      <p className="mt-2 text-sm text-muted">
+                        Required for pole, hoop, and silks bookings.
+                      </p>
+                    </div>
+                    <span
+                      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider ${
+                        member.parQCompleted
+                          ? "bg-emerald-50 text-emerald-900"
+                          : "bg-brand/10 text-brand"
+                      }`}
+                    >
+                      {member.parQCompleted ? "Complete" : "Required"}
+                    </span>
+                  </div>
+                  {!member.parQCompleted && (
+                    <Link
+                      href="/account/parq"
+                      className="mt-4 inline-flex rounded-lg bg-plum px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-white hover:bg-plum-hover"
+                    >
+                      Complete PAR-Q now
+                    </Link>
+                  )}
+                </div>
+
+                <div className="rounded-xl border border-plum/10 bg-surface px-5 py-5 shadow-sm">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand">
+                        Class credits
+                      </p>
+                      <p className="mt-2 font-display text-4xl text-plum">
+                        {member.creditsRemaining ?? 0}
+                      </p>
+                      <p className="mt-1 text-sm text-muted">
+                        {(member.creditsRemaining ?? 0) === 1 ? "credit" : "credits"} available
+                      </p>
+                    </div>
+                    <Link
+                      href="/account/credits"
+                      className="rounded-lg border border-plum/15 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-plum transition hover:border-pink hover:text-brand"
+                    >
+                      Buy class packs
+                    </Link>
+                  </div>
+
+                  {(member.creditsRemaining ?? 0) > 0 && !selectedSession?.isFull && !joinWaitlist ? (
+                    <label className="mt-5 flex items-start gap-3 rounded-lg border border-plum/10 bg-pink-soft/30 px-4 py-4 text-sm text-plum">
+                      <input
+                        type="checkbox"
+                        checked={useCredit}
+                        onChange={(event) => setUseCredit(event.target.checked)}
+                        className="mt-1"
+                      />
+                      <span>
+                        <strong className="block">Pay with 1 class credit</strong>
+                        Skip the deposit and confirm instantly using your pack balance.
+                      </span>
+                    </label>
+                  ) : (
+                    <p className="mt-4 rounded-lg bg-pink-soft/40 px-4 py-3 text-sm text-muted">
+                      {(member.creditsRemaining ?? 0) === 0
+                        ? "No credits yet — purchase a class pack to book without paying a deposit each time."
+                        : selectedSession?.isFull || joinWaitlist
+                          ? "Credits cannot be used for waitlist entries."
+                          : "Select an available session to use a credit."}
+                    </p>
+                  )}
+                </div>
+
+                <div className="rounded-xl border border-plum/10 bg-surface px-5 py-5 shadow-sm">
+                  <label htmlFor="voucherCode" className="text-xs font-semibold uppercase tracking-[0.14em] text-brand">
+                    Voucher or reward code
+                  </label>
+                  <p className="mt-2 text-sm text-muted">
+                    Have a birthday treat or milestone reward? Enter it here for a complimentary class.
+                  </p>
+                  <input
+                    id="voucherCode"
+                    name="voucherCode"
+                    type="text"
+                    value={voucherCode}
+                    onChange={(event) => setVoucherCode(event.target.value.toUpperCase())}
+                    placeholder="e.g. BDAY-XXXX"
+                    className={`${fieldClassName()} mt-3 uppercase tracking-wider`}
+                  />
                 </div>
 
                 <div>
@@ -575,6 +713,12 @@ export function BookingForm() {
               </div>
             ) : memberLoaded ? (
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2 rounded-xl border border-plum/10 bg-pink-soft/30 px-4 py-4 text-sm text-muted">
+                  <Link href="/login?next=/book" className="font-semibold text-brand hover:underline">
+                    Sign in
+                  </Link>{" "}
+                  to use class credits, vouchers, and save your details for next time.
+                </div>
                 <div className="sm:col-span-2 sm:max-w-md">
                   <label htmlFor="name" className="text-sm font-medium text-foreground">
                     Full name <span className="text-brand">*</span>
@@ -611,12 +755,13 @@ export function BookingForm() {
                 </div>
                 <div>
                   <label htmlFor="phone" className="text-sm font-medium text-foreground">
-                    Phone <span className="text-muted">(optional)</span>
+                    Telephone <span className="text-brand">*</span>
                   </label>
                   <input
                     id="phone"
                     name="phone"
                     type="tel"
+                    required
                     autoComplete="tel"
                     value={contact.phone}
                     onChange={(event) =>
@@ -656,7 +801,16 @@ export function BookingForm() {
               </p>
               {!selectedSession.isFull && (
                 <p className="mt-2 text-sm text-muted">
-                  Deposit due today: <strong className="text-foreground">{depositNote}</strong>
+                  {useCredit && isSignedIn ? (
+                    <>
+                      Payment: <strong className="text-foreground">1 class credit</strong> (no deposit)
+                    </>
+                  ) : (
+                    <>
+                      Deposit due today:{" "}
+                      <strong className="text-foreground">{depositNote}</strong>
+                    </>
+                  )}
                 </p>
               )}
             </div>
@@ -686,9 +840,11 @@ export function BookingForm() {
               ? "Processing…"
               : selectedSession?.isFull && joinWaitlist
                 ? "Join waitlist"
-                : config?.stripeEnabled
-                  ? `Continue to pay ${depositNote} deposit`
-                  : "Confirm booking"}
+                : useCredit && isSignedIn
+                  ? "Confirm with class credit"
+                  : config?.stripeEnabled
+                    ? `Continue to pay ${depositNote} deposit`
+                    : "Confirm booking"}
           </button>
           <p className="text-center text-xs leading-relaxed text-muted">
             Secure online payment. {siteConfig.arrivalNote}
@@ -697,6 +853,51 @@ export function BookingForm() {
       </form>
 
       <aside className="space-y-4 lg:sticky lg:top-28">
+        {isSignedIn && member && (
+          <div className="rounded-2xl border border-plum/10 bg-surface p-6 shadow-sm ring-1 ring-plum/5">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand">
+              Your account
+            </p>
+            <p className="mt-2 font-semibold text-plum">{member.name}</p>
+            <dl className="mt-4 space-y-3 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-muted">Class credits</dt>
+                <dd className="font-semibold text-plum">{member.creditsRemaining ?? 0}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-muted">PAR-Q</dt>
+                <dd>
+                  <span
+                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      member.parQCompleted
+                        ? "bg-emerald-50 text-emerald-900"
+                        : "bg-brand/10 text-brand"
+                    }`}
+                  >
+                    {member.parQCompleted ? "Complete" : "Required"}
+                  </span>
+                </dd>
+              </div>
+            </dl>
+            <div className="mt-4 flex flex-col gap-2">
+              {!member.parQCompleted && (
+                <Link
+                  href="/account/parq"
+                  className="rounded-lg bg-plum px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-white hover:bg-plum-hover"
+                >
+                  Complete PAR-Q
+                </Link>
+              )}
+              <Link
+                href="/account/credits"
+                className="rounded-lg border border-plum/15 px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-plum hover:border-pink hover:text-brand"
+              >
+                Buy class packs
+              </Link>
+            </div>
+          </div>
+        )}
+
         <div className="rounded-2xl border border-plum/10 bg-surface p-6 shadow-sm ring-1 ring-plum/5">
           <h3 className="text-sm font-bold uppercase tracking-[0.14em] text-plum">
             How booking works
@@ -718,12 +919,15 @@ export function BookingForm() {
 
         <div className="rounded-2xl border border-plum/10 bg-gradient-to-br from-plum to-brand p-6 text-white shadow-lg">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-pink-light">
-            Deposit
+            {isSignedIn && useCredit ? "Payment" : "Deposit"}
           </p>
-          <p className="mt-2 text-3xl font-semibold">{depositNote}</p>
+          <p className="mt-2 text-3xl font-semibold">
+            {isSignedIn && useCredit ? "1 credit" : depositNote}
+          </p>
           <p className="mt-2 text-sm leading-relaxed text-white/85">
-            Pay online when you book. You will receive a confirmation email once
-            payment is complete.
+            {isSignedIn && useCredit
+              ? "Your booking confirms instantly when you use a class credit — no deposit needed."
+              : "Pay online when you book. You will receive a confirmation email once payment is complete."}
           </p>
         </div>
 

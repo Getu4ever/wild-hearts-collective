@@ -83,6 +83,8 @@ export type PublicMember = {
   membershipStatus: string;
   membershipRenewsAt: Date | null;
   createdAt: Date;
+  creditsRemaining: number;
+  parQCompleted: boolean;
 };
 
 export function toPublicMember(user: {
@@ -97,6 +99,8 @@ export function toPublicMember(user: {
   membershipStatus: string;
   membershipRenewsAt: Date | null;
   createdAt: Date;
+  creditsRemaining?: number;
+  parQCompletedAt?: Date | null;
 }): PublicMember {
   return {
     id: user.id,
@@ -110,6 +114,8 @@ export function toPublicMember(user: {
     membershipStatus: user.membershipStatus,
     membershipRenewsAt: user.membershipRenewsAt,
     createdAt: user.createdAt,
+    creditsRemaining: user.creditsRemaining ?? 0,
+    parQCompleted: Boolean(user.parQCompletedAt),
   };
 }
 
@@ -131,6 +137,8 @@ export async function getCurrentMember() {
       membershipStatus: true,
       membershipRenewsAt: true,
       createdAt: true,
+      creditsRemaining: true,
+      parQCompletedAt: true,
     },
   });
 

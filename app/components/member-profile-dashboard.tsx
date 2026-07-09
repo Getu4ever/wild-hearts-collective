@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { MemberProfilePhotoField } from "@/app/components/member-profile-photo-field";
 import { MemberBillingSection } from "@/app/components/member-billing-section";
 import {
   CANCELLATION_REASONS,
@@ -41,6 +41,7 @@ type TimelineEvent = {
 
 type MemberProfileDashboardProps = {
   initialProfile: MemberProfile;
+  isGoogleAccount: boolean;
   upcomingBookings: ActivityBooking[];
   pastBookings: ActivityBooking[];
   timeline: TimelineEvent[];
@@ -51,6 +52,7 @@ const sections = [
   { id: "personal", label: "Personal" },
   { id: "health", label: "Health & safety" },
   { id: "membership", label: "Membership" },
+  { id: "credits", label: "Credits" },
   { id: "activity", label: "Activity" },
   { id: "skills", label: "Skills" },
   { id: "billing", label: "Billing" },
@@ -103,6 +105,7 @@ const inputClass =
 
 export function MemberProfileDashboard({
   initialProfile,
+  isGoogleAccount,
   upcomingBookings,
   pastBookings,
   timeline,
@@ -242,20 +245,26 @@ export function MemberProfileDashboard({
 
         <div className="space-y-8">
           <ProfileCard id="overview" title="Profile overview">
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
-              <div className="relative h-24 w-24 overflow-hidden rounded-full border border-plum/10 bg-pink-soft">
-                {profile.image ? (
-                  <Image src={profile.image} alt="" fill className="object-cover" />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-2xl font-semibold text-brand">
-                    {initials}
-                  </div>
-                )}
-              </div>
-              <div className="flex-1 space-y-3">
+            <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
+              <MemberProfilePhotoField
+                image={profile.image}
+                initials={initials}
+                isGoogleAccount={isGoogleAccount}
+                loading={loading}
+                setLoading={setLoading}
+                onUploaded={(image) => {
+                  setProfile((current) => ({ ...current, image }));
+                  setForm((current) => ({ ...current, image: image ?? "" }));
+                  router.refresh();
+                }}
+                onError={setError}
+                onMessage={setMessage}
+              />
+
+              <div className="min-w-0 flex-1 space-y-4">
                 <div>
-                  <p className="text-lg font-semibold text-plum">{profile.name}</p>
-                  <p className="text-sm text-muted">{profile.email}</p>
+                  <p className="text-xl font-semibold text-plum">{profile.name}</p>
+                  <p className="mt-1 text-sm text-muted">{profile.email}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider ${membershipStatusTone(profile.membership.status)}`}>
@@ -265,7 +274,7 @@ export function MemberProfileDashboard({
                     {membershipPlanLabel(profile.membership.plan)}
                   </span>
                 </div>
-                <dl className="grid gap-3 text-sm sm:grid-cols-2">
+                <dl className="grid gap-4 text-sm sm:grid-cols-2">
                   <div>
                     <dt className="text-muted">Member since</dt>
                     <dd className="font-medium text-plum">
@@ -284,24 +293,6 @@ export function MemberProfileDashboard({
                   </div>
                 </dl>
               </div>
-            </div>
-            <div className="mt-6">
-              <Field label="Profile photo URL" hint="Optional. Paste a photo URL or keep your Google photo.">
-                <input
-                  className={inputClass}
-                  value={form.image}
-                  onChange={(event) => setForm((current) => ({ ...current, image: event.target.value }))}
-                  placeholder="https://..."
-                />
-              </Field>
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => saveProfile({ image: form.image })}
-                className="mt-4 rounded-sm bg-plum px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-plum-hover disabled:opacity-60"
-              >
-                Save photo
-              </button>
             </div>
           </ProfileCard>
 
@@ -527,6 +518,28 @@ export function MemberProfileDashboard({
             </div>
           </ProfileCard>
 
+          <ProfileCard id="credits" title="Class credits">
+            <div className="flex flex-wrap items-end justify-between gap-6">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand">
+                  Available balance
+                </p>
+                <p className="mt-2 font-display text-5xl text-plum">
+                  {profile.membership.creditsRemaining}
+                </p>
+                <p className="mt-2 text-sm text-muted">
+                  Use credits when booking to skip the deposit.
+                </p>
+              </div>
+              <Link
+                href="/account/credits"
+                className="rounded-lg bg-plum px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-plum-hover"
+              >
+                Manage credits
+              </Link>
+            </div>
+          </ProfileCard>
+
           <ProfileCard id="activity" title="Membership & class activity">
             <div className="grid gap-6 lg:grid-cols-2">
               <div>
@@ -534,7 +547,10 @@ export function MemberProfileDashboard({
                 <p className="mt-2 text-sm text-muted">
                   {membershipPlanLabel(profile.membership.plan)} · Credits remaining: {profile.membership.creditsRemaining}
                 </p>
-                <Link href="/account/bookings" className="mt-4 inline-block text-sm font-semibold text-brand hover:underline">
+                <Link href="/account/credits" className="mt-4 inline-block text-sm font-semibold text-brand hover:underline">
+                  View credit activity & buy packs
+                </Link>
+                <Link href="/account/bookings" className="mt-2 block text-sm font-semibold text-brand hover:underline">
                   View all bookings
                 </Link>
               </div>

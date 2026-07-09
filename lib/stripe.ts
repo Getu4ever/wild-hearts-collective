@@ -79,3 +79,50 @@ export function verifyStripeWebhook(payload: string, signature: string) {
 export function depositLabel() {
   return formatMoneyFromPence(getDepositAmountPence());
 }
+
+type ClassPackCheckout = {
+  purchaseId: string;
+  userId: string;
+  packId: string;
+  email: string;
+  name: string;
+  packName: string;
+  credits: number;
+  pricePence: number;
+};
+
+export async function createClassPackCheckoutSession(pack: ClassPackCheckout) {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new Error("Stripe is not configured.");
+  }
+
+  const stripe = getStripeClient();
+  const baseUrl = getAppBaseUrl();
+
+  return stripe.checkout.sessions.create({
+    ui_mode: "embedded_page",
+    mode: "payment",
+    customer_email: pack.email,
+    client_reference_id: pack.purchaseId,
+    metadata: {
+      type: "class_pack",
+      purchaseId: pack.purchaseId,
+      userId: pack.userId,
+      packId: pack.packId,
+    },
+    line_items: [
+      {
+        quantity: 1,
+        price_data: {
+          currency: "gbp",
+          unit_amount: pack.pricePence,
+          product_data: {
+            name: `${pack.packName} — ${pack.credits} class credits`,
+            description: "Class credit bundle for Wild Hearts Collective",
+          },
+        },
+      },
+    ],
+    return_url: `${baseUrl}/account/credits/success?purchase=${pack.purchaseId}&session_id={CHECKOUT_SESSION_ID}`,
+  });
+}

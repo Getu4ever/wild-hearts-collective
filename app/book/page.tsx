@@ -15,14 +15,14 @@ export default function BookPage() {
     <>
       <PageHero
         title="Book a Class"
-        subtitle="Choose your session, reserve your spot, and join us in the studio."
+        subtitle="Choose your session, pay your deposit or use class credits, and receive confirmation by email."
         image="classes"
       />
 
       <ContentSection className="bg-background">
         <SectionHeading
           title="Book your class"
-          subtitle="Choose a session, pay your deposit online, and receive confirmation by email."
+          subtitle="Filter by class type, pick a time, and confirm your booking in a few steps. Members can pay with credits or a voucher code."
         />
         <div className="mt-10">
           <BookingFormSection />

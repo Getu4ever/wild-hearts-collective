@@ -13,27 +13,50 @@ model Class {
   title       String
   description String
   duration    Int       @default(60)
+  maxCapacity Int       @default(12)
   sessions    Session[]
   createdAt   DateTime  @default(now())
+}
+
+model Tutor {
+  id        String    @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  active    Boolean   @default(true)
+  bio       String?
+  sessions  Session[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([active])
 }
 
 model Session {
   id             String          @id @default(cuid())
   classId        String
   class          Class           @relation(fields: [classId], references: [id], onDelete: Cascade)
+  tutorId        String?
+  tutor          Tutor?          @relation(fields: [tutorId], references: [id], onDelete: SetNull)
   startsAt       DateTime
+  endsAt         DateTime?
   capacity       Int             @default(12)
+  status         String          @default("scheduled")
+  adminNotes     String?
   bookings       Booking[]
   waitlist       WaitlistEntry[]
   createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   @@index([startsAt])
   @@index([classId])
+  @@index([tutorId])
+  @@index([status])
 }
 
 model User {
-  id                           String             @id @default(cuid())
-  email                        String             @unique
+  id                           String              @id @default(cuid())
+  email                        String              @unique
   passwordHash                 String?
   name                         String
   phone                        String?
@@ -48,35 +71,47 @@ model User {
   injuriesLimitations          String?
   allergiesSafetyAlerts        String?
   safetyConsentAt              DateTime?
+  parQCompletedAt              DateTime?
+  parQData                     Json?
   experienceLevel              String?
   disciplineInterests          String?
   notificationPreferences      String?
-  stripeCustomerId             String?            @unique
-  membershipPlan               String             @default("account")
-  membershipStatus             String             @default("active")
-  accountStatus                String             @default("active")
-  stripeSubscriptionId         String?            @unique
+  stripeCustomerId             String?             @unique
+  membershipPlan               String              @default("account")
+  membershipStatus             String              @default("active")
+  accountStatus                String              @default("active")
+  stripeSubscriptionId         String?             @unique
   membershipStartedAt          DateTime?
   membershipRenewsAt           DateTime?
   membershipPausedAt           DateTime?
   membershipResumeAt           DateTime?
   membershipCancelledAt        DateTime?
   cancellationReason           String?
-  creditsRemaining             Int                @default(0)
+  creditsRemaining             Int                 @default(0)
+  totalClassesAttended         Int                 @default(0)
+  lastClassAttendedAt          DateTime?
+  milestonesAwarded            Json?
   internalNotes                String?
-  createdAt                    DateTime           @default(now())
-  updatedAt                    DateTime           @updatedAt
+  createdAt                    DateTime            @default(now())
+  updatedAt                    DateTime            @updatedAt
   bookings                     Booking[]
   waitlist                     WaitlistEntry[]
   oauthAccounts                OAuthAccount[]
   verificationCodes            VerificationCode[]
   membershipEvents             MembershipEvent[]
-  auditLogs                    AdminAuditLog[]    @relation("AuditTarget")
+  auditLogs                    AdminAuditLog[]     @relation("AuditTarget")
+  classPackPurchases           ClassPackPurchase[]
+  creditTransactions           CreditTransaction[]
+  vouchers                     Voucher[]
+  parQResponse                 ParQResponse?
+  engagementLogs               EngagementLog[]
 
   @@index([email])
   @@index([membershipStatus])
   @@index([accountStatus])
   @@index([experienceLevel])
+  @@index([dateOfBirth])
+  @@index([lastClassAttendedAt])
 }
 
 model OAuthAccount {
@@ -85,6 +120,7 @@ model OAuthAccount {
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   provider          String
   providerAccountId String
+  profileImageUrl   String?
   createdAt         DateTime @default(now())
 
   @@unique([provider, providerAccountId])
@@ -135,28 +171,130 @@ model AdminAuditLog {
   @@index([createdAt])
 }
 
-model Booking {
-  id              String   @id @default(cuid())
-  sessionId       String
-  session         Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+model ClassPack {
+  id          String              @id @default(cuid())
+  slug        String              @unique
+  name        String
+  description String?
+  credits     Int
+  pricePence  Int
+  validDays   Int                 @default(90)
+  active      Boolean             @default(true)
+  sortOrder   Int                 @default(0)
+  createdAt   DateTime            @default(now())
+  purchases   ClassPackPurchase[]
+}
+
+model ClassPackPurchase {
+  id                 String              @id @default(cuid())
+  userId             String
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  packId             String
+  pack               ClassPack           @relation(fields: [packId], references: [id], onDelete: Restrict)
+  creditsGranted     Int
+  creditsRemaining   Int
+  expiresAt          DateTime
+  stripeSessionId    String?             @unique
+  stripePaymentId    String?
+  status             String              @default("active")
+  createdAt          DateTime            @default(now())
+  bookings           Booking[]
+  creditTransactions CreditTransaction[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model CreditTransaction {
+  id           String             @id @default(cuid())
+  userId       String
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purchaseId   String?
+  purchase     ClassPackPurchase? @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
+  bookingId    String?
+  booking      Booking?           @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  amount       Int
+  balanceAfter Int
+  reason       String
+  createdAt    DateTime           @default(now())
+
+  @@index([userId, createdAt])
+  @@index([bookingId])
+}
+
+model Voucher {
+  id              String    @id @default(cuid())
+  code            String    @unique
   userId          String?
-  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  name            String
-  email           String
-  phone           String?
-  notes           String?
-  status          String   @default("pending")
-  attendance      String?
-  stripeSessionId String?  @unique
-  stripePaymentId String?
-  amountPaid      Int?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @default(now()) @updatedAt
+  user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  type            String
+  discountPercent Int       @default(100)
+  expiresAt       DateTime
+  usedAt          DateTime?
+  bookingId       String?   @unique
+  booking         Booking?  @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  metadata        Json?
+  createdAt       DateTime  @default(now())
+
+  @@index([userId])
+  @@index([type])
+  @@index([expiresAt])
+}
+
+model ParQResponse {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  data        Json
+  submittedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model EngagementLog {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  status    String    @default("pending")
+  metadata  Json?
+  sentAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, type])
+  @@index([status, createdAt])
+}
+
+model Booking {
+  id               String              @id @default(cuid())
+  sessionId        String
+  session          Session             @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId           String?
+  user             User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  name             String
+  email            String
+  phone            String?
+  notes            String?
+  status           String              @default("pending")
+  attendance       String?
+  cancellationType String?
+  paidWithCredit   Boolean             @default(false)
+  packPurchaseId   String?
+  packPurchase     ClassPackPurchase?  @relation(fields: [packPurchaseId], references: [id], onDelete: SetNull)
+  voucherId        String?
+  voucher          Voucher?
+  stripeSessionId  String?             @unique
+  stripePaymentId  String?
+  amountPaid       Int?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @default(now()) @updatedAt
+  creditTransactions CreditTransaction[]
 
   @@index([sessionId])
   @@index([email])
   @@index([userId])
   @@index([status])
+  @@index([attendance])
 }
 
 model WaitlistEntry {

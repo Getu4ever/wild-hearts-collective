@@ -176,6 +176,23 @@ export default async function AccountPage({
           </section>
 
           <section className="rounded-sm border border-plum/10 bg-surface p-6">
+            <h2 className="font-display text-2xl text-plum">Class credits</h2>
+            <p className="mt-2 text-sm text-muted">
+              Pay with credits when booking instead of a deposit each time.
+            </p>
+            <p className="mt-4 font-display text-4xl text-plum">{member.creditsRemaining}</p>
+            <p className="mt-1 text-sm text-muted">
+              {member.creditsRemaining === 1 ? "credit available" : "credits available"}
+            </p>
+            <Link
+              href="/account/credits"
+              className="mt-4 inline-block rounded-sm bg-plum px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-plum-hover"
+            >
+              Manage credits
+            </Link>
+          </section>
+
+          <section className="rounded-sm border border-plum/10 bg-surface p-6">
             <h2 className="font-display text-2xl text-plum">Quick links</h2>
             <ul className="mt-4 space-y-2 text-sm">
               <li>
@@ -189,6 +206,14 @@ export default async function AccountPage({
                   className="font-semibold text-brand hover:underline"
                 >
                   View all bookings
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/account/credits"
+                  className="font-semibold text-brand hover:underline"
+                >
+                  Class credits
                 </Link>
               </li>
               <li>

@@ -13,12 +13,14 @@ const phoneHref = contact.phone.startsWith("Phone")
   ? "/contact"
   : `tel:${contact.phone.replace(/\s/g, "")}`;
 
+const classesDropdownPanelClass = "classes-dropdown-panel rounded-2xl ring-1 ring-plum/10";
+
 const SCROLL_THRESHOLD = 32;
 
 type ClassIconKey = (typeof classMenuLinks)[number]["icon"];
 
 function ClassMenuIcon({ icon }: { icon: ClassIconKey }) {
-  const className = "h-5 w-5 shrink-0 text-pink/90";
+  const className = "h-5 w-5 shrink-0 text-header-accent/75";
 
   switch (icon) {
     case "pole":
@@ -69,7 +71,7 @@ function ClassesMenuList({
   onNavigate?: () => void;
 }) {
   return (
-    <ul className="py-1.5">
+    <ul className="relative z-10 py-1.5">
       {classMenuLinks.map((item) => {
         const isActive = pathname === item.href;
 
@@ -80,8 +82,8 @@ function ClassesMenuList({
               onClick={onNavigate}
               className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition ${
                 isActive
-                  ? "bg-white/10 text-white"
-                  : "text-white/90 hover:bg-white/10 hover:text-white"
+                  ? "bg-white/55 text-header-accent shadow-sm backdrop-blur-sm"
+                  : "text-header-accent/90 hover:bg-white/35 hover:text-header-accent"
               }`}
             >
               <ClassMenuIcon icon={item.icon} />
@@ -133,7 +135,7 @@ export function SiteHeader() {
           className={`transition-all duration-300 ease-out ${
             overlayMode
               ? "border-b border-transparent bg-transparent shadow-none"
-              : "border-b border-white/10 bg-brand shadow-md backdrop-blur-sm"
+              : "border-b border-header-accent/15 bg-header-bg shadow-md backdrop-blur-sm"
           }`}
         >
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 md:px-6 md:py-4">
@@ -145,27 +147,29 @@ export function SiteHeader() {
                 width={646}
                 height={493}
                 priority
-                className="h-[72px] w-auto object-contain sm:h-[84px] lg:h-[92px]"
+                className={`h-[72px] w-auto object-contain sm:h-[84px] lg:h-[92px] ${
+                  overlayMode ? "" : "logo-header-accent"
+                }`}
               />
             </Link>
 
             <div className="hidden gap-2 lg:flex">
               <a
                 href={phoneHref}
-                className={`rounded-md px-3 py-2 text-xs font-semibold shadow transition ${
+                className={`rounded-md px-3 py-2 text-xs font-semibold normal-case tracking-normal transition ${
                   overlayMode
-                    ? "border border-white/30 bg-white/15 text-white hover:bg-white/25"
-                    : "bg-white text-brand hover:bg-pink-light"
+                    ? "border border-white/30 bg-white/15 text-white shadow hover:bg-white/25"
+                    : "border border-header-accent bg-transparent text-header-accent hover:bg-header-accent/5"
                 }`}
               >
                 Call
               </a>
               <a
                 href={`mailto:${contact.email}`}
-                className={`rounded-md px-3 py-2 text-xs font-semibold shadow transition ${
+                className={`rounded-md px-3 py-2 text-xs font-semibold normal-case tracking-normal transition ${
                   overlayMode
-                    ? "border border-white/30 bg-white/15 text-white hover:bg-white/25"
-                    : "bg-white text-brand hover:bg-pink-light"
+                    ? "border border-white/30 bg-white/15 text-white shadow hover:bg-white/25"
+                    : "border border-header-accent bg-transparent text-header-accent hover:bg-header-accent/5"
                 }`}
               >
                 Email
@@ -175,10 +179,12 @@ export function SiteHeader() {
 
           <nav
             aria-label="Main navigation"
-            className="hidden items-center gap-5 text-xs font-semibold uppercase tracking-wider text-white lg:flex xl:gap-6 xl:text-sm"
+            className={`hidden items-center gap-5 text-xs font-semibold uppercase tracking-wider lg:flex xl:gap-6 xl:text-sm ${
+              overlayMode ? "text-white" : "text-header-accent"
+            }`}
           >
             {mainNavLinks.slice(0, 2).map((link) => (
-              <NavLink key={link.href} href={link.href} label={link.label} />
+              <NavLink key={link.href} href={link.href} label={link.label} overlayMode={overlayMode} />
             ))}
 
             <div
@@ -198,8 +204,12 @@ export function SiteHeader() {
                 aria-haspopup="true"
                 className={`flex items-center gap-1.5 uppercase transition ${
                   isClassesActive || classesOpen
-                    ? "text-pink underline decoration-pink decoration-2 underline-offset-4"
-                    : "text-white/90 hover:text-pink"
+                    ? overlayMode
+                      ? "text-pink underline decoration-pink decoration-2 underline-offset-4"
+                      : "text-header-accent underline decoration-header-accent decoration-2 underline-offset-4"
+                    : overlayMode
+                      ? "text-white/90 hover:text-pink"
+                      : "text-header-accent hover:text-header-accent-hover"
                 }`}
               >
                 CLASSES
@@ -218,24 +228,24 @@ export function SiteHeader() {
                     : "pointer-events-none invisible -translate-y-1 opacity-0"
                 }`}
               >
-                <div className="overflow-hidden rounded-2xl bg-gradient-to-b from-plum via-[#4a2540] to-brand shadow-2xl ring-1 ring-white/10">
+                <div className={classesDropdownPanelClass}>
                   <ClassesMenuList pathname={pathname} />
                 </div>
               </div>
             </div>
 
             {mainNavLinks.slice(2, -1).map((link) => (
-              <NavLink key={link.href} href={link.href} label={link.label} />
+              <NavLink key={link.href} href={link.href} label={link.label} overlayMode={overlayMode} />
             ))}
 
-            <NavLink href="/contact" label="Contact" />
+            <NavLink href="/contact" label="Contact" overlayMode={overlayMode} />
 
             <Link
               href={BOOKING_URL}
-              className={`rounded-md px-4 py-2 text-xs font-semibold uppercase tracking-wider shadow transition xl:text-sm ${
+              className={`rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wider transition xl:text-sm ${
                 overlayMode
-                  ? "border border-white/30 bg-white text-brand hover:bg-pink-light"
-                  : "bg-white text-brand hover:bg-pink-light"
+                  ? "border border-white/30 bg-white text-brand shadow hover:bg-pink-light"
+                  : "bg-header-accent text-white shadow-md shadow-header-accent/25 hover:bg-header-accent-hover"
               }`}
             >
               Book
@@ -247,7 +257,7 @@ export function SiteHeader() {
             className={`rounded-md border px-3 py-2 lg:hidden ${
               overlayMode
                 ? "border-white/30 bg-white/15 text-white"
-                : "border-white/25 bg-white/15 text-white"
+                : "border-header-accent bg-transparent text-header-accent hover:bg-header-accent/5"
             }`}
             onClick={() => setMenuOpen((open) => !open)}
             aria-expanded={menuOpen}
@@ -258,15 +268,15 @@ export function SiteHeader() {
         </div>
 
         {menuOpen && (
-          <div className="space-y-2 border-t border-white/10 bg-brand px-4 py-4 lg:hidden">
+          <div className="space-y-2 border-t border-header-accent/15 bg-header-bg px-4 py-4 lg:hidden">
             <MobileLink href="/" label="Home" close={() => setMenuOpen(false)} />
             <MobileLink href="/about" label="About" close={() => setMenuOpen(false)} />
 
-            <div className="overflow-hidden rounded-2xl bg-gradient-to-b from-plum via-[#4a2540] to-brand ring-1 ring-white/10">
+            <div className={classesDropdownPanelClass}>
               <button
                 type="button"
                 onClick={() => setMobileClassesOpen((open) => !open)}
-                className="flex w-full items-center justify-between px-4 py-3 text-sm font-semibold uppercase tracking-wider text-white"
+                className="relative z-10 flex w-full items-center justify-between px-4 py-3 text-sm font-semibold uppercase tracking-wider text-header-accent"
               >
                 <span>CLASSES</span>
                 <span className="text-xs" aria-hidden="true">
@@ -297,7 +307,7 @@ export function SiteHeader() {
             <Link
               href={BOOKING_URL}
               onClick={() => setMenuOpen(false)}
-              className="block rounded-md bg-white py-2.5 text-center text-sm font-semibold uppercase tracking-wider text-brand"
+              className="block rounded-md bg-header-accent py-2.5 text-center text-sm font-bold uppercase tracking-wider text-white shadow-md shadow-header-accent/25"
             >
               Book
             </Link>
@@ -305,13 +315,13 @@ export function SiteHeader() {
             <div className="flex gap-2 pt-1">
               <a
                 href={phoneHref}
-                className="flex-1 rounded-md bg-white/90 py-2 text-center text-xs font-semibold text-brand"
+                className="flex-1 rounded-md border border-header-accent py-2 text-center text-xs font-semibold text-header-accent"
               >
                 Call
               </a>
               <a
                 href={`mailto:${contact.email}`}
-                className="flex-1 rounded-md bg-white/90 py-2 text-center text-xs font-semibold text-brand"
+                className="flex-1 rounded-md border border-header-accent py-2 text-center text-xs font-semibold text-header-accent"
               >
                 Email
               </a>
@@ -328,7 +338,15 @@ export function SiteHeader() {
   );
 }
 
-function NavLink({ href, label }: { href: string; label: string }) {
+function NavLink({
+  href,
+  label,
+  overlayMode,
+}: {
+  href: string;
+  label: string;
+  overlayMode: boolean;
+}) {
   const pathname = usePathname();
   const isActive = pathname === href;
 
@@ -337,8 +355,12 @@ function NavLink({ href, label }: { href: string; label: string }) {
       href={href}
       className={`transition ${
         isActive
-          ? "text-white underline decoration-pink decoration-2 underline-offset-4"
-          : "text-white/90 hover:text-white"
+          ? overlayMode
+            ? "text-white underline decoration-pink decoration-2 underline-offset-4"
+            : "text-header-accent underline decoration-header-accent decoration-2 underline-offset-4"
+          : overlayMode
+            ? "text-white/90 hover:text-white"
+            : "text-header-accent hover:text-header-accent-hover"
       }`}
     >
       {label}
@@ -364,8 +386,8 @@ function MobileLink({
       onClick={close}
       className={`block rounded-md px-3 py-2 text-sm font-medium transition ${
         isActive
-          ? "bg-white font-semibold text-brand shadow-sm"
-          : "text-white hover:bg-white/10"
+          ? "bg-header-accent font-semibold text-white shadow-sm"
+          : "text-header-accent hover:bg-header-accent/5"
       }`}
     >
       {label}
