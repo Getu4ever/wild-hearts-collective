@@ -17,6 +17,15 @@ async function run(statement: string) {
   console.log(`Applied: ${statement.split("\n")[0]}`);
 }
 
+async function runOptional(statement: string) {
+  try {
+    await run(statement);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.log(`Skipped (optional): ${statement.split("\n")[0]} — ${message}`);
+  }
+}
+
 async function main() {
   await run(
     'ALTER TABLE "Booking" ADD COLUMN IF NOT EXISTS "cancellationType" TEXT',
@@ -149,24 +158,46 @@ async function main() {
   await run('CREATE INDEX IF NOT EXISTS "Session_tutorId_idx" ON "Session"("tutorId")');
   await run('CREATE INDEX IF NOT EXISTS "Session_status_idx" ON "Session"("status")');
 
+  await run(`
+    CREATE TABLE IF NOT EXISTS "ParQResponse" (
+      "id" TEXT NOT NULL,
+      "userId" TEXT NOT NULL,
+      "data" JSONB NOT NULL DEFAULT '{}',
+      "submittedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "ParQResponse_pkey" PRIMARY KEY ("id")
+    )
+  `);
+  await run(
+    'CREATE UNIQUE INDEX IF NOT EXISTS "ParQResponse_userId_key" ON "ParQResponse"("userId")',
+  );
   await run('ALTER TABLE "ParQResponse" ADD COLUMN IF NOT EXISTS "data" JSONB');
   await run(
     'ALTER TABLE "ParQResponse" ADD COLUMN IF NOT EXISTS "submittedAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP',
   );
   await run(
+    'ALTER TABLE "ParQResponse" ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP',
+  );
+  await runOptional(
     'UPDATE "ParQResponse" SET "data" = "answers"::jsonb WHERE "data" IS NULL AND "answers" IS NOT NULL',
   );
   await run(
     'UPDATE "ParQResponse" SET "data" = \'{}\'::jsonb WHERE "data" IS NULL',
   );
-  await run(
+  await runOptional(
     'UPDATE "ParQResponse" SET "submittedAt" = "completedAt" WHERE "submittedAt" IS NULL AND "completedAt" IS NOT NULL',
   );
   await run(
     'UPDATE "ParQResponse" SET "submittedAt" = "updatedAt" WHERE "submittedAt" IS NULL AND "updatedAt" IS NOT NULL',
   );
-  await run('ALTER TABLE "ParQResponse" ALTER COLUMN "answers" DROP NOT NULL');
+  await runOptional('ALTER TABLE "ParQResponse" ALTER COLUMN "answers" DROP NOT NULL');
   await run('ALTER TABLE "ParQResponse" ALTER COLUMN "data" SET NOT NULL');
+  await runOptional(
+    'UPDATE "User" u SET "parQCompletedAt" = p."completedAt" FROM "ParQResponse" p WHERE u."id" = p."userId" AND u."parQCompletedAt" IS NULL AND p."completedAt" IS NOT NULL',
+  );
+  await run(
+    'UPDATE "User" u SET "parQData" = p."data" FROM "ParQResponse" p WHERE u."id" = p."userId" AND u."parQData" IS NULL AND p."data" IS NOT NULL',
+  );
 
   await run(
     'ALTER TABLE "OAuthAccount" ADD COLUMN IF NOT EXISTS "profileImageUrl" TEXT',
