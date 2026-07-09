@@ -41,7 +41,7 @@ export default async function CreditsSuccessPage({ searchParams }: SuccessPagePr
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
       <div className="overflow-hidden rounded-2xl border border-plum/10 bg-surface shadow-sm">
-        <div className="bg-gradient-to-r from-plum to-brand px-8 py-6 text-white">
+        <div className="bg-gradient-to-r from-sage to-sage/80 px-8 py-6 text-white">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-pink-light">
             {isFulfilled ? "Payment complete" : "Processing payment"}
           </p>
@@ -85,7 +85,7 @@ export default async function CreditsSuccessPage({ searchParams }: SuccessPagePr
           <div className="flex flex-col gap-3 pt-2 sm:flex-row">
             <Link
               href="/book"
-              className="rounded-lg bg-plum px-6 py-3 text-center text-sm font-semibold uppercase tracking-wider text-white hover:bg-plum-hover"
+              className="rounded-lg bg-sage px-6 py-3 text-center text-sm font-semibold uppercase tracking-wider text-white hover:bg-sage-hover"
             >
               Book a class
             </Link>

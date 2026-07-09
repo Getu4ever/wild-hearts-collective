@@ -33,7 +33,7 @@ function YesNoQuestion({
                 selected
                   ? option.answer
                     ? "border-brand bg-brand/10 text-brand"
-                    : "border-plum bg-plum/10 text-plum"
+                    : "border-plum bg-sage/10 text-plum"
                   : "border-plum/15 bg-surface text-muted hover:border-pink/40 hover:text-plum"
               }`}
             >
@@ -114,7 +114,7 @@ export function ParQForm({ completed }: { completed?: boolean }) {
   if (success) {
     return (
       <div className="overflow-hidden rounded-2xl border border-plum/10 bg-surface shadow-sm">
-        <div className="bg-gradient-to-r from-plum to-brand px-8 py-6 text-white">
+        <div className="bg-gradient-to-r from-sage to-sage/80 px-8 py-6 text-white">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-pink-light">Complete</p>
           <h2 className="mt-2 font-display text-4xl">PAR-Q submitted</h2>
         </div>
@@ -125,7 +125,7 @@ export function ParQForm({ completed }: { completed?: boolean }) {
           </p>
           <Link
             href="/book"
-            className="inline-flex rounded-lg bg-plum px-6 py-3 text-sm font-semibold uppercase tracking-wider text-white hover:bg-plum-hover"
+            className="inline-flex rounded-lg bg-sage px-6 py-3 text-sm font-semibold uppercase tracking-wider text-white hover:bg-sage-hover"
           >
             Book a class
           </Link>
@@ -235,7 +235,7 @@ export function ParQForm({ completed }: { completed?: boolean }) {
         <button
           type="submit"
           disabled={loading || !allAnswered}
-          className="w-full rounded-lg bg-plum px-6 py-4 text-sm font-semibold uppercase tracking-wider text-white shadow-md shadow-plum/20 transition hover:bg-plum-hover disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+          className="w-full rounded-lg bg-sage px-6 py-4 text-sm font-semibold uppercase tracking-wider text-white shadow-md shadow-sage/15 transition hover:bg-sage-hover disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         >
           {loading ? "Saving…" : "Submit PAR-Q"}
         </button>

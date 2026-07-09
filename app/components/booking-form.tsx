@@ -18,7 +18,8 @@ type SessionOption = {
 };
 
 type BookingConfig = {
-  depositLabel: string;
+  classPriceLabel?: string;
+  depositLabel?: string;
   stripeEnabled: boolean;
   stripePublishableKey: string;
   emailEnabled: boolean;
@@ -32,7 +33,7 @@ type PendingPayment = {
     email: string;
     classTitle: string;
     startsAt: string;
-    depositLabel: string;
+    classPriceLabel: string;
   };
 };
 
@@ -72,7 +73,7 @@ const classFilters = [
 const bookingSteps = [
   { title: "Choose a session", detail: "Pick your class and time" },
   { title: "Enter your details", detail: "Name, email, telephone and optional notes" },
-  { title: "Pay deposit online", detail: "Pay securely on this page" },
+  { title: "Pay in full online", detail: "Pay securely on this page" },
 ];
 
 function formatSessionDate(startsAt: string) {
@@ -111,7 +112,7 @@ export function BookingForm() {
   const cancelled = searchParams.get("cancelled") === "1";
   const selectedSession =
     sessions.find((session) => session.id === selectedSessionId) ?? null;
-  const depositNote = config?.depositLabel ?? "£10.00";
+  const priceNote = config?.classPriceLabel ?? config?.depositLabel ?? "£10.00";
   const hasSelectableSession = sessions.some(
     (session) => !session.isFull || joinWaitlist,
   );
@@ -244,7 +245,7 @@ export function BookingForm() {
             email: data.email,
             classTitle: data.classTitle,
             startsAt: data.startsAt,
-            depositLabel: data.depositLabel ?? depositNote,
+            classPriceLabel: data.classPriceLabel ?? data.depositLabel ?? priceNote,
           },
         });
         return;
@@ -274,7 +275,7 @@ export function BookingForm() {
               Step 3 of 3
             </p>
             <h2 className="mt-2 font-display text-3xl text-plum sm:text-4xl">
-              Pay your deposit
+              Pay for your class
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
               Complete payment below to secure your place. Your booking stays on this page —
@@ -292,8 +293,8 @@ export function BookingForm() {
                 {date.weekday}, {date.shortDate} · {date.time}
               </p>
               <p className="mt-2 text-sm text-muted">
-                Deposit:{" "}
-                <strong className="text-foreground">{pendingPayment.booking.depositLabel}</strong>
+                Amount due:{" "}
+                <strong className="text-foreground">{pendingPayment.booking.classPriceLabel}</strong>
               </p>
             </div>
 
@@ -345,7 +346,7 @@ export function BookingForm() {
 
     return (
       <div className="overflow-hidden rounded-2xl border border-plum/10 bg-surface shadow-lg ring-1 ring-plum/5">
-        <div className="bg-gradient-to-r from-plum to-brand px-8 py-6 text-white">
+        <div className="bg-gradient-to-r from-sage to-sage/80 px-8 py-6 text-white">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-pink-light">
             {isWaitlist ? "Waitlist" : "Success"}
           </p>
@@ -375,13 +376,13 @@ export function BookingForm() {
               ? `We have recorded ${result.email} on the waitlist.`
               : result.paymentSkipped
                 ? `Your booking is confirmed. A confirmation email has been sent to ${result.email}.`
-                : `We will send a confirmation email to ${result.email} once your deposit payment is complete.`}
+                : `We will send a confirmation email to ${result.email} once your payment is complete.`}
           </p>
           <div className="flex flex-col gap-3 pt-2 sm:flex-row">
             <button
               type="button"
               onClick={() => setResult(null)}
-              className="rounded-lg bg-plum px-6 py-3 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-plum-hover"
+              className="rounded-lg bg-sage px-6 py-3 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-sage-hover"
             >
               {isWaitlist ? "Join another waitlist" : "Book another class"}
             </button>
@@ -423,7 +424,7 @@ export function BookingForm() {
             Reserve your class
           </h2>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
-            {siteConfig.bookingNote} Pay a {depositNote} deposit online to secure
+            {siteConfig.bookingNote} Pay {priceNote} in full online to secure
             your place — quick, secure, and confirmed by email.
           </p>
         </div>
@@ -434,14 +435,14 @@ export function BookingForm() {
               className="rounded-lg border border-pink/30 bg-pink-light px-4 py-3 text-sm text-plum"
               role="status"
             >
-              Payment was cancelled. Your booking is still pending until the deposit is paid.
+              Payment was cancelled. Your booking is still pending until payment is completed.
               Choose your session again and complete payment below.
             </p>
           )}
 
           <section aria-labelledby="booking-step-1">
             <div className="flex items-center gap-3">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-plum text-sm font-bold text-white">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sage text-sm font-bold text-white">
                 1
               </span>
               <div>
@@ -460,7 +461,7 @@ export function BookingForm() {
                   onClick={() => setClassFilter(filter.value)}
                   className={`rounded-full px-4 py-2 text-sm font-medium transition ${
                     classFilter === filter.value
-                      ? "bg-plum text-white shadow-sm"
+                      ? "bg-sage text-white shadow-sm"
                       : "bg-pink-soft text-plum hover:bg-pink-light"
                   }`}
                 >
@@ -508,7 +509,7 @@ export function BookingForm() {
                       <span
                         className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
                           session.isFull
-                            ? "bg-plum/10 text-plum"
+                            ? "bg-sage/10 text-plum"
                             : "bg-pink/30 text-plum"
                         }`}
                       >
@@ -541,7 +542,7 @@ export function BookingForm() {
 
           <section aria-labelledby="booking-step-2">
             <div className="flex items-center gap-3">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-plum text-sm font-bold text-white">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sage text-sm font-bold text-white">
                 2
               </span>
               <div>
@@ -626,7 +627,7 @@ export function BookingForm() {
                   {!member.parQCompleted && (
                     <Link
                       href="/account/parq"
-                      className="mt-4 inline-flex rounded-lg bg-plum px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-white hover:bg-plum-hover"
+                      className="mt-4 inline-flex rounded-lg bg-sage px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-white hover:bg-sage-hover"
                     >
                       Complete PAR-Q now
                     </Link>
@@ -664,13 +665,13 @@ export function BookingForm() {
                       />
                       <span>
                         <strong className="block">Pay with 1 class credit</strong>
-                        Skip the deposit and confirm instantly using your pack balance.
+                        Skip the class fee and confirm instantly using your pack balance.
                       </span>
                     </label>
                   ) : (
                     <p className="mt-4 rounded-lg bg-pink-soft/40 px-4 py-3 text-sm text-muted">
                       {(member.creditsRemaining ?? 0) === 0
-                        ? "No credits yet — purchase a class pack to book without paying a deposit each time."
+                        ? "No credits yet — purchase a class pack to book without paying the class fee each time."
                         : selectedSession?.isFull || joinWaitlist
                           ? "Credits cannot be used for waitlist entries."
                           : "Select an available session to use a credit."}
@@ -803,12 +804,12 @@ export function BookingForm() {
                 <p className="mt-2 text-sm text-muted">
                   {useCredit && isSignedIn ? (
                     <>
-                      Payment: <strong className="text-foreground">1 class credit</strong> (no deposit)
+                      Payment: <strong className="text-foreground">1 class credit</strong> (no card payment)
                     </>
                   ) : (
                     <>
-                      Deposit due today:{" "}
-                      <strong className="text-foreground">{depositNote}</strong>
+                      Amount due today:{" "}
+                      <strong className="text-foreground">{priceNote}</strong>
                     </>
                   )}
                 </p>
@@ -834,7 +835,7 @@ export function BookingForm() {
               !hasSelectableSession ||
               !selectedSessionId
             }
-            className="w-full rounded-lg bg-plum px-6 py-4 text-sm font-semibold uppercase tracking-[0.12em] text-white shadow-md shadow-plum/20 transition hover:bg-plum-hover disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-lg bg-sage px-6 py-4 text-sm font-semibold uppercase tracking-[0.12em] text-white shadow-md shadow-sage/15 transition hover:bg-sage-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting
               ? "Processing…"
@@ -843,7 +844,7 @@ export function BookingForm() {
                 : useCredit && isSignedIn
                   ? "Confirm with class credit"
                   : config?.stripeEnabled
-                    ? `Continue to pay ${depositNote} deposit`
+                    ? `Continue to pay ${priceNote}`
                     : "Confirm booking"}
           </button>
           <p className="text-center text-xs leading-relaxed text-muted">
@@ -883,7 +884,7 @@ export function BookingForm() {
               {!member.parQCompleted && (
                 <Link
                   href="/account/parq"
-                  className="rounded-lg bg-plum px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-white hover:bg-plum-hover"
+                  className="rounded-lg bg-sage px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-white hover:bg-sage-hover"
                 >
                   Complete PAR-Q
                 </Link>
@@ -917,16 +918,16 @@ export function BookingForm() {
           </ol>
         </div>
 
-        <div className="rounded-2xl border border-plum/10 bg-gradient-to-br from-plum to-brand p-6 text-white shadow-lg">
+        <div className="rounded-2xl border border-plum/10 bg-gradient-to-br from-sage/90 to-sage p-6 text-white shadow-lg">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-pink-light">
-            {isSignedIn && useCredit ? "Payment" : "Deposit"}
+            {isSignedIn && useCredit ? "Payment" : "Amount due"}
           </p>
           <p className="mt-2 text-3xl font-semibold">
-            {isSignedIn && useCredit ? "1 credit" : depositNote}
+            {isSignedIn && useCredit ? "1 credit" : priceNote}
           </p>
           <p className="mt-2 text-sm leading-relaxed text-white/85">
             {isSignedIn && useCredit
-              ? "Your booking confirms instantly when you use a class credit — no deposit needed."
+              ? "Your booking confirms instantly when you use a class credit — no card payment needed."
               : "Pay online when you book. You will receive a confirmation email once payment is complete."}
           </p>
         </div>

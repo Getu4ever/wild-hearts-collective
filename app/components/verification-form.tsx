@@ -231,7 +231,7 @@ export function VerificationForm({
       <button
         type="submit"
         disabled={loading || code.length !== 6}
-        className="w-full rounded-lg bg-plum px-4 py-3.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-plum-hover disabled:cursor-not-allowed disabled:opacity-60"
+        className="w-full rounded-lg bg-sage px-4 py-3.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-sage-hover disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading ? "Verifying…" : "Verify account"}
       </button>

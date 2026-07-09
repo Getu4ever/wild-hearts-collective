@@ -288,7 +288,7 @@ export function AdminMemberDetail({
                       })
                     }
                     className={`rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition ${
-                      selected ? "bg-plum text-white" : "border border-plum/15 bg-white text-plum"
+                      selected ? "bg-sage text-white" : "border border-plum/15 bg-white text-plum"
                     }`}
                   >
                     {discipline.label}
@@ -325,7 +325,7 @@ export function AdminMemberDetail({
           <button
             type="submit"
             disabled={loading}
-            className="rounded-sm bg-plum px-6 py-3 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-plum-hover disabled:opacity-60"
+            className="rounded-sm bg-sage px-6 py-3 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-sage-hover disabled:opacity-60"
           >
             Save member details
           </button>

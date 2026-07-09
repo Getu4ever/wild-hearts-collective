@@ -166,7 +166,7 @@ export function MemberProfilePhotoField({
           type="button"
           disabled={loading}
           onClick={() => inputRef.current?.click()}
-          className="rounded-lg bg-plum px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white hover:bg-plum-hover disabled:opacity-60"
+          className="rounded-lg bg-sage px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white hover:bg-sage-hover disabled:opacity-60"
         >
           {loading ? "Saving…" : displayImage ? "Change photo" : "Upload photo"}
         </button>

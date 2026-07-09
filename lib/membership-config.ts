@@ -32,7 +32,7 @@ export const membershipPlans = [
     description:
       "Your personal Wild Hearts account — book classes, track bookings, and manage your details in one place.",
     features: [
-      "Book classes online with secure deposit payment",
+      "Book classes online with secure full payment in advance",
       "View upcoming and past bookings",
       "Join waitlists when sessions are full",
       "Update your profile anytime",
@@ -88,7 +88,7 @@ export function membershipStatusTone(status: string) {
       return "bg-pink-soft text-brand";
     case MEMBERSHIP_STATUS.cancelled:
     case MEMBERSHIP_STATUS.expired:
-      return "bg-plum/10 text-plum";
+      return "bg-sage/10 text-plum";
     default:
       return "bg-pink-soft text-brand";
   }

@@ -67,7 +67,7 @@ export function AdminMemberFilters({
       </select>
       <button
         type="submit"
-        className="rounded-sm bg-plum px-5 py-3 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-plum-hover"
+        className="rounded-sm bg-sage px-5 py-3 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-sage-hover"
       >
         Filter
       </button>

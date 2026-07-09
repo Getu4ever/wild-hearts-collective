@@ -46,11 +46,11 @@ export function VideoHero({
 
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-gradient-to-t from-plum/92 via-plum/50 to-plum/20"
+        className="absolute inset-0 bg-gradient-to-t from-plum/60 via-plum/25 to-plum/8"
       />
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-gradient-to-r from-plum/40 via-transparent to-pink/15"
+        className="absolute inset-0 bg-gradient-to-r from-plum/25 via-transparent to-pink/8"
       />
 
       <div className="relative mx-auto mt-36 w-full max-w-6xl px-6 pb-10 sm:mt-40 lg:mt-44 lg:px-8 lg:pb-14">

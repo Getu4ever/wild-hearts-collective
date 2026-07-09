@@ -1,12 +1,12 @@
 import { whyChooseUs } from "@/lib/site-data";
 
 const accentColors = [
-  "from-pink/30 to-pink-light/20",
-  "from-brand/25 to-pink/15",
-  "from-plum/10 to-pink-soft",
-  "from-pink-light/40 to-background",
-  "from-brand/20 to-pink-light/25",
-  "from-pink/20 to-brand/10",
+  "from-pink/15 to-pink-light/10",
+  "from-sage/15 to-pink/10",
+  "from-plum/5 to-pink-soft",
+  "from-pink-light/25 to-background",
+  "from-sage/10 to-pink-light/15",
+  "from-pink/10 to-sage/8",
 ];
 
 export function WhyChooseUs() {
@@ -43,7 +43,7 @@ export function WhyChooseUs() {
                 className={`absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity group-hover:opacity-100 ${accentColors[index % accentColors.length]}`}
               />
               <div className="relative">
-                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-brand text-xs font-bold text-white">
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-pink-light text-xs font-bold text-brand">
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 <h3 className="mt-4 font-display text-2xl text-plum">

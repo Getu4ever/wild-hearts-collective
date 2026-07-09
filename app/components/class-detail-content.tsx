@@ -90,26 +90,26 @@ export function ClassDetailContent({ classItem }: { classItem: ClassDetailData }
         </ul>
       </ContentSection>
 
-      <ContentSection className="bg-plum text-white">
+      <ContentSection className="bg-pink-soft">
         <div className="grid gap-10 lg:grid-cols-2">
           <div>
-            <SectionHeading title="Who is it for?" light />
-            <p className="mt-4 max-w-xl text-base leading-relaxed text-white/85">
+            <SectionHeading title="Who is it for?" />
+            <p className="mt-4 max-w-xl text-base leading-relaxed text-muted">
               {classItem.whoFor}
             </p>
           </div>
           <div>
-            <SectionHeading title="What to wear" light />
-            <p className="mt-4 max-w-xl text-base leading-relaxed text-white/85">
+            <SectionHeading title="What to wear" />
+            <p className="mt-4 max-w-xl text-base leading-relaxed text-muted">
               {classItem.whatToWear}
             </p>
           </div>
         </div>
         <div className="mt-10 flex flex-wrap gap-4">
-          <BookButton variant="light">Book now</BookButton>
+          <BookButton>Book now</BookButton>
           <Link
             href="/contact"
-            className="inline-flex items-center text-sm font-semibold uppercase tracking-wider text-pink transition hover:text-pink-light"
+            className="inline-flex items-center text-sm font-semibold uppercase tracking-wider text-brand transition hover:text-brand-hover"
           >
             Ask us a question →
           </Link>

@@ -14,10 +14,17 @@ export const WAITLIST_STATUS = {
 
 export type WaitlistStatus = (typeof WAITLIST_STATUS)[keyof typeof WAITLIST_STATUS];
 
-export function getDepositAmountPence() {
-  const raw = process.env.STRIPE_DEPOSIT_AMOUNT;
+/** Full class price charged in advance (pence). */
+export function getClassPaymentAmountPence() {
+  const raw =
+    process.env.STRIPE_CLASS_AMOUNT ?? process.env.STRIPE_DEPOSIT_AMOUNT;
   const parsed = raw ? Number.parseInt(raw, 10) : 1000;
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1000;
+}
+
+/** @deprecated Use getClassPaymentAmountPence — classes are paid in full in advance. */
+export function getDepositAmountPence() {
+  return getClassPaymentAmountPence();
 }
 
 export function formatMoneyFromPence(pence: number) {

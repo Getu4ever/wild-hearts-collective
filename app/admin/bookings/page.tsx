@@ -73,7 +73,7 @@ export default async function AdminBookingsPage() {
                   <th className="px-4 py-3 font-semibold">Email</th>
                   <th className="px-4 py-3 font-semibold">Phone</th>
                   <th className="px-4 py-3 font-semibold">Notes</th>
-                  <th className="px-4 py-3 font-semibold">Deposit</th>
+                  <th className="px-4 py-3 font-semibold">Paid</th>
                   <th className="px-4 py-3 font-semibold">Status</th>
                 </tr>
               </thead>

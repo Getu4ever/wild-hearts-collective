@@ -51,7 +51,7 @@ export default function PrivacyPage() {
             </li>
             <li>
               <strong>Booking information</strong> — classes booked, attendance
-              history, deposits, and payment-related records (processed via our
+              history, class payments, and payment-related records (processed via our
               booking platform).
             </li>
             <li>

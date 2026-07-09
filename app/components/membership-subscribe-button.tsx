@@ -15,7 +15,7 @@ export function MembershipSubscribeButton() {
 
   if (signedIn === null) {
     return (
-      <div className="rounded-sm bg-plum/60 px-4 py-3 text-sm font-semibold uppercase tracking-wider text-white">
+      <div className="rounded-sm bg-sage/60 px-4 py-3 text-sm font-semibold uppercase tracking-wider text-white">
         Loading…
       </div>
     );
@@ -25,7 +25,7 @@ export function MembershipSubscribeButton() {
     return (
       <Link
         href="/register?plan=monthly"
-        className="block w-full rounded-sm bg-plum px-4 py-3 text-center text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-plum-hover"
+        className="block w-full rounded-sm bg-sage px-4 py-3 text-center text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-sage-hover"
       >
         Subscribe monthly
       </Link>
@@ -35,7 +35,7 @@ export function MembershipSubscribeButton() {
   return (
     <Link
       href="/account/profile#billing"
-      className="block w-full rounded-sm bg-plum px-4 py-3 text-center text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-plum-hover"
+      className="block w-full rounded-sm bg-sage px-4 py-3 text-center text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-sage-hover"
     >
       Subscribe monthly
     </Link>

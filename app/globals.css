@@ -1,20 +1,28 @@
 @import "tailwindcss";
 
 :root {
-  --background: #faf6f8;
-  --foreground: #2b2d2f;
-  --muted: #6b5b68;
-  --plum: #3b1f38;
-  --plum-hover: #4a253f;
-  --pink: #ffb6c1;
-  --pink-light: #ffe4ea;
-  --pink-soft: #f5eef2;
-  --surface: #ffffff;
-  --brand: #aa336a;
-  --brand-hover: #922d5c;
-  --header-bg: #e8d8c9;
-  --header-accent: #6b232e;
-  --header-accent-hover: #5a1d26;
+  /* Soft taupes & beiges — keep fills quiet */
+  --background: #f7f4ef;
+  --foreground: #4a433c;
+  --muted: #8a8178;
+  --plum: #6b5f54;
+  --plum-hover: #5c5248;
+  /* Dusty pink accents — client reference #D58A94 */
+  --pink: #d58a94;
+  --pink-light: #f5e6e9;
+  --pink-soft: #f5f0ea;
+  --surface: #fffcf9;
+  --brand: #d58a94;
+  --brand-hover: #c27580;
+  /* Header: soft beige + muted sage */
+  --header-bg: #ebe4da;
+  --header-accent: #8a9a85;
+  --header-accent-hover: #758574;
+  /* Sage / cream */
+  --sage: #8a9a85;
+  --sage-hover: #758574;
+  --sage-light: #eef2ec;
+  --cream: #f8f5f0;
 }
 
 @theme inline {
@@ -32,6 +40,10 @@
   --color-header-bg: var(--header-bg);
   --color-header-accent: var(--header-accent);
   --color-header-accent-hover: var(--header-accent-hover);
+  --color-sage: var(--sage);
+  --color-sage-hover: var(--sage-hover);
+  --color-sage-light: var(--sage-light);
+  --color-cream: var(--cream);
   --font-sans: var(--font-raleway);
   --font-display: var(--font-satisfy);
 }
@@ -71,33 +83,32 @@ body {
   }
 }
 
-/* Tint header logo to match burgundy nav on beige header */
+/* Tint header logo to soft sage green */
 .logo-header-accent {
-  filter: brightness(0) saturate(100%) invert(14%) sepia(35%) saturate(3200%)
-    hue-rotate(318deg) brightness(88%) contrast(96%);
+  filter: brightness(0) saturate(100%) invert(58%) sepia(10%) saturate(520%)
+    hue-rotate(68deg) brightness(96%) contrast(86%);
 }
 
 /* Legacy alias */
 .logo-plum {
-  filter: brightness(0) saturate(100%) invert(14%) sepia(35%) saturate(3200%)
-    hue-rotate(318deg) brightness(88%) contrast(96%);
+  filter: brightness(0) saturate(100%) invert(58%) sepia(10%) saturate(520%)
+    hue-rotate(68deg) brightness(96%) contrast(86%);
 }
 
 .classes-dropdown-panel {
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(59, 31, 56, 0.16);
+  border: 1px solid rgba(107, 95, 84, 0.12);
   background: linear-gradient(
     155deg,
-    #ffffff 0%,
-    #f4ece5 24%,
-    #eadacb 50%,
-    #d9c4b6 78%,
-    rgba(59, 31, 56, 0.32) 100%
+    #fffcf9 0%,
+    #f5efe8 35%,
+    #ebe4da 70%,
+    #e4ddd3 100%
   );
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.65) inset,
-    0 18px 42px rgba(59, 31, 56, 0.18);
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 14px 32px rgba(107, 95, 84, 0.08);
 }
 
 .classes-dropdown-panel::before {
@@ -106,10 +117,10 @@ body {
   inset: 0;
   background: linear-gradient(
     125deg,
-    rgba(59, 31, 56, 0.16) 0%,
-    transparent 42%,
-    transparent 68%,
-    rgba(170, 51, 106, 0.1) 100%
+    rgba(138, 154, 133, 0.08) 0%,
+    transparent 45%,
+    transparent 70%,
+    rgba(213, 138, 148, 0.08) 100%
   );
   pointer-events: none;
 }
@@ -120,7 +131,7 @@ body {
   left: 0;
   right: 0;
   top: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #6b232e 0%, #7a2f38 45%, #aa336a 100%);
+  height: 2px;
+  background: linear-gradient(90deg, #8a9a85 0%, #b5c0b0 50%, #d58a94 100%);
   pointer-events: none;
 }

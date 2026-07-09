@@ -87,7 +87,7 @@ export function AdminScheduleBoard({
           </button>
           <Link
             href="/admin/sessions/new"
-            className="rounded-sm bg-plum px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white hover:bg-brand"
+            className="rounded-sm bg-sage px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white hover:bg-brand"
           >
             Add class
           </Link>
@@ -146,7 +146,7 @@ export function AdminScheduleBoard({
                     </div>
 
                     <div className="mt-4">
-                      <div className="h-2 overflow-hidden rounded-full bg-plum/10">
+                      <div className="h-2 overflow-hidden rounded-full bg-sage/10">
                         <div
                           className={`h-full rounded-full transition-all ${occupancyBarClass(level)}`}
                           style={{ width: `${fillPercent}%` }}
@@ -169,7 +169,7 @@ export function AdminScheduleBoard({
                       <div className="mt-4 flex flex-wrap gap-2">
                         <Link
                           href={`/admin/sessions/${session.id}`}
-                          className="rounded-sm bg-plum px-3 py-2 text-xs font-semibold uppercase tracking-wider text-white hover:bg-brand"
+                          className="rounded-sm bg-sage px-3 py-2 text-xs font-semibold uppercase tracking-wider text-white hover:bg-brand"
                         >
                           View roster
                         </Link>
@@ -207,7 +207,7 @@ function FilterButton({
       onClick={onClick}
       className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider transition ${
         active
-          ? "bg-plum text-white"
+          ? "bg-sage text-white"
           : "border border-plum/15 bg-white text-plum hover:border-pink"
       }`}
     >

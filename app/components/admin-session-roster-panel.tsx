@@ -48,7 +48,7 @@ export function AdminSessionRosterPanel({
           <h2 className="font-display text-3xl text-plum">Class roster</h2>
           <Link
             href={`/admin/sessions/${sessionId}#force-book`}
-            className="rounded-sm bg-plum px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white hover:bg-brand"
+            className="rounded-sm bg-sage px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white hover:bg-brand"
           >
             Force book student
           </Link>
@@ -113,7 +113,7 @@ export function AdminSessionRosterPanel({
                       />
                     </td>
                     <td className="px-4 py-4 text-muted">
-                      {booking.paidWithCredit ? "Credit used" : "Deposit/other"}
+                      {booking.paidWithCredit ? "Credit used" : "Paid in full"}
                       {booking.user && (
                         <p className="mt-1 text-xs">
                           Balance: {booking.user.creditsRemaining}
@@ -369,7 +369,7 @@ export function AdminForceBookForm({ sessionId }: { sessionId: string }) {
         <button
           type="submit"
           disabled={loading}
-          className="rounded-sm bg-plum px-5 py-3 text-xs font-semibold uppercase tracking-wider text-white hover:bg-brand disabled:opacity-60"
+          className="rounded-sm bg-sage px-5 py-3 text-xs font-semibold uppercase tracking-wider text-white hover:bg-brand disabled:opacity-60"
         >
           {loading ? "Booking…" : "Force book into class"}
         </button>

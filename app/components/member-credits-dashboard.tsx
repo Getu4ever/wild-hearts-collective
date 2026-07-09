@@ -153,7 +153,7 @@ export function MemberCreditsDashboard({
           </div>
           <Link
             href={BOOKING_URL}
-            className="rounded-lg bg-plum px-5 py-3 text-sm font-semibold uppercase tracking-wider text-white hover:bg-plum-hover"
+            className="rounded-lg bg-sage px-5 py-3 text-sm font-semibold uppercase tracking-wider text-white hover:bg-sage-hover"
           >
             Book a class
           </Link>
@@ -234,7 +234,7 @@ export function MemberCreditsDashboard({
       <section className="rounded-2xl border border-plum/10 bg-surface p-6 shadow-sm">
         <h2 className="font-display text-2xl text-plum">Buy a class pack</h2>
         <p className="mt-2 text-sm text-muted">
-          One credit equals one class booking. Pay with a pack to skip the deposit each time.
+          One credit equals one class booking. Pay with a pack to skip paying the class fee each time.
         </p>
 
         {overview.packs.length === 0 ? (
@@ -263,7 +263,7 @@ export function MemberCreditsDashboard({
                   type="button"
                   disabled={!stripeEnabled || loadingPackId === pack.id}
                   onClick={() => startPurchase(pack.id)}
-                  className="mt-6 rounded-lg bg-plum px-5 py-3 text-sm font-semibold uppercase tracking-wider text-white hover:bg-plum-hover disabled:cursor-not-allowed disabled:opacity-60"
+                  className="mt-6 rounded-lg bg-sage px-5 py-3 text-sm font-semibold uppercase tracking-wider text-white hover:bg-sage-hover disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loadingPackId === pack.id ? "Starting checkout…" : "Buy pack"}
                 </button>
@@ -288,7 +288,7 @@ export function MemberCreditsDashboard({
                     {purchase.creditsGranted} credits · purchased {purchase.purchasedLabel}
                   </p>
                 </div>
-                <span className="rounded-full bg-plum/10 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-plum">
+                <span className="rounded-full bg-sage/10 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-plum">
                   {purchase.statusLabel}
                 </span>
               </li>

@@ -81,7 +81,7 @@ export function occupancyBadgeClass(level: OccupancyLevel) {
     case "near":
       return "bg-amber-100 text-amber-900 border-amber-200";
     case "cancelled":
-      return "bg-plum/10 text-muted border-plum/15 line-through";
+      return "bg-sage/10 text-muted border-plum/15 line-through";
     default:
       return "bg-emerald-50 text-emerald-900 border-emerald-200";
   }

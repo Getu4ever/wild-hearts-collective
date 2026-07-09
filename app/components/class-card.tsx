@@ -41,7 +41,7 @@ export function ClassCard({
                 aria-hidden="true"
                 className={`absolute inset-0 ${
                   light
-                    ? "bg-plum/35"
+                    ? "bg-sage/35"
                     : "bg-gradient-to-t from-plum/50 via-plum/10 to-transparent"
                 }`}
               />

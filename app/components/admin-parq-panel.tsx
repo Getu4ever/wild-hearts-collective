@@ -64,7 +64,7 @@ export function AdminParQPanel({
                       <td className="px-4 py-4">
                         <span
                           className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
-                            isYes ? "bg-brand/10 text-brand" : "bg-plum/10 text-plum"
+                            isYes ? "bg-brand/10 text-brand" : "bg-sage/10 text-plum"
                           }`}
                         >
                           {formatParQYesNo(answer)}

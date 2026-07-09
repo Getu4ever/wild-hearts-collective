@@ -37,7 +37,7 @@ export function MemberNav({ member }: { member: PublicMember }) {
                 href={link.href}
                 className={`rounded-sm px-4 py-2 text-sm font-semibold transition ${
                   isActive
-                    ? "bg-plum text-white"
+                    ? "bg-sage text-white"
                     : "border border-plum/15 bg-white text-plum hover:border-pink hover:text-brand"
                 }`}
               >

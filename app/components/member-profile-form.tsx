@@ -151,7 +151,7 @@ export function MemberProfileForm({ member }: MemberProfileFormProps) {
       <button
         type="submit"
         disabled={loading}
-        className="rounded-sm bg-plum px-6 py-3 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-plum-hover disabled:opacity-60"
+        className="rounded-sm bg-sage px-6 py-3 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-sage-hover disabled:opacity-60"
       >
         {loading ? "Saving…" : "Save changes"}
       </button>

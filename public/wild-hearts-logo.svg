@@ -1,5 +1,5 @@
 <svg width="260" height="80" viewBox="0 0 260 80" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Wild Hearts Collective">
-  <g stroke="#3B1F38" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none">
+  <g stroke="#7D9178" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none">
     <circle cx="218" cy="14.5" r="3.2"/>
     <path d="M218 17.8C216.5 22.5 214.5 26.5 212 31C209.5 35.5 208 40 207 45"/>
     <path d="M218 17.8C220.5 15.5 223.5 12.5 227 11C229.5 10 231.5 11.5 230.5 14C229.5 16.5 226.5 19 223 21"/>
@@ -9,7 +9,7 @@
     <path d="M228.5 37.5C230 40 230.5 43.5 229.5 47C228.5 50.5 225.5 53 222 54"/>
     <path d="M209.5 75.5L207 78.5"/>
   </g>
-  <text x="4" y="28" font-family="Georgia, serif" font-size="28" font-style="italic" fill="#3B1F38">Wild</text>
-  <text x="4" y="56" font-family="Georgia, serif" font-size="28" font-style="italic" fill="#3B1F38">Hearts</text>
-  <text x="76" y="72" font-family="Georgia, serif" font-size="11" font-style="italic" fill="#6B5B68">collective</text>
+  <text x="4" y="28" font-family="Georgia, serif" font-size="28" font-style="italic" fill="#7D9178">Wild</text>
+  <text x="4" y="56" font-family="Georgia, serif" font-size="28" font-style="italic" fill="#7D9178">Hearts</text>
+  <text x="76" y="72" font-family="Georgia, serif" font-size="11" font-style="italic" fill="#7A7168">collective</text>
 </svg>

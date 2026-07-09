@@ -190,7 +190,7 @@ export function MemberBillingSection() {
                 setError("");
                 setMessage("");
               }}
-              className="rounded-sm bg-plum px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-plum-hover"
+              className="rounded-sm bg-sage px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-sage-hover"
             >
               Add payment method
             </button>
@@ -236,7 +236,7 @@ export function MemberBillingSection() {
                 setError("");
                 setMessage("");
               }}
-              className="mt-4 rounded-sm bg-plum px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-plum-hover"
+              className="mt-4 rounded-sm bg-sage px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-sage-hover"
             >
               Subscribe with secure checkout
             </button>

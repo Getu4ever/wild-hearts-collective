@@ -32,7 +32,7 @@ export function occupancyBarClass(level: OccupancyLevel) {
     case "near":
       return "bg-amber-500";
     case "cancelled":
-      return "bg-plum/20";
+      return "bg-sage/20";
     default:
       return "bg-emerald-500";
   }

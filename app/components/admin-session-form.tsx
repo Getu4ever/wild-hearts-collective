@@ -189,7 +189,7 @@ export function AdminSessionForm({ mode, sessionId, initial }: AdminSessionFormP
       <button
         type="submit"
         disabled={loading}
-        className="rounded-sm bg-plum px-5 py-3 text-xs font-semibold uppercase tracking-wider text-white hover:bg-brand disabled:opacity-60"
+        className="rounded-sm bg-sage px-5 py-3 text-xs font-semibold uppercase tracking-wider text-white hover:bg-brand disabled:opacity-60"
       >
         {loading ? "Saving…" : mode === "create" ? "Schedule class" : "Save changes"}
       </button>

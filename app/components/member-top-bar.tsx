@@ -20,8 +20,10 @@ function TopBarLink({
   return (
     <Link
       href={href}
-      className={`transition hover:text-pink-light ${
-        onDark ? "text-white/90 hover:text-white" : "text-white/85 hover:text-white"
+      className={`transition ${
+        onDark
+          ? "text-white/90 hover:text-white"
+          : "text-white/90 hover:text-white"
       }`}
     >
       {label}
@@ -67,8 +69,8 @@ export function MemberTopBar({ overlayMode }: { overlayMode?: boolean }) {
     <div
       className={`border-b text-[11px] font-semibold uppercase tracking-[0.18em] transition-colors duration-300 ${
         onDark
-          ? "border-header-accent-hover/40 bg-header-accent text-white"
-          : "border-white/10 bg-black/25 text-white backdrop-blur-sm"
+          ? "border-sage-hover/30 bg-sage text-white"
+          : "border-white/10 bg-black/20 text-white backdrop-blur-sm"
       }`}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-end gap-3 px-4 py-2 md:px-6">
@@ -97,19 +99,19 @@ export function MemberTopBar({ overlayMode }: { overlayMode?: boolean }) {
 
 export function FooterMemberLinks() {
   return (
-    <div className="mt-5 overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-br from-white/10 via-white/5 to-pink/10 p-4 shadow-lg shadow-black/10 ring-1 ring-white/10 backdrop-blur-sm">
+    <div className="mt-5 overflow-hidden rounded-sm border border-plum/10 bg-white/70 p-4">
       <div className="flex items-center gap-2">
         <span
-          className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-header-bg text-[11px] font-bold text-plum shadow-sm"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sage-light text-[11px] font-bold text-sage"
           aria-hidden="true"
         >
           ♥
         </span>
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-header-bg">
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-sage">
             Member access
           </p>
-          <p className="text-[12px] leading-snug text-white/65">
+          <p className="text-[12px] leading-snug text-muted">
             Book, manage, and grow with us
           </p>
         </div>
@@ -118,7 +120,7 @@ export function FooterMemberLinks() {
       <nav aria-label="Member access" className="mt-4 flex flex-col gap-2">
         <Link
           href="/membership"
-          className="group inline-flex w-full items-center justify-between rounded-full bg-header-bg px-4 py-2 text-xs font-bold uppercase tracking-wide text-plum shadow-lg shadow-black/10 transition hover:opacity-90"
+          className="group inline-flex w-full items-center justify-between rounded-sm bg-sage px-4 py-2 text-xs font-bold uppercase tracking-wide text-white transition hover:bg-sage-hover"
         >
           <span>Membership</span>
           <span
@@ -132,13 +134,13 @@ export function FooterMemberLinks() {
         <div className="grid grid-cols-2 gap-2">
           <Link
             href="/register"
-            className="rounded-xl border border-white/20 bg-white/10 px-3 py-2.5 text-center text-[11px] font-bold uppercase tracking-[0.14em] text-white transition hover:border-header-bg hover:bg-white/15 hover:text-header-bg"
+            className="rounded-sm border border-plum/15 bg-white px-3 py-2.5 text-center text-[11px] font-bold uppercase tracking-[0.14em] text-plum transition hover:border-sage hover:text-sage"
           >
             Sign up
           </Link>
           <Link
             href="/login"
-            className="rounded-xl border border-white/20 bg-plum/40 px-3 py-2.5 text-center text-[11px] font-bold uppercase tracking-[0.14em] text-white transition hover:border-header-bg hover:bg-plum/55 hover:text-header-bg"
+            className="rounded-sm border border-plum/15 bg-white px-3 py-2.5 text-center text-[11px] font-bold uppercase tracking-[0.14em] text-plum transition hover:border-sage hover:text-sage"
           >
             Login
           </Link>

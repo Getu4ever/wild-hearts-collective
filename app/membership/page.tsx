@@ -1,15 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Suspense } from "react";
 import {
   ContentSection,
   ProseBlock,
 } from "@/app/components/content-section";
+import { BundlePurchaseGrid } from "@/app/components/bundle-purchase-grid";
 import { MembershipSubscribeButton } from "@/app/components/membership-subscribe-button";
 import { PageHero } from "@/app/components/page-hero";
 import { SectionHeading } from "@/app/components/section-heading";
+import { formatMoneyFromPence } from "@/lib/booking-config";
 import { BOOKING_URL } from "@/lib/constants";
+import { db } from "@/lib/db";
 import { membershipPlans } from "@/lib/membership-config";
+import { seedClassPacks } from "@/lib/seed-database";
 
 export const metadata: Metadata = {
   title: "Membership",
@@ -24,7 +27,7 @@ const steps = [
   },
   {
     title: "Book a class",
-    description: "Choose a session from our timetable and pay your deposit securely online.",
+    description: "Choose a session from our timetable and pay the full class fee securely online.",
   },
   {
     title: "Track everything",
@@ -32,7 +35,27 @@ const steps = [
   },
 ];
 
-export default function MembershipPage() {
+export default async function MembershipPage() {
+  const packCount = await db.classPack.count();
+  if (packCount === 0) {
+    await seedClassPacks(db);
+  }
+
+  const classPacks = await db.classPack.findMany({
+    where: { active: true },
+    orderBy: { sortOrder: "asc" },
+  });
+
+  const packs = classPacks.map((pack) => ({
+    id: pack.id,
+    slug: pack.slug,
+    name: pack.name,
+    description: pack.description,
+    credits: pack.credits,
+    priceLabel: formatMoneyFromPence(pack.pricePence),
+    validDays: pack.validDays,
+  }));
+
   return (
     <>
       <PageHero
@@ -69,7 +92,7 @@ export default function MembershipPage() {
               key={plan.id}
               className={`flex flex-col rounded-sm border bg-surface p-8 ${
                 plan.highlighted
-                  ? "border-brand shadow-lg ring-1 ring-brand/20"
+                  ? "border-pink/40 shadow-sm ring-1 ring-pink/15"
                   : "border-plum/10"
               }`}
             >
@@ -102,7 +125,7 @@ export default function MembershipPage() {
                 ) : (
                   <Link
                     href={plan.href}
-                    className="block w-full rounded-sm bg-plum py-3 text-center text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-plum-hover"
+                    className="block w-full rounded-sm bg-sage py-3 text-center text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-sage-hover"
                   >
                     {plan.cta}
                   </Link>
@@ -111,6 +134,18 @@ export default function MembershipPage() {
             </article>
           ))}
         </div>
+
+        {packs.length > 0 && (
+          <div className="mt-16">
+            <SectionHeading
+              title="Class passes"
+              subtitle="Prefer pay-as-you-go? Choose a 5 or 10 class pack and use credits whenever you book."
+            />
+            <div className="mt-12">
+              <BundlePurchaseGrid packs={packs} />
+            </div>
+          </div>
+        )}
       </ContentSection>
 
       <ContentSection>
@@ -124,7 +159,7 @@ export default function MembershipPage() {
           <div className="mt-6 flex flex-wrap gap-4">
             <Link
               href="/register"
-              className="rounded-sm bg-plum px-6 py-3 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-plum-hover"
+              className="rounded-sm bg-sage px-6 py-3 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-sage-hover"
             >
               Create free account
             </Link>

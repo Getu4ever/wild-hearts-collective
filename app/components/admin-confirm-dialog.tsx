@@ -54,7 +54,7 @@ export function AdminConfirmDialog({
   const confirmClass =
     variant === "danger"
       ? "bg-brand text-white hover:bg-brand-hover"
-      : "bg-plum text-white hover:bg-plum-hover";
+      : "bg-sage text-white hover:bg-sage-hover";
 
   return (
     <div
@@ -66,7 +66,7 @@ export function AdminConfirmDialog({
         aria-label="Close dialog"
         disabled={loading}
         onClick={onCancel}
-        className="absolute inset-0 bg-plum/40 backdrop-blur-[2px]"
+        className="absolute inset-0 bg-sage/40 backdrop-blur-[2px]"
       />
 
       <div

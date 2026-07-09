@@ -270,7 +270,7 @@ export function MemberProfileDashboard({
                   <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider ${membershipStatusTone(profile.membership.status)}`}>
                     {membershipStatusLabel(profile.membership.status)}
                   </span>
-                  <span className="rounded-full bg-plum/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-plum">
+                  <span className="rounded-full bg-sage/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-plum">
                     {membershipPlanLabel(profile.membership.plan)}
                   </span>
                 </div>
@@ -338,7 +338,7 @@ export function MemberProfileDashboard({
                   <input className={inputClass} value={form.emergencyContactPhone} onChange={(e) => setForm({ ...form, emergencyContactPhone: e.target.value })} />
                 </Field>
               </div>
-              <button type="submit" disabled={loading} className="rounded-sm bg-plum px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-plum-hover disabled:opacity-60">
+              <button type="submit" disabled={loading} className="rounded-sm bg-sage px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-sage-hover disabled:opacity-60">
                 Save personal details
               </button>
             </form>
@@ -381,7 +381,7 @@ export function MemberProfileDashboard({
                   I understand that participation involves physical activity and I will inform instructors of any changes to my health.
                 </span>
               </label>
-              <button type="submit" disabled={loading} className="rounded-sm bg-plum px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-plum-hover disabled:opacity-60">
+              <button type="submit" disabled={loading} className="rounded-sm bg-sage px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-sage-hover disabled:opacity-60">
                 Save health information
               </button>
             </form>
@@ -435,7 +435,7 @@ export function MemberProfileDashboard({
                         await fetch("/api/members/membership/resume", { method: "POST" });
                         router.refresh();
                       }}
-                      className="ml-2 rounded-sm bg-plum px-4 py-2.5 text-sm font-semibold text-white"
+                      className="ml-2 rounded-sm bg-sage px-4 py-2.5 text-sm font-semibold text-white"
                     >
                       Resume now
                     </button>
@@ -528,12 +528,12 @@ export function MemberProfileDashboard({
                   {profile.membership.creditsRemaining}
                 </p>
                 <p className="mt-2 text-sm text-muted">
-                  Use credits when booking to skip the deposit.
+                  Use credits when booking to skip paying the class fee.
                 </p>
               </div>
               <Link
                 href="/account/credits"
-                className="rounded-lg bg-plum px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-plum-hover"
+                className="rounded-lg bg-sage px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-sage-hover"
               >
                 Manage credits
               </Link>
@@ -624,7 +624,7 @@ export function MemberProfileDashboard({
                           }))
                         }
                         className={`rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wider ${
-                          selected ? "bg-plum text-white" : "border border-plum/15 text-plum"
+                          selected ? "bg-sage text-white" : "border border-plum/15 text-plum"
                         }`}
                       >
                         {discipline.label}
@@ -633,7 +633,7 @@ export function MemberProfileDashboard({
                   })}
                 </div>
               </Field>
-              <button type="submit" disabled={loading} className="rounded-sm bg-plum px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-plum-hover disabled:opacity-60">
+              <button type="submit" disabled={loading} className="rounded-sm bg-sage px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-sage-hover disabled:opacity-60">
                 Save skills & interests
               </button>
             </form>
@@ -669,7 +669,7 @@ export function MemberProfileDashboard({
                   />
                 </label>
               ))}
-              <button type="submit" disabled={loading} className="rounded-sm bg-plum px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-plum-hover disabled:opacity-60">
+              <button type="submit" disabled={loading} className="rounded-sm bg-sage px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-sage-hover disabled:opacity-60">
                 Save preferences
               </button>
             </form>
@@ -692,7 +692,7 @@ export function MemberProfileDashboard({
               <Field label="New password">
                 <input type="password" className={inputClass} value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} />
               </Field>
-              <button type="submit" disabled={loading} className="rounded-sm bg-plum px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-plum-hover disabled:opacity-60">
+              <button type="submit" disabled={loading} className="rounded-sm bg-sage px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-sage-hover disabled:opacity-60">
                 Update password
               </button>
             </form>

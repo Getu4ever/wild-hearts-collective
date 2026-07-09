@@ -52,13 +52,12 @@ export default function Home() {
 
       <WhyChooseUs />
 
-      <ContentSection className="bg-plum text-white">
+      <ContentSection className="bg-white">
         <SectionHeading
           title="Our Classes"
           subtitle={siteConfig.bookingNote}
-          light
         />
-        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-white/75">
+        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted">
           {siteConfig.levelNote}
         </p>
         <ul className="mt-12 grid gap-8 sm:grid-cols-2">
@@ -70,7 +69,6 @@ export default function Home() {
                 href={item.href}
                 gradient={item.gradient}
                 imageKey={getClassHeroKey(item.slug)}
-                light
               />
             </li>
           ))}

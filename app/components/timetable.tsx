@@ -19,7 +19,7 @@ export function Timetable() {
             onClick={() => setActiveDay(index)}
             className={`rounded-sm px-5 py-2.5 text-sm font-semibold uppercase tracking-wider transition-colors ${
               activeDay === index
-                ? "bg-plum text-white"
+                ? "bg-sage text-white"
                 : "bg-surface text-foreground hover:bg-pink-soft"
             }`}
           >

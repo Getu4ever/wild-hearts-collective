@@ -4,6 +4,7 @@ import {
   CREDIT_REASON,
 } from "@/lib/booking-advanced-config";
 import { db } from "@/lib/db";
+import { sendClassPackPurchaseEmails } from "@/lib/email";
 
 type TransactionClient = Prisma.TransactionClient;
 
@@ -104,7 +105,7 @@ export async function fulfillPendingClassPackPurchase(
   stripePaymentId?: string,
   stripeSessionId?: string,
 ) {
-  return db.$transaction(async (tx) => {
+  const result = await db.$transaction(async (tx) => {
     const purchase = await tx.classPackPurchase.findUnique({
       where: { id: purchaseId },
       include: { pack: true },
@@ -117,7 +118,7 @@ export async function fulfillPendingClassPackPurchase(
     const user = await tx.user.update({
       where: { id: purchase.userId },
       data: { creditsRemaining: { increment: purchase.creditsGranted } },
-      select: { creditsRemaining: true },
+      select: { creditsRemaining: true, name: true, email: true },
     });
 
     const fulfilled = await tx.classPackPurchase.update({
@@ -140,8 +141,31 @@ export async function fulfillPendingClassPackPurchase(
       },
     });
 
-    return { purchase: fulfilled, balance: user.creditsRemaining };
+    return {
+      purchase: fulfilled,
+      pack: purchase.pack,
+      balance: user.creditsRemaining,
+      customer: { name: user.name, email: user.email },
+    };
   });
+
+  if (result) {
+    try {
+      await sendClassPackPurchaseEmails(result.customer, {
+        packName: result.pack.name,
+        credits: result.purchase.creditsGranted,
+        pricePence: result.pack.pricePence,
+        expiresAt: result.purchase.expiresAt,
+        balanceAfter: result.balance,
+      });
+    } catch (error) {
+      console.error("[email:class-pack]", purchaseId, error);
+    }
+  }
+
+  return result
+    ? { purchase: result.purchase, balance: result.balance }
+    : null;
 }
 
 export async function deductCreditForBooking(

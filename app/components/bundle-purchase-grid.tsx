@@ -32,7 +32,7 @@ export function BundlePurchaseGrid({ packs }: { packs: Pack[] }) {
       const data = await response.json();
       if (!response.ok) {
         if (response.status === 401) {
-          router.push("/login?next=/account/credits");
+          router.push("/login?next=/membership");
           return;
         }
         throw new Error(data.error || "Unable to start checkout.");
@@ -75,7 +75,7 @@ export function BundlePurchaseGrid({ packs }: { packs: Pack[] }) {
               type="button"
               disabled={loadingId === pack.id}
               onClick={() => purchase(pack.id)}
-              className="mt-8 rounded-sm bg-plum px-6 py-3 text-sm font-semibold uppercase tracking-wider text-white hover:bg-plum-hover disabled:opacity-60"
+              className="mt-8 rounded-sm bg-sage px-6 py-3 text-sm font-semibold uppercase tracking-wider text-white hover:bg-sage-hover disabled:opacity-60"
             >
               {loadingId === pack.id ? "Starting checkout…" : "Buy pack"}
             </button>

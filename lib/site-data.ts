@@ -2,7 +2,7 @@ export const siteConfig = {
   name: "Wild Hearts Collective",
   tagline: "Inclusive aerial & pole studio · Community hub",
   bookingNote:
-    "All classes need to be booked in advance. Some courses and private lessons require deposits to secure your place.",
+    "All classes need to be booked in advance. The full class fee is paid online when you book.",
   levelNote:
     "We have classes for all abilities. If you are unsure which level is right for you, please contact us and we can advise you.",
   arrivalNote:
@@ -422,12 +422,12 @@ export const faqs = [
   {
     question: "Do I need to book in advance?",
     answer:
-      "Yes. All classes must be booked in advance through this website. Some courses and private lessons require a deposit.",
+      "Yes. All classes must be booked in advance through this website. The full class fee is paid online when you book.",
   },
   {
     question: "What should I wear?",
     answer:
-      "Comfortable clothing that allows free movement. For pole and aerial, shorts or fitted leggings work well. Avoid lotion on the day of class.",
+      "Comfortable clothing that allows free movement. For pole and aerial, shorts or fitted leggings work well. Avoid lotion on the day of class. All jewellery must be removed, belly button piercings protected. No buckles, chains or rhinestones.",
   },
   {
     question: "I'm a complete beginner — is that okay?",

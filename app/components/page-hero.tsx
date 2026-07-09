@@ -37,11 +37,11 @@ export function PageHero({
 
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-gradient-to-t from-plum/90 via-plum/45 to-plum/15"
+        className="absolute inset-0 bg-gradient-to-t from-plum/55 via-plum/20 to-plum/5"
       />
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-gradient-to-r from-plum/35 via-transparent to-pink/10"
+        className="absolute inset-0 bg-gradient-to-r from-plum/20 via-transparent to-pink/5"
       />
 
       <div className="relative mx-auto w-full max-w-6xl px-6 pb-12 pt-28 lg:px-8 lg:pb-16">

@@ -24,7 +24,7 @@ export function AdminNav({
             href={link.href}
             className={`rounded-sm px-4 py-2 text-xs font-semibold uppercase tracking-wider transition ${
               isActive
-                ? "bg-plum text-white shadow-sm"
+                ? "bg-sage text-white shadow-sm"
                 : "border border-plum/15 bg-white text-plum hover:border-pink hover:text-brand"
             }`}
           >

@@ -245,7 +245,7 @@ export function SiteHeader() {
               className={`rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wider transition xl:text-sm ${
                 overlayMode
                   ? "border border-white/30 bg-white text-brand shadow hover:bg-pink-light"
-                  : "bg-header-accent text-white shadow-md shadow-header-accent/25 hover:bg-header-accent-hover"
+                  : "bg-sage text-white hover:bg-sage-hover"
               }`}
             >
               Book
@@ -307,7 +307,7 @@ export function SiteHeader() {
             <Link
               href={BOOKING_URL}
               onClick={() => setMenuOpen(false)}
-              className="block rounded-md bg-header-accent py-2.5 text-center text-sm font-bold uppercase tracking-wider text-white shadow-md shadow-header-accent/25"
+              className="block rounded-md bg-sage py-2.5 text-center text-sm font-bold uppercase tracking-wider text-white hover:bg-sage-hover"
             >
               Book
             </Link>
@@ -386,7 +386,7 @@ function MobileLink({
       onClick={close}
       className={`block rounded-md px-3 py-2 text-sm font-medium transition ${
         isActive
-          ? "bg-header-accent font-semibold text-white shadow-sm"
+          ? "bg-sage font-semibold text-white"
           : "text-header-accent hover:bg-header-accent/5"
       }`}
     >

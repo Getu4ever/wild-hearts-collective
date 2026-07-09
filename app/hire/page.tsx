@@ -73,7 +73,7 @@ export default function HirePage() {
         />
         <Link
           href="/contact"
-          className="mt-6 inline-flex rounded-sm bg-plum px-8 py-3 text-sm font-semibold uppercase tracking-wider text-white transition-colors hover:bg-plum-hover"
+          className="mt-6 inline-flex rounded-sm bg-sage px-8 py-3 text-sm font-semibold uppercase tracking-wider text-white transition-colors hover:bg-sage-hover"
         >
           Contact us
         </Link>

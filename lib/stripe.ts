@@ -3,7 +3,7 @@ import {
   formatMoneyFromPence,
   formatSessionDateTime,
   getAppBaseUrl,
-  getDepositAmountPence,
+  getClassPaymentAmountPence,
   isStripeConfigured,
 } from "@/lib/booking-config";
 
@@ -35,7 +35,7 @@ export async function createBookingCheckoutSession(booking: CheckoutBooking) {
   }
 
   const stripe = getStripeClient();
-  const deposit = getDepositAmountPence();
+  const amount = getClassPaymentAmountPence();
   const baseUrl = getAppBaseUrl();
 
   return stripe.checkout.sessions.create({
@@ -51,9 +51,9 @@ export async function createBookingCheckoutSession(booking: CheckoutBooking) {
         quantity: 1,
         price_data: {
           currency: "gbp",
-          unit_amount: deposit,
+          unit_amount: amount,
           product_data: {
-            name: `${booking.classTitle} — class deposit`,
+            name: `${booking.classTitle} — class booking`,
             description: formatSessionDateTime(booking.startsAt),
           },
         },
@@ -76,8 +76,13 @@ export function verifyStripeWebhook(payload: string, signature: string) {
   );
 }
 
+export function classPaymentLabel() {
+  return formatMoneyFromPence(getClassPaymentAmountPence());
+}
+
+/** @deprecated Use classPaymentLabel — classes are paid in full in advance. */
 export function depositLabel() {
-  return formatMoneyFromPence(getDepositAmountPence());
+  return classPaymentLabel();
 }
 
 type ClassPackCheckout = {

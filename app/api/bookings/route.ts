@@ -12,7 +12,7 @@ import {
 } from "@/lib/email";
 import { getMemberSession } from "@/lib/member-auth";
 import { assertParQCompleteForSession, ParQRequiredError } from "@/lib/parq-service";
-import { createBookingCheckoutSession, depositLabel } from "@/lib/stripe";
+import { createBookingCheckoutSession, classPaymentLabel } from "@/lib/stripe";
 import { redeemVoucherForBooking } from "@/lib/voucher-service";
 
 type BookingBody = {
@@ -281,6 +281,7 @@ export async function POST(request: Request) {
     classTitle: booking.session.class.title,
     startsAt: booking.session.startsAt.toISOString(),
     clientSecret: checkout.client_secret,
-    depositLabel: depositLabel(),
+    classPriceLabel: classPaymentLabel(),
+    depositLabel: classPaymentLabel(),
   });
 }

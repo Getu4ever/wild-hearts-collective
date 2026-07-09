@@ -1,13 +1,21 @@
 import { NextResponse } from "next/server";
-import { getDepositAmountPence } from "@/lib/booking-config";
-import { depositLabel } from "@/lib/stripe";
+import {
+  getClassPaymentAmountPence,
+  isStripeConfigured,
+} from "@/lib/booking-config";
 import { isEmailConfigured } from "@/lib/email";
-import { isStripeConfigured } from "@/lib/booking-config";
+import { classPaymentLabel } from "@/lib/stripe";
 
 export async function GET() {
+  const amountPence = getClassPaymentAmountPence();
+  const priceLabel = classPaymentLabel();
+
   return NextResponse.json({
-    depositAmountPence: getDepositAmountPence(),
-    depositLabel: depositLabel(),
+    classAmountPence: amountPence,
+    classPriceLabel: priceLabel,
+    // Legacy keys kept for older clients
+    depositAmountPence: amountPence,
+    depositLabel: priceLabel,
     stripeEnabled: isStripeConfigured(),
     stripePublishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "",
     emailEnabled: isEmailConfigured(),

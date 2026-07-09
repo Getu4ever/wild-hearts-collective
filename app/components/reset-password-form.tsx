@@ -122,7 +122,7 @@ export function ResetPasswordForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-sm bg-plum px-4 py-3 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-plum-hover disabled:opacity-60"
+        className="w-full rounded-sm bg-sage px-4 py-3 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-sage-hover disabled:opacity-60"
       >
         {loading ? "Updating…" : "Reset password"}
       </button>

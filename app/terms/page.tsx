@@ -24,9 +24,9 @@ export default function TermsPage() {
         <SectionHeading title="Booking & cancellation" />
         <ProseBlock>
           <p>
-            All classes must be booked in advance through TeamUp. Deposits may
-            be required for courses and private lessons. Cancellation policies
-            will be confirmed at the time of booking.
+            All classes must be booked in advance through this website. The full
+            class fee is paid online when you book. Cancellation policies will be
+            confirmed at the time of booking.
           </p>
         </ProseBlock>
       </ContentSection>

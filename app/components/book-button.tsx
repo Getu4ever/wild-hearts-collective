@@ -15,7 +15,7 @@ export function BookButton({
   const styles =
     variant === "light"
       ? "bg-white text-plum hover:bg-pink-light"
-      : "bg-plum text-white hover:bg-plum-hover";
+      : "bg-sage text-white hover:bg-sage-hover";
 
   return (
     <Link

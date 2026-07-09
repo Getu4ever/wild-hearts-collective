@@ -91,7 +91,7 @@ function PaymentFormInner({
       <button
         type="submit"
         disabled={!stripe || !elements || submitting}
-        className="rounded-sm bg-plum px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-plum-hover disabled:cursor-not-allowed disabled:opacity-60"
+        className="rounded-sm bg-sage px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-sage-hover disabled:cursor-not-allowed disabled:opacity-60"
       >
         {submitting ? "Processing…" : submitLabel}
       </button>

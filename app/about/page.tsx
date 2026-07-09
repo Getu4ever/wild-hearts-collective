@@ -120,14 +120,14 @@ export default function AboutPage() {
         </ProseBlock>
       </ContentSection>
 
-      <section className="border-y border-plum/8 bg-plum text-white">
+      <section className="border-y border-pink/25 bg-pink-soft">
         <div className="mx-auto grid max-w-6xl grid-cols-2 gap-8 px-6 py-10 sm:grid-cols-4 lg:px-8">
           {qualifications.map((item) => (
             <div key={item.label} className="text-center">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-pink/15 text-pink">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white text-brand shadow-sm ring-1 ring-pink/30">
                 {item.icon}
               </div>
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/90 sm:text-sm">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-plum sm:text-sm">
                 {item.label}
               </p>
             </div>

@@ -15,7 +15,7 @@ export default function BookPage() {
     <>
       <PageHero
         title="Book a Class"
-        subtitle="Choose your session, pay your deposit or use class credits, and receive confirmation by email."
+        subtitle="Choose your session, pay in full or use class credits, and receive confirmation by email."
         image="classes"
       />
 

@@ -15,8 +15,8 @@ import { FooterMemberLinks } from "./member-top-bar";
 
 function FooterHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] text-white">
-      <span className="inline-block h-4 w-0.5 shrink-0 rounded-full bg-header-bg" aria-hidden="true" />
+    <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] text-plum">
+      <span className="inline-block h-4 w-0.5 shrink-0 rounded-full bg-sage" aria-hidden="true" />
       {children}
     </h3>
   );
@@ -33,9 +33,9 @@ function FooterLinkList({
         <li key={link.href}>
           <Link
             href={link.href}
-            className="group inline-flex text-[13px] leading-snug text-white/75 transition hover:text-header-bg"
+            className="group inline-flex text-[13px] leading-snug text-muted transition hover:text-brand"
           >
-            <span className="mr-1.5 text-header-bg/0 transition group-hover:text-header-bg">›</span>
+            <span className="mr-1.5 text-sage/0 transition group-hover:text-sage">›</span>
             {link.label}
           </Link>
         </li>
@@ -63,10 +63,10 @@ function SocialIcon({ label }: { label: string }) {
 export function ContactBlock() {
   return (
     <div>
-      <h3 className="font-display text-2xl text-white">Contact us</h3>
-      <ul className="mt-4 space-y-2 text-sm leading-relaxed text-white/85">
+      <h3 className="font-display text-2xl text-plum">Contact us</h3>
+      <ul className="mt-4 space-y-2 text-sm leading-relaxed text-muted">
         <li>
-          <span className="font-bold text-white">Address</span>
+          <span className="font-bold text-plum">Address</span>
           <br />
           {contact.addressLines.map((line) => (
             <span key={line}>
@@ -76,16 +76,16 @@ export function ContactBlock() {
           ))}
         </li>
         <li>
-          <span className="font-bold text-white">Phone</span>
+          <span className="font-bold text-plum">Phone</span>
           <br />
           {contact.phone}
         </li>
         <li>
-          <span className="font-bold text-white">Email</span>
+          <span className="font-bold text-plum">Email</span>
           <br />
           <a
             href={`mailto:${contact.email}`}
-            className="underline-offset-2 hover:text-header-bg hover:underline"
+            className="underline-offset-2 hover:text-brand hover:underline"
           >
             {contact.email}
           </a>
@@ -101,7 +101,7 @@ export function SiteFooter() {
     : `tel:${contact.phone.replace(/\s/g, "")}`;
 
   return (
-    <footer className="relative overflow-hidden bg-gradient-to-br from-plum via-[#4a2540] to-brand text-white">
+    <footer className="relative overflow-hidden border-t border-plum/10 bg-pink-soft text-plum">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0"
@@ -111,14 +111,13 @@ export function SiteFooter() {
           alt=""
           fill
           sizes="100vw"
-          className="object-cover object-[70%_20%] opacity-[0.14]"
+          className="object-cover object-[70%_20%] opacity-[0.05]"
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-plum/92 via-[#4a2540]/88 to-brand/90" />
-        <div className="absolute inset-0 bg-gradient-to-t from-plum/80 via-transparent to-plum/40" />
+        <div className="absolute inset-0 bg-gradient-to-br from-pink-soft/95 via-cream/90 to-sage-light/85" />
       </div>
       <div
         aria-hidden="true"
-        className="absolute inset-x-0 top-0 h-1 bg-header-bg"
+        className="absolute inset-x-0 top-0 h-px bg-pink/35"
       />
 
       <div className="relative mx-auto max-w-7xl px-6 py-12 lg:px-8 lg:py-14">
@@ -130,37 +129,37 @@ export function SiteFooter() {
                 alt={siteConfig.name}
                 width={646}
                 height={493}
-                className="h-10 w-auto object-contain"
+                className="logo-header-accent h-10 w-auto object-contain"
               />
             </Link>
-            <p className="mt-3 text-[13px] leading-relaxed text-white/70">
+            <p className="mt-3 text-[13px] leading-relaxed text-muted">
               {footerDescription}
             </p>
             <FooterMemberLinks />
           </div>
 
-          <div className="border-t border-white/10 pt-8 sm:border-t-0 sm:pt-0 lg:border-l lg:border-white/10 lg:pl-6">
+          <div className="border-t border-plum/10 pt-8 sm:border-t-0 sm:pt-0 lg:border-l lg:border-plum/10 lg:pl-6">
             <FooterHeading>Services</FooterHeading>
             <FooterLinkList links={footerServiceLinks} />
           </div>
 
-          <div className="border-t border-white/10 pt-8 sm:border-t-0 sm:pt-0 lg:border-l lg:border-white/10 lg:pl-6">
+          <div className="border-t border-plum/10 pt-8 sm:border-t-0 sm:pt-0 lg:border-l lg:border-plum/10 lg:pl-6">
             <FooterHeading>Quick Links</FooterHeading>
             <FooterLinkList links={footerQuickLinks} />
           </div>
 
-          <div className="border-t border-white/10 pt-8 sm:border-t-0 sm:pt-0 lg:border-l lg:border-white/10 lg:pl-6">
+          <div className="border-t border-plum/10 pt-8 sm:border-t-0 sm:pt-0 lg:border-l lg:border-plum/10 lg:pl-6">
             <FooterHeading>Legal</FooterHeading>
             <FooterLinkList links={footerLegalLinks} />
           </div>
 
-          <div className="border-t border-white/10 pt-8 sm:border-t-0 sm:pt-0 lg:border-l lg:border-white/10 lg:pl-6">
-            <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-white">
+          <div className="border-t border-plum/10 pt-8 sm:border-t-0 sm:pt-0 lg:border-l lg:border-plum/10 lg:pl-6">
+            <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-plum">
               Let&apos;s Connect
             </h3>
-            <dl className="mt-4 space-y-4 text-[13px] text-white/75">
+            <dl className="mt-4 space-y-4 text-[13px] text-muted">
               <div>
-                <dt className="font-bold text-white">Address</dt>
+                <dt className="font-bold text-plum">Address</dt>
                 <dd className="mt-1 leading-relaxed">
                   {contact.addressLines.map((line) => (
                     <span key={line} className="block">
@@ -170,19 +169,19 @@ export function SiteFooter() {
                 </dd>
               </div>
               <div>
-                <dt className="font-bold text-white">Phone</dt>
+                <dt className="font-bold text-plum">Phone</dt>
                 <dd className="mt-1">
-                  <a href={phoneHref} className="transition hover:text-header-bg">
+                  <a href={phoneHref} className="transition hover:text-brand">
                     {contact.phone}
                   </a>
                 </dd>
               </div>
               <div>
-                <dt className="font-bold text-white">Email</dt>
+                <dt className="font-bold text-plum">Email</dt>
                 <dd className="mt-1">
                   <a
                     href={`mailto:${contact.email}`}
-                    className="break-all transition hover:text-header-bg"
+                    className="break-all transition hover:text-brand"
                   >
                     {contact.email}
                   </a>
@@ -191,7 +190,7 @@ export function SiteFooter() {
             </dl>
             <Link
               href={BOOKING_URL}
-              className="mt-4 inline-flex rounded-full bg-header-bg px-4 py-2 text-xs font-bold uppercase tracking-wide text-plum shadow-lg shadow-black/10 transition hover:opacity-90"
+              className="mt-4 inline-flex rounded-sm bg-sage px-4 py-2 text-xs font-bold uppercase tracking-wide text-white transition hover:bg-sage-hover"
             >
               Book a Class
             </Link>
@@ -201,7 +200,7 @@ export function SiteFooter() {
                   key={link.label}
                   href={link.href}
                   aria-label={link.label}
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:border-header-bg hover:bg-header-bg hover:text-plum"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-plum/15 bg-white/70 text-plum transition hover:border-sage hover:bg-sage-light hover:text-sage"
                 >
                   <SocialIcon label={link.label} />
                 </a>
@@ -211,7 +210,7 @@ export function SiteFooter() {
         </div>
       </div>
 
-      <div className="relative border-t border-white/10 bg-black/20 px-6 py-5 text-[11px] tracking-wide text-white/50 backdrop-blur-[1px] lg:px-8">
+      <div className="relative border-t border-plum/10 bg-cream/80 px-6 py-5 text-[11px] tracking-wide text-muted lg:px-8">
         <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-2 sm:grid-cols-3">
           <p className="text-left">
             Website by –{" "}
@@ -219,7 +218,7 @@ export function SiteFooter() {
               href="https://www.karoldigital.co.uk/"
               target="_blank"
               rel="noopener noreferrer"
-              className="transition hover:text-header-bg hover:underline"
+              className="transition hover:text-brand hover:underline"
             >
               Karol Digital
             </a>

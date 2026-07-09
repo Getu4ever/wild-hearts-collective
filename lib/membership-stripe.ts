@@ -1,11 +1,12 @@
 import type Stripe from "stripe";
 import { getAppBaseUrl } from "@/lib/booking-config";
+import { db } from "@/lib/db";
+import { sendMembershipWelcomeEmails } from "@/lib/email";
 import {
   getMonthlyMembershipPricePence,
   MEMBERSHIP_PLAN,
   MEMBERSHIP_STATUS,
 } from "@/lib/membership-config";
-import { db } from "@/lib/db";
 import { getStripeClient } from "@/lib/stripe";
 
 export function getSubscriptionPeriodEnd(subscription: Stripe.Subscription) {
@@ -92,26 +93,76 @@ export async function activateMembershipFromSubscription(
   },
 ) {
   const active = subscription.status === "active" || subscription.status === "trialing";
+  const renewsAt = subscription.currentPeriodEnd
+    ? new Date(subscription.currentPeriodEnd * 1000)
+    : null;
 
-  await db.user.update({
+  const prior = await db.user.findUnique({
     where: { id: userId },
-    data: {
-      membershipPlan: MEMBERSHIP_PLAN.monthly,
-      membershipStatus: active ? MEMBERSHIP_STATUS.active : MEMBERSHIP_STATUS.inactive,
-      stripeSubscriptionId: subscription.id,
-      membershipRenewsAt: subscription.currentPeriodEnd
-        ? new Date(subscription.currentPeriodEnd * 1000)
-        : null,
-      membershipStartedAt: active
-        ? (
-            await db.user.findUnique({
-              where: { id: userId },
-              select: { membershipStartedAt: true },
-            })
-          )?.membershipStartedAt ?? new Date()
-        : undefined,
+    select: {
+      name: true,
+      email: true,
+      membershipStartedAt: true,
     },
   });
+
+  if (!prior) {
+    return;
+  }
+
+  if (!active) {
+    await db.user.update({
+      where: { id: userId },
+      data: {
+        membershipPlan: MEMBERSHIP_PLAN.monthly,
+        membershipStatus: MEMBERSHIP_STATUS.inactive,
+        stripeSubscriptionId: subscription.id,
+        membershipRenewsAt: renewsAt,
+      },
+    });
+    return;
+  }
+
+  // Atomically claim the inactive → active transition so webhook + client sync
+  // cannot both send a welcome email.
+  const transitioned = await db.user.updateMany({
+    where: {
+      id: userId,
+      OR: [
+        { membershipPlan: { not: MEMBERSHIP_PLAN.monthly } },
+        { membershipStatus: { not: MEMBERSHIP_STATUS.active } },
+      ],
+    },
+    data: {
+      membershipPlan: MEMBERSHIP_PLAN.monthly,
+      membershipStatus: MEMBERSHIP_STATUS.active,
+      stripeSubscriptionId: subscription.id,
+      membershipRenewsAt: renewsAt,
+      membershipStartedAt: prior.membershipStartedAt ?? new Date(),
+    },
+  });
+
+  if (transitioned.count === 0) {
+    await db.user.update({
+      where: { id: userId },
+      data: {
+        membershipPlan: MEMBERSHIP_PLAN.monthly,
+        membershipStatus: MEMBERSHIP_STATUS.active,
+        stripeSubscriptionId: subscription.id,
+        membershipRenewsAt: renewsAt,
+      },
+    });
+    return;
+  }
+
+  try {
+    await sendMembershipWelcomeEmails(
+      { name: prior.name, email: prior.email },
+      { renewsAt },
+    );
+  } catch (error) {
+    console.error("[email:membership]", userId, error);
+  }
 }
 
 export async function cancelMembershipFromSubscription(userId: string) {

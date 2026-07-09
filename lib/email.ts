@@ -1,15 +1,18 @@
 import { Resend } from "resend";
 import {
+  formatMoneyFromPence,
   formatSessionDateTime,
+  formatUkDateLong,
   getAppBaseUrl,
-  getDepositAmountPence,
+  getClassPaymentAmountPence,
   getStudioEmail,
 } from "@/lib/booking-config";
 import {
   buildBrandedEmail,
   sessionDetailBlock,
 } from "@/lib/email-template";
-import { depositLabel } from "@/lib/stripe";
+import { monthlyMembershipLabel } from "@/lib/membership-config";
+import { classPaymentLabel } from "@/lib/stripe";
 
 type SessionDetails = {
   classTitle: string;
@@ -96,7 +99,7 @@ export async function sendBookingReceivedEmails(
           </p>
           ${sessionDetailBlock(session.classTitle, session.startsAt)}
           <p>
-            Once your ${depositLabel()} deposit payment has been processed, we will
+            Once your ${classPaymentLabel()} payment has been processed, we will
             send you another email to confirm your booking.
           </p>
           <p>If you have any questions in the meantime, just reply to this email.</p>
@@ -119,7 +122,7 @@ export async function sendBookingReceivedEmails(
           <p>
             <strong>Name:</strong> ${customer.name}<br />
             <strong>Email:</strong> ${customer.email}<br />
-            <strong>Deposit:</strong> ${depositLabel()}
+            <strong>Amount due:</strong> ${classPaymentLabel()}
           </p>
         `,
       }),
@@ -138,7 +141,7 @@ export async function sendBookingConfirmedEmails(
           style: "currency",
           currency: "GBP",
         }).format(amountPaidPence / 100)
-      : depositLabel();
+      : classPaymentLabel();
 
   await Promise.all([
     sendEmail({
@@ -155,7 +158,7 @@ export async function sendBookingConfirmedEmails(
           </p>
           ${sessionDetailBlock(session.classTitle, session.startsAt)}
           <p>
-            <strong>Deposit paid:</strong> ${paidAmount}<br />
+            <strong>Amount paid:</strong> ${paidAmount}<br />
             <strong>Status:</strong> Confirmed
           </p>
           <p>
@@ -181,7 +184,7 @@ export async function sendBookingConfirmedEmails(
           <p>
             <strong>Name:</strong> ${customer.name}<br />
             <strong>Email:</strong> ${customer.email}<br />
-            <strong>Deposit paid:</strong> ${paidAmount}
+            <strong>Amount paid:</strong> ${paidAmount}
           </p>
         `,
       }),
@@ -303,8 +306,8 @@ export async function sendWaitlistSpotAvailableEmail(
         <p>Good news — a place has opened up for the session below.</p>
         ${sessionDetailBlock(session.classTitle, session.startsAt)}
         <p>
-          Book now to secure your spot. A ${depositLabel()} deposit is required to
-          confirm your booking.
+          Book now to secure your spot. The full class fee of ${classPaymentLabel()} is
+          required to confirm your booking.
         </p>
       `,
       cta: {
@@ -346,7 +349,7 @@ export async function sendVerificationCodeEmail(
               : "Use the verification code below to verify your Wild Hearts Collective account."
           }
         </p>
-        <p style="font-size:28px;font-weight:700;letter-spacing:0.25em;color:#3B1F38;margin:24px 0;">
+        <p style="font-size:28px;font-weight:700;letter-spacing:0.25em;color:#5A4D42;margin:24px 0;">
           ${code}
         </p>
         <p>This code expires in 15 minutes. If you did not request this, you can safely ignore this email.</p>
@@ -397,8 +400,13 @@ export function isEmailConfigured() {
   return Boolean(process.env.RESEND_API_KEY);
 }
 
+export function getDefaultClassPaymentPence() {
+  return getClassPaymentAmountPence();
+}
+
+/** @deprecated Use getDefaultClassPaymentPence */
 export function getDefaultDepositPence() {
-  return getDepositAmountPence();
+  return getClassPaymentAmountPence();
 }
 
 type VoucherEmailDetails = {
@@ -476,4 +484,135 @@ export async function sendEngagementEmail(
       },
     }),
   });
+}
+
+type ClassPackPurchaseDetails = {
+  packName: string;
+  credits: number;
+  pricePence: number;
+  expiresAt: Date;
+  balanceAfter: number;
+};
+
+export async function sendClassPackPurchaseEmails(
+  customer: CustomerDetails,
+  pack: ClassPackPurchaseDetails,
+) {
+  const priceLabel = formatMoneyFromPence(pack.pricePence);
+  const expiresLabel = formatUkDateLong(pack.expiresAt);
+  const creditsUrl = `${getAppBaseUrl()}/account/credits`;
+
+  await Promise.all([
+    sendEmail({
+      to: customer.email,
+      subject: `Your ${pack.packName} is ready`,
+      html: buildBrandedEmail({
+        previewText: `Your ${pack.packName} purchase is confirmed — ${pack.credits} credits added.`,
+        heading: "Class pack confirmed",
+        bodyHtml: `
+          <p>Hi ${customer.name},</p>
+          <p>
+            Thank you for your purchase. Your class pack is now active and ready to use
+            when you book.
+          </p>
+          <p>
+            <strong>Pack:</strong> ${pack.packName}<br />
+            <strong>Credits added:</strong> ${pack.credits}<br />
+            <strong>Amount paid:</strong> ${priceLabel}<br />
+            <strong>Credits expire:</strong> ${expiresLabel}<br />
+            <strong>Current balance:</strong> ${pack.balanceAfter} credit${pack.balanceAfter === 1 ? "" : "s"}
+          </p>
+          <p>
+            Log in to your account to view your balance and book your next class.
+          </p>
+        `,
+        cta: {
+          label: "View my credits",
+          href: creditsUrl,
+        },
+      }),
+    }),
+    sendEmail({
+      to: getStudioEmail(),
+      subject: `Class pack purchased — ${customer.name}`,
+      html: buildBrandedEmail({
+        previewText: `${customer.name} purchased ${pack.packName}.`,
+        heading: "Class pack purchased",
+        bodyHtml: `
+          <p>A class pack purchase has been completed.</p>
+          <p>
+            <strong>Name:</strong> ${customer.name}<br />
+            <strong>Email:</strong> ${customer.email}<br />
+            <strong>Pack:</strong> ${pack.packName}<br />
+            <strong>Credits:</strong> ${pack.credits}<br />
+            <strong>Amount paid:</strong> ${priceLabel}<br />
+            <strong>Expires:</strong> ${expiresLabel}
+          </p>
+        `,
+      }),
+    }),
+  ]);
+}
+
+type MembershipWelcomeDetails = {
+  renewsAt: Date | null;
+};
+
+export async function sendMembershipWelcomeEmails(
+  customer: CustomerDetails,
+  membership: MembershipWelcomeDetails,
+) {
+  const priceLabel = monthlyMembershipLabel();
+  const renewsLabel = membership.renewsAt
+    ? formatUkDateLong(membership.renewsAt)
+    : null;
+  const accountUrl = `${getAppBaseUrl()}/account`;
+
+  await Promise.all([
+    sendEmail({
+      to: customer.email,
+      subject: "Welcome to your Wild Hearts monthly membership",
+      html: buildBrandedEmail({
+        previewText: "Your monthly membership is now active.",
+        heading: "Membership confirmed",
+        bodyHtml: `
+          <p>Hi ${customer.name},</p>
+          <p>
+            Welcome — your Monthly Membership is now active. You can book selected
+            drop-in classes and enjoy member perks through your account.
+          </p>
+          <p>
+            <strong>Plan:</strong> Monthly Membership<br />
+            <strong>Price:</strong> ${priceLabel} per month<br />
+            ${renewsLabel ? `<strong>Next renewal:</strong> ${renewsLabel}<br />` : ""}
+            <strong>Status:</strong> Active
+          </p>
+          <p>
+            Manage your membership, bookings, and profile anytime from your account.
+          </p>
+        `,
+        cta: {
+          label: "Go to my account",
+          href: accountUrl,
+        },
+      }),
+    }),
+    sendEmail({
+      to: getStudioEmail(),
+      subject: `New monthly membership — ${customer.name}`,
+      html: buildBrandedEmail({
+        previewText: `${customer.name} subscribed to Monthly Membership.`,
+        heading: "New monthly membership",
+        bodyHtml: `
+          <p>A member has subscribed to Monthly Membership.</p>
+          <p>
+            <strong>Name:</strong> ${customer.name}<br />
+            <strong>Email:</strong> ${customer.email}<br />
+            <strong>Plan:</strong> Monthly Membership (${priceLabel}/month)<br />
+            ${renewsLabel ? `<strong>Next renewal:</strong> ${renewsLabel}` : ""}
+          </p>
+        `,
+      }),
+    }),
+  ]);
 }

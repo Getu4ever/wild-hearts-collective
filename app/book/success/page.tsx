@@ -56,7 +56,7 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
               </p>
               <Link
                 href="/book"
-                className="mt-6 inline-block rounded-sm bg-plum px-6 py-3 text-sm font-semibold uppercase tracking-wider text-white hover:bg-plum-hover"
+                className="mt-6 inline-block rounded-sm bg-sage px-6 py-3 text-sm font-semibold uppercase tracking-wider text-white hover:bg-sage-hover"
               >
                 Back to booking
               </Link>
@@ -83,7 +83,7 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/book"
-                  className="rounded-sm bg-plum px-6 py-3 text-center text-sm font-semibold uppercase tracking-wider text-white hover:bg-plum-hover"
+                  className="rounded-sm bg-sage px-6 py-3 text-center text-sm font-semibold uppercase tracking-wider text-white hover:bg-sage-hover"
                 >
                   Book another class
                 </Link>
