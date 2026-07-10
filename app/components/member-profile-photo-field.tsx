@@ -65,8 +65,12 @@ export function MemberProfilePhotoField({
   const usingGooglePhoto = isGoogleAccount && isGooglePhotoUrl(displayImage);
   const hasCustomPhoto = Boolean(displayImage?.startsWith("data:"));
 
-  const helperText = usingGooglePhoto
-    ? "Using your Google profile photo. You can upload a different photo if you prefer."
+  const helperText = isGoogleAccount
+    ? usingGooglePhoto
+      ? "Using your Google profile photo. You can upload a different photo if you prefer."
+      : hasCustomPhoto
+        ? "Using your uploaded photo. You can switch back to your Google photo anytime."
+        : "Sign in with Google again to refresh your Google photo, or upload one from your device."
     : displayImage
       ? "Your profile photo appears across your member account."
       : "Add a profile photo from your device (JPG, PNG, or WebP, up to 2 MB).";

@@ -123,6 +123,9 @@ export async function getCurrentMember() {
   const session = await getMemberSession();
   if (!session) return null;
 
+  const { ensureGoogleProfileImage } = await import("@/lib/google-auth-service");
+  await ensureGoogleProfileImage(session.userId);
+
   const user = await db.user.findUnique({
     where: { id: session.userId },
     select: {

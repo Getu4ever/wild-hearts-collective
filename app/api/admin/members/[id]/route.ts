@@ -3,9 +3,10 @@ import { logAdminAction } from "@/lib/admin-audit";
 import { requireAdmin } from "@/lib/admin-api";
 import {
   profileSelectFields,
-  serializeDisciplineInterests,
+  serializeDisciplineSkills,
   toMemberProfile,
 } from "@/lib/member-profile-service";
+import type { DisciplineSkills } from "@/lib/profile-config";
 import { db } from "@/lib/db";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -22,6 +23,7 @@ type AdminMemberBody = {
   allergiesSafetyAlerts?: string | null;
   experienceLevel?: string | null;
   disciplineInterests?: string[];
+  disciplineSkills?: DisciplineSkills;
   internalNotes?: string | null;
   membershipPlan?: string;
   membershipStatus?: string;
@@ -144,9 +146,22 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (body.allergiesSafetyAlerts !== undefined) {
     data.allergiesSafetyAlerts = body.allergiesSafetyAlerts?.trim() || null;
   }
-  if (body.experienceLevel !== undefined) data.experienceLevel = body.experienceLevel || null;
-  if (body.disciplineInterests !== undefined) {
-    data.disciplineInterests = serializeDisciplineInterests(body.disciplineInterests);
+  if (body.disciplineSkills !== undefined) {
+    data.disciplineInterests = serializeDisciplineSkills(body.disciplineSkills);
+    data.experienceLevel = null;
+  } else if (body.disciplineInterests !== undefined) {
+    const level =
+      body.experienceLevel && typeof body.experienceLevel === "string"
+        ? body.experienceLevel
+        : "beginner";
+    const skills: DisciplineSkills = {};
+    for (const id of body.disciplineInterests) {
+      skills[id] = level;
+    }
+    data.disciplineInterests = serializeDisciplineSkills(skills);
+    data.experienceLevel = null;
+  } else if (body.experienceLevel !== undefined) {
+    data.experienceLevel = body.experienceLevel || null;
   }
   if (body.internalNotes !== undefined) data.internalNotes = body.internalNotes?.trim() || null;
   if (body.membershipPlan !== undefined) data.membershipPlan = body.membershipPlan;

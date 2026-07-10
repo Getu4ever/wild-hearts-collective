@@ -1,5 +1,8 @@
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
+  isDisciplineInterestId,
+  isExperienceLevelId,
+  type DisciplineSkills,
   type NotificationPreferences,
 } from "@/lib/profile-config";
 
@@ -57,8 +60,10 @@ export type MemberProfile = {
     allergiesSafetyAlerts: string | null;
     safetyConsentAt: string | null;
   };
+  /** @deprecated Prefer disciplineSkills — kept for older clients. */
   experienceLevel: string | null;
   disciplineInterests: string[];
+  disciplineSkills: DisciplineSkills;
   notificationPreferences: NotificationPreferences;
   membership: {
     plan: string;
@@ -90,6 +95,78 @@ function parseJsonArray(value: string | null) {
   }
 }
 
+/**
+ * Reads per-discipline skill levels from `disciplineInterests`.
+ * Supports the new map shape and the legacy string-array + global experienceLevel.
+ */
+export function parseDisciplineSkills(
+  interestsValue: string | null,
+  experienceLevel: string | null = null,
+): DisciplineSkills {
+  if (!interestsValue) return {};
+
+  try {
+    const parsed = JSON.parse(interestsValue) as unknown;
+
+    if (Array.isArray(parsed)) {
+      const fallback =
+        experienceLevel && isExperienceLevelId(experienceLevel)
+          ? experienceLevel
+          : "beginner";
+      const skills: DisciplineSkills = {};
+      for (const item of parsed) {
+        if (typeof item === "string" && isDisciplineInterestId(item)) {
+          skills[item] = fallback;
+        }
+      }
+      return skills;
+    }
+
+    if (parsed && typeof parsed === "object") {
+      const skills: DisciplineSkills = {};
+      for (const [discipline, level] of Object.entries(
+        parsed as Record<string, unknown>,
+      )) {
+        if (
+          isDisciplineInterestId(discipline) &&
+          typeof level === "string" &&
+          isExperienceLevelId(level)
+        ) {
+          skills[discipline] = level;
+        }
+      }
+      return skills;
+    }
+  } catch {
+    return {};
+  }
+
+  return {};
+}
+
+export function serializeDisciplineSkills(skills: DisciplineSkills) {
+  const cleaned: DisciplineSkills = {};
+
+  for (const [discipline, level] of Object.entries(skills)) {
+    if (isDisciplineInterestId(discipline) && isExperienceLevelId(level)) {
+      cleaned[discipline] = level;
+    }
+  }
+
+  return JSON.stringify(cleaned);
+}
+
+/** @deprecated Use serializeDisciplineSkills */
+export function serializeDisciplineInterests(interests: string[]) {
+  const skills: DisciplineSkills = {};
+  for (const id of interests) {
+    if (isDisciplineInterestId(id)) {
+      skills[id] = "beginner";
+    }
+  }
+  return serializeDisciplineSkills(skills);
+}
+
 export function parseNotificationPreferences(value: string | null): NotificationPreferences {
   if (!value) return DEFAULT_NOTIFICATION_PREFERENCES;
   try {
@@ -104,15 +181,13 @@ export function serializeNotificationPreferences(prefs: NotificationPreferences)
   return JSON.stringify(prefs);
 }
 
-export function serializeDisciplineInterests(interests: string[]) {
-  return JSON.stringify(interests);
-}
-
 function toIso(value: Date | null) {
   return value ? value.toISOString() : null;
 }
 
 export function calculateProfileCompletion(user: ProfileUserRecord) {
+  const skills = parseDisciplineSkills(user.disciplineInterests, user.experienceLevel);
+
   const steps: { id: string; label: string; complete: boolean }[] = [
     { id: "photo", label: "Add a profile photo", complete: Boolean(user.image) },
     { id: "phone", label: "Add your phone number", complete: Boolean(user.phone) },
@@ -122,14 +197,9 @@ export function calculateProfileCompletion(user: ProfileUserRecord) {
       complete: Boolean(user.emergencyContactName && user.emergencyContactPhone),
     },
     {
-      id: "experience",
-      label: "Set your experience level",
-      complete: Boolean(user.experienceLevel),
-    },
-    {
-      id: "interests",
-      label: "Choose your discipline interests",
-      complete: parseJsonArray(user.disciplineInterests).length > 0,
+      id: "skills",
+      label: "Choose interests and set a skill level for each",
+      complete: Object.keys(skills).length > 0,
     },
     {
       id: "safety",
@@ -148,6 +218,12 @@ export function calculateProfileCompletion(user: ProfileUserRecord) {
 }
 
 export function toMemberProfile(user: ProfileUserRecord): MemberProfile {
+  const disciplineSkills = parseDisciplineSkills(
+    user.disciplineInterests,
+    user.experienceLevel,
+  );
+  const disciplineInterests = Object.keys(disciplineSkills);
+
   return {
     id: user.id,
     email: user.email,
@@ -169,7 +245,8 @@ export function toMemberProfile(user: ProfileUserRecord): MemberProfile {
       safetyConsentAt: toIso(user.safetyConsentAt),
     },
     experienceLevel: user.experienceLevel,
-    disciplineInterests: parseJsonArray(user.disciplineInterests),
+    disciplineInterests,
+    disciplineSkills,
     notificationPreferences: parseNotificationPreferences(user.notificationPreferences),
     membership: {
       plan: user.membershipPlan,

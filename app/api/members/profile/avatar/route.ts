@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ensureGoogleProfileImage } from "@/lib/google-auth-service";
 import { getMemberSession } from "@/lib/member-auth";
 import { profileSelectFields, toMemberProfile } from "@/lib/member-profile-service";
 import { db } from "@/lib/db";
@@ -66,11 +67,24 @@ export async function DELETE() {
     select: { profileImageUrl: true },
   });
 
+  const restoredImage = googleAccount?.profileImageUrl ?? null;
+
   const updated = await db.user.update({
     where: { id: session.userId },
-    data: { image: googleAccount?.profileImageUrl ?? null },
+    data: { image: restoredImage },
     select: profileSelectFields,
   });
+
+  if (!updated.image && googleAccount) {
+    await ensureGoogleProfileImage(session.userId);
+    const refreshed = await db.user.findUnique({
+      where: { id: session.userId },
+      select: profileSelectFields,
+    });
+    if (refreshed) {
+      return NextResponse.json({ profile: toMemberProfile(refreshed) });
+    }
+  }
 
   return NextResponse.json({ profile: toMemberProfile(updated) });
 }

@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
+import { ensureGoogleProfileImage } from "@/lib/google-auth-service";
 import { getMemberSession } from "@/lib/member-auth";
 import {
   profileSelectFields,
-  serializeDisciplineInterests,
+  serializeDisciplineSkills,
   serializeNotificationPreferences,
   toMemberProfile,
 } from "@/lib/member-profile-service";
-import type { NotificationPreferences } from "@/lib/profile-config";
+import type { DisciplineSkills, NotificationPreferences } from "@/lib/profile-config";
 import { db } from "@/lib/db";
 import { hashPassword, verifyPassword } from "@/lib/password";
 
@@ -24,6 +25,7 @@ type ProfileBody = {
   safetyConsent?: boolean;
   experienceLevel?: string | null;
   disciplineInterests?: string[];
+  disciplineSkills?: DisciplineSkills;
   notificationPreferences?: NotificationPreferences;
   currentPassword?: string;
   newPassword?: string;
@@ -34,6 +36,8 @@ export async function GET() {
   if (!session) {
     return NextResponse.json({ error: "You must be signed in." }, { status: 401 });
   }
+
+  await ensureGoogleProfileImage(session.userId);
 
   const user = await db.user.findUnique({
     where: { id: session.userId },
@@ -93,11 +97,23 @@ export async function PATCH(request: Request) {
   if (body.safetyConsent !== undefined) {
     data.safetyConsentAt = body.safetyConsent ? new Date() : null;
   }
-  if (body.experienceLevel !== undefined) {
+  if (body.disciplineSkills !== undefined) {
+    data.disciplineInterests = serializeDisciplineSkills(body.disciplineSkills);
+    data.experienceLevel = null;
+  } else if (body.disciplineInterests !== undefined) {
+    // Legacy: interests list only — default each to beginner (or provided experienceLevel).
+    const level =
+      body.experienceLevel && typeof body.experienceLevel === "string"
+        ? body.experienceLevel
+        : "beginner";
+    const skills: DisciplineSkills = {};
+    for (const id of body.disciplineInterests) {
+      skills[id] = level;
+    }
+    data.disciplineInterests = serializeDisciplineSkills(skills);
+    data.experienceLevel = null;
+  } else if (body.experienceLevel !== undefined) {
     data.experienceLevel = body.experienceLevel || null;
-  }
-  if (body.disciplineInterests !== undefined) {
-    data.disciplineInterests = serializeDisciplineInterests(body.disciplineInterests);
   }
   if (body.notificationPreferences !== undefined) {
     data.notificationPreferences = serializeNotificationPreferences(body.notificationPreferences);

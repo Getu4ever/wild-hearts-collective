@@ -128,8 +128,7 @@ export function MemberProfileDashboard({
     injuriesLimitations: profile.healthSafety.injuriesLimitations ?? "",
     allergiesSafetyAlerts: profile.healthSafety.allergiesSafetyAlerts ?? "",
     safetyConsent: Boolean(profile.healthSafety.safetyConsentAt),
-    experienceLevel: profile.experienceLevel ?? "",
-    disciplineInterests: profile.disciplineInterests,
+    disciplineSkills: { ...profile.disciplineSkills },
     notificationPreferences: profile.notificationPreferences,
     currentPassword: "",
     newPassword: "",
@@ -588,51 +587,74 @@ export function MemberProfileDashboard({
             </div>
           </ProfileCard>
 
-          <ProfileCard id="skills" title="Skill level & interests">
+          <ProfileCard
+            id="skills"
+            title="Skills & interests"
+            description="Select each discipline you practise and set your level for that one — for example advanced pole and beginner hoop."
+          >
             <form
               className="space-y-4"
               onSubmit={(event) => {
                 event.preventDefault();
                 saveProfile({
-                  experienceLevel: form.experienceLevel || null,
-                  disciplineInterests: form.disciplineInterests,
+                  disciplineSkills: form.disciplineSkills,
                 });
               }}
             >
-              <Field label="Experience level">
-                <select className={inputClass} value={form.experienceLevel} onChange={(e) => setForm({ ...form, experienceLevel: e.target.value })}>
-                  <option value="">Select level</option>
-                  {EXPERIENCE_LEVELS.map((level) => (
-                    <option key={level.id} value={level.id}>{level.label}</option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Discipline interests">
-                <div className="flex flex-wrap gap-2">
-                  {DISCIPLINE_INTERESTS.map((discipline) => {
-                    const selected = form.disciplineInterests.includes(discipline.id);
-                    return (
-                      <button
-                        key={discipline.id}
-                        type="button"
-                        onClick={() =>
+              <ul className="space-y-3">
+                {DISCIPLINE_INTERESTS.map((discipline) => {
+                  const selected = Boolean(form.disciplineSkills[discipline.id]);
+                  const level = form.disciplineSkills[discipline.id] ?? "beginner";
+
+                  return (
+                    <li
+                      key={discipline.id}
+                      className="flex flex-col gap-3 rounded-lg border border-plum/10 bg-white/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <label className="flex items-center gap-3 text-sm font-medium text-plum">
+                        <input
+                          type="checkbox"
+                          checked={selected}
+                          onChange={() =>
+                            setForm((current) => {
+                              const next = { ...current.disciplineSkills };
+                              if (selected) {
+                                delete next[discipline.id];
+                              } else {
+                                next[discipline.id] = "beginner";
+                              }
+                              return { ...current, disciplineSkills: next };
+                            })
+                          }
+                          className="h-4 w-4 rounded border-plum/30 text-sage focus:ring-pink"
+                        />
+                        {discipline.label}
+                      </label>
+                      <select
+                        className={`${inputClass} sm:max-w-[11rem]`}
+                        value={level}
+                        disabled={!selected}
+                        onChange={(e) =>
                           setForm((current) => ({
                             ...current,
-                            disciplineInterests: selected
-                              ? current.disciplineInterests.filter((item) => item !== discipline.id)
-                              : [...current.disciplineInterests, discipline.id],
+                            disciplineSkills: {
+                              ...current.disciplineSkills,
+                              [discipline.id]: e.target.value,
+                            },
                           }))
                         }
-                        className={`rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wider ${
-                          selected ? "bg-sage text-white" : "border border-plum/15 text-plum"
-                        }`}
+                        aria-label={`${discipline.label} skill level`}
                       >
-                        {discipline.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </Field>
+                        {EXPERIENCE_LEVELS.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.label}
+                          </option>
+                        ))}
+                      </select>
+                    </li>
+                  );
+                })}
+              </ul>
               <button type="submit" disabled={loading} className="rounded-sm bg-sage px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-sage-hover disabled:opacity-60">
                 Save skills & interests
               </button>

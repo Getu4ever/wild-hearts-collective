@@ -89,8 +89,7 @@ export function AdminMemberDetail({
     medicalNotes: member.healthSafety.medicalNotes ?? "",
     injuriesLimitations: member.healthSafety.injuriesLimitations ?? "",
     allergiesSafetyAlerts: member.healthSafety.allergiesSafetyAlerts ?? "",
-    experienceLevel: member.experienceLevel ?? "",
-    disciplineInterests: member.disciplineInterests,
+    disciplineSkills: { ...member.disciplineSkills },
     internalNotes: member.internalNotes ?? "",
     membershipPlan: member.membership.plan,
     membershipStatus: member.membership.status,
@@ -265,38 +264,63 @@ export function AdminMemberDetail({
 
         <section className="rounded-lg border border-plum/10 bg-surface p-6 shadow-sm">
           <h3 className="font-display text-2xl text-plum">Skills & interests</h3>
-          <div className="mt-4 space-y-4">
-            <select className={inputClass} value={form.experienceLevel} onChange={(e) => setForm({ ...form, experienceLevel: e.target.value })}>
-              <option value="">Experience level</option>
-              {EXPERIENCE_LEVELS.map((level) => (
-                <option key={level.id} value={level.id}>{level.label}</option>
-              ))}
-            </select>
-            <div className="flex flex-wrap gap-2">
-              {DISCIPLINE_INTERESTS.map((discipline) => {
-                const selected = form.disciplineInterests.includes(discipline.id);
-                return (
-                  <button
-                    key={discipline.id}
-                    type="button"
-                    onClick={() =>
-                      setForm({
-                        ...form,
-                        disciplineInterests: selected
-                          ? form.disciplineInterests.filter((item) => item !== discipline.id)
-                          : [...form.disciplineInterests, discipline.id],
-                      })
-                    }
-                    className={`rounded-full px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition ${
-                      selected ? "bg-sage text-white" : "border border-plum/15 bg-white text-plum"
-                    }`}
-                  >
+          <p className="mt-2 text-sm text-muted">
+            Set a skill level for each discipline this member practises.
+          </p>
+          <ul className="mt-4 space-y-3">
+            {DISCIPLINE_INTERESTS.map((discipline) => {
+              const selected = Boolean(form.disciplineSkills[discipline.id]);
+              const level = form.disciplineSkills[discipline.id] ?? "beginner";
+
+              return (
+                <li
+                  key={discipline.id}
+                  className="flex flex-col gap-3 rounded-lg border border-plum/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <label className="flex items-center gap-3 text-sm font-medium text-plum">
+                    <input
+                      type="checkbox"
+                      checked={selected}
+                      onChange={() =>
+                        setForm((current) => {
+                          const next = { ...current.disciplineSkills };
+                          if (selected) {
+                            delete next[discipline.id];
+                          } else {
+                            next[discipline.id] = "beginner";
+                          }
+                          return { ...current, disciplineSkills: next };
+                        })
+                      }
+                      className="h-4 w-4 rounded border-plum/30 text-sage focus:ring-pink"
+                    />
                     {discipline.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+                  </label>
+                  <select
+                    className={`${inputClass} sm:max-w-[11rem]`}
+                    value={level}
+                    disabled={!selected}
+                    onChange={(e) =>
+                      setForm((current) => ({
+                        ...current,
+                        disciplineSkills: {
+                          ...current.disciplineSkills,
+                          [discipline.id]: e.target.value,
+                        },
+                      }))
+                    }
+                    aria-label={`${discipline.label} skill level`}
+                  >
+                    {EXPERIENCE_LEVELS.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
+                </li>
+              );
+            })}
+          </ul>
         </section>
 
         <section className="rounded-lg border border-plum/10 bg-surface p-6 shadow-sm">

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { MemberProfileDashboard } from "@/app/components/member-profile-dashboard";
 import { expireStalePendingBookings } from "@/lib/booking-service";
+import { ensureGoogleProfileImage } from "@/lib/google-auth-service";
 import { getMemberSession } from "@/lib/member-auth";
 import { profileSelectFields, toMemberProfile } from "@/lib/member-profile-service";
 import { getMembershipTimeline } from "@/lib/membership-actions";
@@ -16,6 +17,7 @@ export default async function AccountProfilePage() {
   if (!session) return null;
 
   await expireStalePendingBookings();
+  await ensureGoogleProfileImage(session.userId);
 
   const [user, oauthAccounts, upcomingBookings, pastBookings, timeline] = await Promise.all([
     db.user.findUnique({
@@ -24,7 +26,7 @@ export default async function AccountProfilePage() {
     }),
     db.oAuthAccount.findMany({
       where: { userId: session.userId },
-      select: { provider: true },
+      select: { provider: true, profileImageUrl: true },
     }),
     db.booking.findMany({
       where: {
@@ -50,11 +52,16 @@ export default async function AccountProfilePage() {
 
   if (!user) return null;
 
-  const isGoogleAccount = oauthAccounts.some((account) => account.provider === "google");
+  const googleAccount = oauthAccounts.find((account) => account.provider === "google");
+  const isGoogleAccount = Boolean(googleAccount);
+  const profile = toMemberProfile({
+    ...user,
+    image: user.image ?? googleAccount?.profileImageUrl ?? null,
+  });
 
   return (
     <MemberProfileDashboard
-      initialProfile={toMemberProfile(user)}
+      initialProfile={profile}
       isGoogleAccount={isGoogleAccount}
       upcomingBookings={upcomingBookings.map((booking) => ({
         id: booking.id,

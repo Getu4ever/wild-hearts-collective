@@ -4,6 +4,8 @@ export const EXPERIENCE_LEVELS = [
   { id: "advanced", label: "Advanced" },
 ] as const;
 
+export type ExperienceLevelId = (typeof EXPERIENCE_LEVELS)[number]["id"];
+
 export const DISCIPLINE_INTERESTS = [
   { id: "pole", label: "Pole" },
   { id: "aerial-hoop", label: "Aerial Hoop" },
@@ -11,6 +13,28 @@ export const DISCIPLINE_INTERESTS = [
   { id: "flexibility", label: "Flexibility" },
   { id: "creative-workshops", label: "Creative Workshops" },
 ] as const;
+
+export type DisciplineInterestId = (typeof DISCIPLINE_INTERESTS)[number]["id"];
+
+/** Map of discipline id → skill level id, e.g. { pole: "advanced", "aerial-hoop": "beginner" } */
+export type DisciplineSkills = Partial<Record<DisciplineInterestId, ExperienceLevelId>> &
+  Record<string, string>;
+
+export const EXPERIENCE_LEVEL_IDS = new Set(
+  EXPERIENCE_LEVELS.map((level) => level.id),
+);
+
+export const DISCIPLINE_INTEREST_IDS = new Set(
+  DISCIPLINE_INTERESTS.map((discipline) => discipline.id),
+);
+
+export function isExperienceLevelId(value: string): value is ExperienceLevelId {
+  return EXPERIENCE_LEVEL_IDS.has(value as ExperienceLevelId);
+}
+
+export function isDisciplineInterestId(value: string): value is DisciplineInterestId {
+  return DISCIPLINE_INTEREST_IDS.has(value as DisciplineInterestId);
+}
 
 export const NOTIFICATION_KEYS = [
   { id: "classReminders", label: "Class reminders" },
