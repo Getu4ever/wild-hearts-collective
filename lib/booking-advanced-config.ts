@@ -12,6 +12,7 @@ export type AttendanceStatus = (typeof ATTENDANCE_STATUS)[keyof typeof ATTENDANC
 export const CANCELLATION_TYPE = {
   onTime: "on_time",
   lateCancelled: "late_cancelled",
+  paymentExpired: "payment_expired",
 } as const;
 
 export type CancellationType = (typeof CANCELLATION_TYPE)[keyof typeof CANCELLATION_TYPE];
@@ -55,6 +56,9 @@ export const CREDIT_REASON = {
 export const MILESTONE_THRESHOLDS = [50, 100, 150] as const;
 
 export const CANCELLATION_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+/** Unpaid Stripe checkouts hold a class spot for this long, then auto-cancel. */
+export const PAYMENT_HOLD_MS = 10 * 60 * 1000;
 
 export const INACTIVITY_DAYS = 30;
 

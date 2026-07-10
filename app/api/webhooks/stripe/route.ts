@@ -1,14 +1,49 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { BOOKING_STATUS } from "@/lib/booking-config";
-import { confirmBooking } from "@/lib/booking-service";
+import { CANCELLATION_TYPE } from "@/lib/booking-advanced-config";
+import {
+  confirmBooking,
+  expireStalePendingBookings,
+} from "@/lib/booking-service";
 import { fulfillPendingClassPackPurchase } from "@/lib/credit-service";
 import { db } from "@/lib/db";
 import {
   activateMembershipFromSubscription,
   syncMembershipFromStripeSubscription,
 } from "@/lib/membership-stripe";
-import { verifyStripeWebhook } from "@/lib/stripe";
+import { getStripeClient, verifyStripeWebhook } from "@/lib/stripe";
+
+async function refundCheckoutPayment(session: Stripe.Checkout.Session) {
+  const paymentIntent =
+    typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : session.payment_intent?.id;
+
+  if (!paymentIntent) return;
+
+  try {
+    await getStripeClient().refunds.create({ payment_intent: paymentIntent });
+  } catch (error) {
+    console.error("Failed to refund expired booking payment:", error);
+  }
+}
+
+async function cancelPendingBookingForExpiredCheckout(bookingId: string) {
+  const booking = await db.booking.findUnique({ where: { id: bookingId } });
+
+  if (!booking || booking.status !== BOOKING_STATUS.pending) {
+    return;
+  }
+
+  await db.booking.update({
+    where: { id: bookingId },
+    data: {
+      status: BOOKING_STATUS.cancelled,
+      cancellationType: CANCELLATION_TYPE.paymentExpired,
+    },
+  });
+}
 
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
@@ -60,9 +95,11 @@ export async function POST(request: Request) {
         session.metadata?.bookingId ?? session.client_reference_id ?? undefined;
 
       if (bookingId) {
+        await expireStalePendingBookings();
+
         const booking = await db.booking.findUnique({ where: { id: bookingId } });
 
-        if (booking && booking.status === BOOKING_STATUS.pending) {
+        if (booking?.status === BOOKING_STATUS.pending) {
           await confirmBooking(bookingId, {
             stripePaymentId:
               typeof session.payment_intent === "string"
@@ -70,8 +107,24 @@ export async function POST(request: Request) {
                 : session.payment_intent?.id,
             amountPaid: session.amount_total ?? undefined,
           });
+        } else if (
+          booking?.status === BOOKING_STATUS.cancelled &&
+          booking.cancellationType === CANCELLATION_TYPE.paymentExpired
+        ) {
+          // Payment arrived after the hold expired — refund so the spot stays free.
+          await refundCheckoutPayment(session);
         }
       }
+    }
+  }
+
+  if (event.type === "checkout.session.expired") {
+    const session = event.data.object as Stripe.Checkout.Session;
+    const bookingId =
+      session.metadata?.bookingId ?? session.client_reference_id ?? undefined;
+
+    if (bookingId && session.metadata?.type !== "class_pack" && session.metadata?.type !== "membership") {
+      await cancelPendingBookingForExpiredCheckout(bookingId);
     }
   }
 

@@ -4,6 +4,7 @@ import { MemberLogoutButton } from "@/app/components/member-logout-button";
 import { MembershipSubscribeButton } from "@/app/components/membership-subscribe-button";
 import { BOOKING_URL } from "@/lib/constants";
 import { formatSessionDateTime, formatUkDateLong } from "@/lib/booking-config";
+import { expireStalePendingBookings } from "@/lib/booking-service";
 import { getCurrentMember } from "@/lib/member-auth";
 import {
   calculateProfileCompletion,
@@ -32,6 +33,8 @@ export default async function AccountPage({
 
   const params = await searchParams;
   const showMembershipSuccess = params.membership === "success";
+
+  await expireStalePendingBookings();
 
   const [upcomingBookings, recentBookings, profileRecord] = await Promise.all([
     db.booking.findMany({

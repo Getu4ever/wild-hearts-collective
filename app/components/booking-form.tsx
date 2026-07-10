@@ -278,8 +278,8 @@ export function BookingForm() {
               Pay for your class
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
-              Complete payment below to secure your place. Your booking stays on this page —
-              no redirect to another site.
+              Complete payment below within 10 minutes to secure your place. If payment
+              is not completed in time, the spot is released automatically.
             </p>
           </div>
 
@@ -435,8 +435,8 @@ export function BookingForm() {
               className="rounded-lg border border-pink/30 bg-pink-light px-4 py-3 text-sm text-plum"
               role="status"
             >
-              Payment was cancelled. Your booking is still pending until payment is completed.
-              Choose your session again and complete payment below.
+              Payment was cancelled. Your spot is held for 10 minutes — choose your session
+              again and complete payment below before it is released.
             </p>
           )}
 

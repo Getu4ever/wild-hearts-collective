@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { BOOKING_STATUS, isStripeConfigured } from "@/lib/booking-config";
 import {
-  countConfirmedBookings,
+  countHeldBookings,
   confirmBooking,
 } from "@/lib/booking-service";
 import { deductCreditForBooking, getUserCreditBalance } from "@/lib/credit-service";
@@ -58,8 +58,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "This session is no longer available." }, { status: 404 });
   }
 
-  const confirmedCount = await countConfirmedBookings(sessionId);
-  const spotsLeft = session.capacity - confirmedCount;
+  const heldCount = await countHeldBookings(sessionId);
+  const spotsLeft = session.capacity - heldCount;
   const memberSession = await getMemberSession();
 
   let userId = memberSession?.userId ?? null;

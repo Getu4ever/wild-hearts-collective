@@ -1,4 +1,5 @@
 import { MEMBERSHIP_STATUS } from "@/lib/membership-config";
+import { expireStalePendingBookings } from "@/lib/booking-service";
 import { db } from "@/lib/db";
 
 function startOfDay(date: Date) {
@@ -14,6 +15,8 @@ function endOfDay(date: Date) {
 }
 
 export async function getAdminDashboardStats() {
+  await expireStalePendingBookings();
+
   const now = new Date();
   const todayStart = startOfDay(now);
   const todayEnd = endOfDay(now);

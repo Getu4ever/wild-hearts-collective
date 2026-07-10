@@ -1,6 +1,7 @@
 import { ensureSeededDatabase } from "@/lib/seed-database";
 import { NextResponse } from "next/server";
 import { BOOKING_STATUS } from "@/lib/booking-config";
+import { expireStalePendingBookings, paymentHoldCutoff } from "@/lib/booking-service";
 import { db } from "@/lib/db";
 
 export async function GET(request: Request) {
@@ -9,6 +10,7 @@ export async function GET(request: Request) {
 
   try {
     await ensureSeededDatabase();
+    await expireStalePendingBookings();
     return NextResponse.json(await loadSessions(classSlug));
   } catch (error) {
     console.error("Failed to load sessions:", error);
@@ -20,6 +22,8 @@ export async function GET(request: Request) {
 }
 
 async function loadSessions(classSlug: string | null) {
+  const cutoff = paymentHoldCutoff();
+
   const sessions = await db.session.findMany({
     where: {
       startsAt: { gte: new Date() },
@@ -28,7 +32,15 @@ async function loadSessions(classSlug: string | null) {
     include: {
       class: true,
       bookings: {
-        where: { status: BOOKING_STATUS.confirmed },
+        where: {
+          OR: [
+            { status: BOOKING_STATUS.confirmed },
+            {
+              status: BOOKING_STATUS.pending,
+              createdAt: { gte: cutoff },
+            },
+          ],
+        },
         select: { id: true },
       },
       waitlist: {
@@ -40,8 +52,8 @@ async function loadSessions(classSlug: string | null) {
   });
 
   return sessions.map((session) => {
-    const confirmedCount = session.bookings.length;
-    const spotsLeft = session.capacity - confirmedCount;
+    const heldCount = session.bookings.length;
+    const spotsLeft = session.capacity - heldCount;
 
     return {
       id: session.id,

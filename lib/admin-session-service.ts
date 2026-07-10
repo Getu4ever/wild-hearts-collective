@@ -8,22 +8,40 @@ import {
 import { logAdminAction } from "@/lib/admin-audit";
 import { BOOKING_STATUS, ukLocalToUtc, UK_TIMEZONE } from "@/lib/booking-config";
 import { CANCELLATION_TYPE } from "@/lib/booking-advanced-config";
+import {
+  expireStalePendingBookings,
+  paymentHoldCutoff,
+} from "@/lib/booking-service";
 import { refundCreditForCancellation } from "@/lib/credit-service";
 import { db } from "@/lib/db";
 import { sendSessionCancelledEmail } from "@/lib/email";
 
-const sessionInclude = {
-  class: true,
-  tutor: true,
-  bookings: {
-    where: { status: BOOKING_STATUS.confirmed },
-    select: { id: true },
-  },
-  waitlist: {
-    where: { status: { in: ["waiting", "notified"] as string[] } },
-    select: { id: true },
-  },
-};
+function heldBookingsWhere() {
+  return {
+    OR: [
+      { status: BOOKING_STATUS.confirmed },
+      {
+        status: BOOKING_STATUS.pending,
+        createdAt: { gte: paymentHoldCutoff() },
+      },
+    ],
+  };
+}
+
+function sessionInclude() {
+  return {
+    class: true,
+    tutor: true,
+    bookings: {
+      where: heldBookingsWhere(),
+      select: { id: true },
+    },
+    waitlist: {
+      where: { status: { in: ["waiting", "notified"] as string[] } },
+      select: { id: true },
+    },
+  };
+}
 
 function mapSessionRecord(session: {
   id: string;
@@ -65,6 +83,8 @@ export async function listAdminSessions(options?: {
   from?: Date;
   to?: Date;
 }) {
+  await expireStalePendingBookings();
+
   const now = new Date();
   const from = options?.from ?? now;
   const to =
@@ -75,7 +95,7 @@ export async function listAdminSessions(options?: {
     where: {
       startsAt: { gte: from, lte: to },
     },
-    include: sessionInclude,
+    include: sessionInclude(),
     orderBy: { startsAt: "asc" },
   });
 
@@ -83,6 +103,9 @@ export async function listAdminSessions(options?: {
 }
 
 export async function getAdminSessionRoster(sessionId: string) {
+  await expireStalePendingBookings({ sessionId });
+
+  const cutoff = paymentHoldCutoff();
   const session = await db.session.findUnique({
     where: { id: sessionId },
     include: {
@@ -128,7 +151,11 @@ export async function getAdminSessionRoster(sessionId: string) {
 
   const summary = mapSessionRecord({
     ...session,
-    bookings: session.bookings.filter((b) => b.status === BOOKING_STATUS.confirmed),
+    bookings: session.bookings.filter(
+      (b) =>
+        b.status === BOOKING_STATUS.confirmed ||
+        (b.status === BOOKING_STATUS.pending && b.createdAt >= cutoff),
+    ),
     waitlist: session.waitlist,
   });
 
@@ -229,7 +256,7 @@ export async function createAdminSession(input: CreateSessionInput) {
       adminNotes: input.adminNotes?.trim() || null,
       status: SESSION_STATUS.scheduled,
     },
-    include: sessionInclude,
+    include: sessionInclude(),
   });
 
   await logAdminAction({
@@ -317,7 +344,7 @@ export async function updateAdminSession(sessionId: string, input: UpdateSession
   const session = await db.session.update({
     where: { id: sessionId },
     data,
-    include: sessionInclude,
+    include: sessionInclude(),
   });
 
   await logAdminAction({

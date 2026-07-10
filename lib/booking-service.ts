@@ -1,4 +1,13 @@
-import { BOOKING_STATUS, WAITLIST_STATUS, getAppBaseUrl } from "@/lib/booking-config";
+import {
+  BOOKING_STATUS,
+  WAITLIST_STATUS,
+  getAppBaseUrl,
+  isStripeConfigured,
+} from "@/lib/booking-config";
+import {
+  CANCELLATION_TYPE,
+  PAYMENT_HOLD_MS,
+} from "@/lib/booking-advanced-config";
 import { db } from "@/lib/db";
 import {
   sendBookingCancelledEmail,
@@ -6,19 +15,103 @@ import {
   sendWaitlistSpotAvailableEmail,
 } from "@/lib/email";
 
-type BookingWithSession = {
-  id: string;
-  name: string;
-  email: string;
-  status: string;
-  session: {
-    id: string;
-    startsAt: Date;
-    capacity: number;
-    class: { title: string };
-    _count?: { bookings: number };
+export function paymentHoldCutoff(now = new Date()) {
+  return new Date(now.getTime() - PAYMENT_HOLD_MS);
+}
+
+async function expireStripeCheckoutSession(stripeSessionId: string) {
+  if (!isStripeConfigured()) return;
+
+  try {
+    const { getStripeClient } = await import("@/lib/stripe");
+    await getStripeClient().checkout.sessions.expire(stripeSessionId);
+  } catch {
+    // Session may already be expired, completed, or unavailable.
+  }
+}
+
+/**
+ * Cancel unpaid pending bookings older than the payment hold window and release
+ * their spots. Does not email the customer (they abandoned checkout).
+ * If Stripe shows the checkout was already paid, confirm instead of cancelling.
+ */
+export async function expireStalePendingBookings(options?: {
+  sessionId?: string;
+}) {
+  const cutoff = paymentHoldCutoff();
+  const stale = await db.booking.findMany({
+    where: {
+      status: BOOKING_STATUS.pending,
+      createdAt: { lt: cutoff },
+      ...(options?.sessionId ? { sessionId: options.sessionId } : {}),
+    },
+    select: {
+      id: true,
+      sessionId: true,
+      stripeSessionId: true,
+    },
+  });
+
+  if (stale.length === 0) {
+    return { expired: 0, confirmed: 0, sessionIds: [] as string[] };
+  }
+
+  let expired = 0;
+  let confirmed = 0;
+  const releasedSessionIds = new Set<string>();
+
+  for (const booking of stale) {
+    if (booking.stripeSessionId && isStripeConfigured()) {
+      try {
+        const { getStripeClient } = await import("@/lib/stripe");
+        const checkout = await getStripeClient().checkout.sessions.retrieve(
+          booking.stripeSessionId,
+        );
+
+        if (checkout.payment_status === "paid") {
+          const paymentIntent =
+            typeof checkout.payment_intent === "string"
+              ? checkout.payment_intent
+              : checkout.payment_intent?.id;
+
+          await confirmBooking(booking.id, {
+            stripePaymentId: paymentIntent,
+            amountPaid: checkout.amount_total ?? undefined,
+          });
+          confirmed += 1;
+          continue;
+        }
+      } catch {
+        // Fall through to cancel if Stripe lookup fails.
+      }
+    }
+
+    await db.booking.update({
+      where: { id: booking.id },
+      data: {
+        status: BOOKING_STATUS.cancelled,
+        cancellationType: CANCELLATION_TYPE.paymentExpired,
+      },
+    });
+
+    if (booking.stripeSessionId) {
+      await expireStripeCheckoutSession(booking.stripeSessionId);
+    }
+
+    expired += 1;
+    releasedSessionIds.add(booking.sessionId);
+  }
+
+  for (const sessionId of releasedSessionIds) {
+    await notifyNextWaitlistEntry(sessionId);
+  }
+
+  return {
+    expired,
+    confirmed,
+    sessionIds: [...releasedSessionIds],
   };
-};
+}
 
 export async function countConfirmedBookings(sessionId: string) {
   return db.booking.count({
@@ -29,9 +122,29 @@ export async function countConfirmedBookings(sessionId: string) {
   });
 }
 
+/** Confirmed bookings plus unpaid checkouts still inside the hold window. */
+export async function countHeldBookings(sessionId: string) {
+  await expireStalePendingBookings({ sessionId });
+
+  const cutoff = paymentHoldCutoff();
+
+  return db.booking.count({
+    where: {
+      sessionId,
+      OR: [
+        { status: BOOKING_STATUS.confirmed },
+        {
+          status: BOOKING_STATUS.pending,
+          createdAt: { gte: cutoff },
+        },
+      ],
+    },
+  });
+}
+
 export async function sessionHasCapacity(sessionId: string, capacity: number) {
-  const confirmed = await countConfirmedBookings(sessionId);
-  return confirmed < capacity;
+  const held = await countHeldBookings(sessionId);
+  return held < capacity;
 }
 
 export async function confirmBooking(
@@ -92,8 +205,8 @@ export async function notifyNextWaitlistEntry(sessionId: string) {
 
   if (!session) return null;
 
-  const confirmed = await countConfirmedBookings(sessionId);
-  if (confirmed >= session.capacity) return null;
+  const held = await countHeldBookings(sessionId);
+  if (held >= session.capacity) return null;
 
   const next = await db.waitlistEntry.findFirst({
     where: {
@@ -146,19 +259,17 @@ export async function updateBookingStatus(
       return null;
     }
 
-    const hasCapacity = await sessionHasCapacity(
-      existing.sessionId,
-      sessionRecord.capacity,
-    );
-
-    if (
-      !hasCapacity &&
-      existing.status !== BOOKING_STATUS.confirmed
-    ) {
-      throw new Error("This session is fully booked.");
-    }
-
     if (existing.status !== BOOKING_STATUS.confirmed) {
+      const held = await countHeldBookings(existing.sessionId);
+      const cutoff = paymentHoldCutoff();
+      const alreadyHoldsSpot =
+        existing.status === BOOKING_STATUS.pending &&
+        existing.createdAt >= cutoff;
+
+      if (!alreadyHoldsSpot && held >= sessionRecord.capacity) {
+        throw new Error("This session is fully booked.");
+      }
+
       return confirmBooking(bookingId);
     }
 

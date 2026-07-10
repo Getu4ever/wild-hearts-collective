@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { MemberProfileDashboard } from "@/app/components/member-profile-dashboard";
+import { expireStalePendingBookings } from "@/lib/booking-service";
 import { getMemberSession } from "@/lib/member-auth";
 import { profileSelectFields, toMemberProfile } from "@/lib/member-profile-service";
 import { getMembershipTimeline } from "@/lib/membership-actions";
@@ -13,6 +14,8 @@ export const metadata: Metadata = {
 export default async function AccountProfilePage() {
   const session = await getMemberSession();
   if (!session) return null;
+
+  await expireStalePendingBookings();
 
   const [user, oauthAccounts, upcomingBookings, pastBookings, timeline] = await Promise.all([
     db.user.findUnique({
