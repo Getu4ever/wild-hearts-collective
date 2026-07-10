@@ -6,6 +6,7 @@ export type HeroImageKey =
   | "aerial-hoop"
   | "aerial-silks"
   | "community"
+  | "creative-arts"
   | "parties"
   | "hire"
   | "contact"
@@ -20,6 +21,7 @@ export const heroImages: Record<HeroImageKey, string> = {
   "aerial-hoop": "/hero/hero-aerial-hoop.jpg",
   "aerial-silks": "/hero/hero-aerial-silks.jpg",
   community: "/hero/hero-community.jpg",
+  "creative-arts": "/hero/hero-creative-arts.jpg",
   parties: "/hero/hero-parties.jpg",
   hire: "/hero/hero-hire.jpg",
   contact: "/hero/hero-contact.jpg",
@@ -31,5 +33,5 @@ export const classSlugToHero: Record<string, HeroImageKey> = {
   pole: "pole",
   "aerial-hoop": "aerial-hoop",
   "aerial-silks": "aerial-silks",
-  "creative-arts-workshops": "community",
+  "creative-arts-workshops": "creative-arts",
 };

@@ -23,7 +23,7 @@ export const siteVideos = {
   },
   "creative-arts-workshops": {
     src: "/video/art-workshop.mp4",
-    posterKey: "community" as HeroImageKey,
+    posterKey: "creative-arts" as HeroImageKey,
     title: "Creative arts workshops at Wild Hearts Collective",
   },
   parties: {

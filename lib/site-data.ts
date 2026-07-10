@@ -340,7 +340,7 @@ export const classes = [
     levels: "Workshops for all ages",
     href: "/classes/creative-arts-workshops",
     gradient: "from-pink-light via-background to-pink-soft",
-    imageKey: "community" as const,
+    imageKey: "creative-arts" as const,
     whatToExpect: [
       "Guided, beginner-friendly sessions — no artistic experience needed",
       "All materials provided unless stated otherwise on the booking",
