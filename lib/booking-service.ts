@@ -12,6 +12,7 @@ import { db } from "@/lib/db";
 import {
   sendBookingCancelledEmails,
   sendBookingConfirmedEmails,
+  sendUnpaidBookingExpiredAdminEmail,
   sendWaitlistSpotAvailableEmail,
 } from "@/lib/email";
 
@@ -31,8 +32,50 @@ async function expireStripeCheckoutSession(stripeSessionId: string) {
 }
 
 /**
+ * Cancel a pending booking after unpaid checkout timed out.
+ * Emails the studio only (not the member — they abandoned payment).
+ */
+export async function cancelBookingForPaymentExpiry(bookingId: string) {
+  const booking = await db.booking.findUnique({
+    where: { id: bookingId },
+    include: {
+      session: { include: { class: true } },
+    },
+  });
+
+  if (!booking || booking.status !== BOOKING_STATUS.pending) {
+    return null;
+  }
+
+  const updated = await db.booking.update({
+    where: { id: bookingId },
+    data: {
+      status: BOOKING_STATUS.cancelled,
+      cancellationType: CANCELLATION_TYPE.paymentExpired,
+    },
+    include: {
+      session: { include: { class: true } },
+    },
+  });
+
+  try {
+    await sendUnpaidBookingExpiredAdminEmail(
+      { name: updated.name, email: updated.email },
+      {
+        classTitle: updated.session.class.title,
+        startsAt: updated.session.startsAt,
+      },
+    );
+  } catch (error) {
+    console.error("[email:unpaid-booking-expired]", bookingId, error);
+  }
+
+  return updated;
+}
+
+/**
  * Cancel unpaid pending bookings older than the payment hold window and release
- * their spots. Does not email the customer (they abandoned checkout).
+ * their spots. Notifies the studio; does not email the customer (abandoned checkout).
  * If Stripe shows the checkout was already paid, confirm instead of cancelling.
  */
 export async function expireStalePendingBookings(options?: {
@@ -86,20 +129,16 @@ export async function expireStalePendingBookings(options?: {
       }
     }
 
-    await db.booking.update({
-      where: { id: booking.id },
-      data: {
-        status: BOOKING_STATUS.cancelled,
-        cancellationType: CANCELLATION_TYPE.paymentExpired,
-      },
-    });
+    const cancelled = await cancelBookingForPaymentExpiry(booking.id);
 
     if (booking.stripeSessionId) {
       await expireStripeCheckoutSession(booking.stripeSessionId);
     }
 
-    expired += 1;
-    releasedSessionIds.add(booking.sessionId);
+    if (cancelled) {
+      expired += 1;
+      releasedSessionIds.add(booking.sessionId);
+    }
   }
 
   for (const sessionId of releasedSessionIds) {

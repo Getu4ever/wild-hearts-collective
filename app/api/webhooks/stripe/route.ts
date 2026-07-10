@@ -3,8 +3,10 @@ import type Stripe from "stripe";
 import { BOOKING_STATUS } from "@/lib/booking-config";
 import { CANCELLATION_TYPE } from "@/lib/booking-advanced-config";
 import {
+  cancelBookingForPaymentExpiry,
   confirmBooking,
   expireStalePendingBookings,
+  notifyNextWaitlistEntry,
 } from "@/lib/booking-service";
 import { fulfillPendingClassPackPurchase } from "@/lib/credit-service";
 import { db } from "@/lib/db";
@@ -30,19 +32,10 @@ async function refundCheckoutPayment(session: Stripe.Checkout.Session) {
 }
 
 async function cancelPendingBookingForExpiredCheckout(bookingId: string) {
-  const booking = await db.booking.findUnique({ where: { id: bookingId } });
-
-  if (!booking || booking.status !== BOOKING_STATUS.pending) {
-    return;
+  const cancelled = await cancelBookingForPaymentExpiry(bookingId);
+  if (cancelled) {
+    await notifyNextWaitlistEntry(cancelled.sessionId);
   }
-
-  await db.booking.update({
-    where: { id: bookingId },
-    data: {
-      status: BOOKING_STATUS.cancelled,
-      cancellationType: CANCELLATION_TYPE.paymentExpired,
-    },
-  });
 }
 
 export async function POST(request: Request) {

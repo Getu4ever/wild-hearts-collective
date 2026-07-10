@@ -289,6 +289,34 @@ export async function sendBookingCancelledEmail(
   return sendBookingCancelledEmails(customer, session, meta);
 }
 
+/** Studio-only: unpaid checkout timed out (member abandoned payment). */
+export async function sendUnpaidBookingExpiredAdminEmail(
+  customer: CustomerDetails,
+  session: SessionDetails,
+) {
+  await sendEmail({
+    to: getStudioEmail(),
+    subject: `Unpaid booking released — ${customer.name}`,
+    html: buildBrandedEmail({
+      previewText: `${customer.name} did not complete payment for ${session.classTitle}.`,
+      heading: "Unpaid booking released",
+      bodyHtml: `
+        <p>A pending booking was cancelled automatically after payment was not completed within 10 minutes. The class spot has been released.</p>
+        <p>
+          <strong>Member:</strong> ${customer.name}<br />
+          <strong>Email:</strong> ${customer.email}<br />
+          <strong>Reason:</strong> Payment not completed (auto-cancelled)
+        </p>
+        ${sessionDetailBlock(session.classTitle, session.startsAt)}
+      `,
+      cta: {
+        label: "Open admin dashboard",
+        href: `${getAppBaseUrl()}/admin`,
+      },
+    }),
+  });
+}
+
 export async function sendSessionCancelledEmail(
   customer: CustomerDetails,
   session: SessionDetails & { reason?: string },
