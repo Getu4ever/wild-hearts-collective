@@ -20,7 +20,7 @@ export const heroImages: Record<HeroImageKey, string> = {
   pole: "/hero/hero-pole.jpg",
   "aerial-hoop": "/hero/hero-aerial-hoop.jpg",
   "aerial-silks": "/hero/hero-aerial-silks.jpg",
-  community: "/hero/hero-community.jpg",
+  community: "/hero/hero-community-hub.jpg",
   "creative-arts": "/hero/hero-creative-arts.jpg",
   parties: "/hero/hero-parties.jpg",
   hire: "/hero/hero-hire.jpg",
