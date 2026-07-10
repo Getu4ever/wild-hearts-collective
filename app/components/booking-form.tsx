@@ -278,8 +278,9 @@ export function BookingForm() {
               Pay for your class
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
-              Complete payment below within 10 minutes to secure your place. If payment
-              is not completed in time, the spot is released automatically.
+              Complete payment below within 10 minutes to secure your place. The
+              lesson will be cancelled without notice if payment is not completed
+              in time.
             </p>
           </div>
 
@@ -376,7 +377,7 @@ export function BookingForm() {
               ? `We have recorded ${result.email} on the waitlist.`
               : result.paymentSkipped
                 ? `Your booking is confirmed. A confirmation email has been sent to ${result.email}.`
-                : `We will send a confirmation email to ${result.email} once your payment is complete.`}
+                : `Complete payment within 10 minutes. The lesson will be cancelled without notice if unpaid. We will email ${result.email} once payment is complete.`}
           </p>
           <div className="flex flex-col gap-3 pt-2 sm:flex-row">
             <button
@@ -435,8 +436,9 @@ export function BookingForm() {
               className="rounded-lg border border-pink/30 bg-pink-light px-4 py-3 text-sm text-plum"
               role="status"
             >
-              Payment was cancelled. Your spot is held for 10 minutes — choose your session
-              again and complete payment below before it is released.
+              Payment was cancelled. Your spot is held for 10 minutes — choose your
+              session again and complete payment below. The lesson will be cancelled
+              without notice if payment is not completed in time.
             </p>
           )}
 

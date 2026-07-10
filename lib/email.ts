@@ -87,10 +87,10 @@ export async function sendBookingReceivedEmails(
   await Promise.all([
     sendEmail({
       to: customer.email,
-      subject: "Thanks for booking with Wild Hearts Collective",
+      subject: "Complete your Wild Hearts booking payment",
       html: buildBrandedEmail({
-        previewText: `Thanks for booking ${session.classTitle}. We will confirm your place shortly.`,
-        heading: "Thanks for booking",
+        previewText: `Please complete payment for ${session.classTitle}. The lesson will be cancelled without notice if unpaid.`,
+        heading: "Complete your payment",
         bodyHtml: `
           <p>Hi ${customer.name},</p>
           <p>
@@ -99,13 +99,18 @@ export async function sendBookingReceivedEmails(
           </p>
           ${sessionDetailBlock(session.classTitle, session.startsAt)}
           <p>
-            Once your ${classPaymentLabel()} payment has been processed, we will
+            Your place is held for <strong>10 minutes</strong> while you complete
+            your ${classPaymentLabel()} payment. Once payment is processed, we will
             send you another email to confirm your booking.
           </p>
-          <p>If you have any questions in the meantime, just reply to this email.</p>
+          <p>
+            <strong>The lesson will be cancelled without notice</strong> if payment
+            is not completed in time.
+          </p>
+          <p>If you have any questions, just reply to this email.</p>
         `,
         cta: {
-          label: "View booking page",
+          label: "Return to booking",
           href: bookUrl,
         },
       }),
