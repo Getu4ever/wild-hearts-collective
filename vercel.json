@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/expire-pending-bookings",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 3 * * *"
     }
   ]
 }
