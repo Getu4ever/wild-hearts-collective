@@ -624,12 +624,19 @@ export function BookingForm() {
                       {member.parQCompleted ? "Complete" : "Required"}
                     </span>
                   </div>
-                  {!member.parQCompleted && (
+                  {!member.parQCompleted ? (
                     <Link
                       href="/account/parq"
                       className="mt-4 inline-flex rounded-lg bg-sage px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-white hover:bg-sage-hover"
                     >
                       Complete PAR-Q now
+                    </Link>
+                  ) : (
+                    <Link
+                      href="/account/parq"
+                      className="mt-4 inline-flex text-xs font-semibold uppercase tracking-wider text-plum hover:text-brand"
+                    >
+                      Update PAR-Q →
                     </Link>
                   )}
                 </div>
@@ -881,12 +888,19 @@ export function BookingForm() {
               </div>
             </dl>
             <div className="mt-4 flex flex-col gap-2">
-              {!member.parQCompleted && (
+              {!member.parQCompleted ? (
                 <Link
                   href="/account/parq"
                   className="rounded-lg bg-sage px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-white hover:bg-sage-hover"
                 >
                   Complete PAR-Q
+                </Link>
+              ) : (
+                <Link
+                  href="/account/parq"
+                  className="rounded-lg border border-plum/15 px-4 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-plum hover:border-pink hover:text-brand"
+                >
+                  Update PAR-Q
                 </Link>
               )}
               <Link

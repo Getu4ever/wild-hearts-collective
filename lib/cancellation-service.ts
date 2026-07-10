@@ -47,14 +47,17 @@ export async function cancelMemberBooking(bookingId: string, userId: string) {
     data: { cancellationType },
   });
 
-  await cancelBooking(bookingId);
-
   let creditRefunded = false;
 
   if (onTime && booking.paidWithCredit) {
     const result = await refundCreditForCancellation(userId, bookingId);
     creditRefunded = result.refunded;
   }
+
+  await cancelBooking(bookingId, {
+    cancelledBy: "member",
+    creditRefunded,
+  });
 
   return {
     bookingId,

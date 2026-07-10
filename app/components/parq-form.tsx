@@ -3,7 +3,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { PARQ_QUESTIONS, type ParQQuestionKey } from "@/lib/parq-config";
+import {
+  formatParQYesNo,
+  PARQ_QUESTIONS,
+  type ParQQuestionKey,
+} from "@/lib/parq-config";
+import { formatUkDateTimeShort } from "@/lib/booking-config";
 
 function YesNoQuestion({
   label,
@@ -54,26 +59,89 @@ function YesNoQuestion({
   );
 }
 
-export function ParQForm({ completed }: { completed?: boolean }) {
-  const router = useRouter();
-  const [answers, setAnswers] = useState<Record<ParQQuestionKey, boolean | null>>({
+type ParQStoredData = {
+  hasHeartCondition?: boolean;
+  hasChestPain?: boolean;
+  hasBoneJointProblem?: boolean;
+  hasHighBloodPressure?: boolean;
+  hasOtherMedicalReason?: boolean;
+  isPregnant?: boolean;
+  additionalNotes?: string | null;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  consentGiven?: boolean;
+};
+
+function emptyAnswers(): Record<ParQQuestionKey, boolean | null> {
+  return {
     hasHeartCondition: null,
     hasChestPain: null,
     hasBoneJointProblem: null,
     hasHighBloodPressure: null,
     hasOtherMedicalReason: null,
     isPregnant: null,
-  });
-  const [emergencyContactName, setEmergencyContactName] = useState("");
-  const [emergencyContactPhone, setEmergencyContactPhone] = useState("");
-  const [additionalNotes, setAdditionalNotes] = useState("");
-  const [consentGiven, setConsentGiven] = useState(false);
+  };
+}
+
+function answersFromData(data: ParQStoredData | null | undefined) {
+  const answers = emptyAnswers();
+  if (!data) return answers;
+
+  for (const question of PARQ_QUESTIONS) {
+    const value = data[question.key];
+    if (typeof value === "boolean") {
+      answers[question.key] = value;
+    }
+  }
+
+  return answers;
+}
+
+export function ParQForm({
+  completed,
+  initialData,
+  completedAt,
+}: {
+  completed?: boolean;
+  initialData?: ParQStoredData | null;
+  completedAt?: string | null;
+}) {
+  const router = useRouter();
+  const stored = (initialData ?? null) as ParQStoredData | null;
+
+  const [editing, setEditing] = useState(!(completed ?? false));
+  const [answers, setAnswers] = useState<Record<ParQQuestionKey, boolean | null>>(
+    () => answersFromData(stored),
+  );
+  const [emergencyContactName, setEmergencyContactName] = useState(
+    stored?.emergencyContactName ?? "",
+  );
+  const [emergencyContactPhone, setEmergencyContactPhone] = useState(
+    stored?.emergencyContactPhone ?? "",
+  );
+  const [additionalNotes, setAdditionalNotes] = useState(
+    stored?.additionalNotes ?? "",
+  );
+  const [consentGiven, setConsentGiven] = useState(Boolean(stored?.consentGiven));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(completed ?? false);
+  const [isUpdate, setIsUpdate] = useState(false);
 
   const allAnswered = PARQ_QUESTIONS.every((question) => answers[question.key] !== null);
   const anyYes = PARQ_QUESTIONS.some((question) => answers[question.key] === true);
+
+  function startUpdate() {
+    setAnswers(answersFromData(stored));
+    setEmergencyContactName(stored?.emergencyContactName ?? "");
+    setEmergencyContactPhone(stored?.emergencyContactPhone ?? "");
+    setAdditionalNotes(stored?.additionalNotes ?? "");
+    setConsentGiven(true);
+    setIsUpdate(true);
+    setSuccess(false);
+    setEditing(true);
+    setError("");
+  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -103,6 +171,8 @@ export function ParQForm({ completed }: { completed?: boolean }) {
       if (!response.ok) throw new Error(data.error || "Unable to save form.");
 
       setSuccess(true);
+      setEditing(false);
+      setIsUpdate(false);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to save form.");
@@ -111,24 +181,53 @@ export function ParQForm({ completed }: { completed?: boolean }) {
     }
   }
 
-  if (success) {
+  if (success && !editing) {
     return (
       <div className="overflow-hidden rounded-2xl border border-plum/10 bg-surface shadow-sm">
         <div className="bg-gradient-to-r from-sage to-sage/80 px-8 py-6 text-white">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-pink-light">Complete</p>
-          <h2 className="mt-2 font-display text-4xl">PAR-Q submitted</h2>
-        </div>
-        <div className="space-y-4 px-8 py-8">
-          <p className="text-sm leading-relaxed text-muted">
-            Thank you. You can now book pole, hoop, and silks classes. Please update this form if
-            your health circumstances change.
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-pink-light">
+            Complete
           </p>
-          <Link
-            href="/book"
-            className="inline-flex rounded-lg bg-sage px-6 py-3 text-sm font-semibold uppercase tracking-wider text-white hover:bg-sage-hover"
-          >
-            Book a class
-          </Link>
+          <h2 className="mt-2 font-display text-4xl">PAR-Q on file</h2>
+          {completedAt && (
+            <p className="mt-2 text-sm text-white/85">
+              Last updated {formatUkDateTimeShort(completedAt)}
+            </p>
+          )}
+        </div>
+        <div className="space-y-6 px-8 py-8">
+          <p className="text-sm leading-relaxed text-muted">
+            Thank you. You can book pole, hoop, and silks classes. If your health
+            circumstances change, please update this questionnaire so we can keep
+            you safe in class.
+          </p>
+
+          {stored && (
+            <ul className="space-y-2 rounded-xl border border-plum/10 bg-pink-soft/30 px-4 py-4 text-sm text-plum">
+              {PARQ_QUESTIONS.map((question) => (
+                <li key={question.key} className="flex justify-between gap-4">
+                  <span className="text-muted">{question.label}</span>
+                  <strong>{formatParQYesNo(stored[question.key])}</strong>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={startUpdate}
+              className="inline-flex rounded-lg bg-sage px-6 py-3 text-sm font-semibold uppercase tracking-wider text-white hover:bg-sage-hover"
+            >
+              Update
+            </button>
+            <Link
+              href="/book"
+              className="inline-flex rounded-lg border border-plum/20 px-6 py-3 text-sm font-semibold uppercase tracking-wider text-plum hover:border-brand hover:text-brand"
+            >
+              Book a class
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -144,13 +243,20 @@ export function ParQForm({ completed }: { completed?: boolean }) {
           Physical Activity Readiness Questionnaire
         </p>
         <p className="mt-3 text-sm leading-relaxed text-muted">
-          Before participating in aerial or pole classes, answer each question with{" "}
-          <strong className="text-plum">Yes</strong> or <strong className="text-plum">No</strong>.
-          If you answer yes to any question, please{" "}
-          <Link href="/contact" className="font-semibold text-brand hover:underline">
-            contact us
-          </Link>{" "}
-          before booking.
+          {isUpdate || completed
+            ? "Update your answers below if your health has changed. We use this information to keep you safe in class."
+            : (
+              <>
+                Before participating in aerial or pole classes, answer each question with{" "}
+                <strong className="text-plum">Yes</strong> or{" "}
+                <strong className="text-plum">No</strong>. If you answer yes to any
+                question, please{" "}
+                <Link href="/contact" className="font-semibold text-brand hover:underline">
+                  contact us
+                </Link>{" "}
+                before booking.
+              </>
+            )}
         </p>
       </div>
 
@@ -232,13 +338,30 @@ export function ParQForm({ completed }: { completed?: boolean }) {
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={loading || !allAnswered}
-          className="w-full rounded-lg bg-sage px-6 py-4 text-sm font-semibold uppercase tracking-wider text-white shadow-md shadow-sage/15 transition hover:bg-sage-hover disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-        >
-          {loading ? "Saving…" : "Submit PAR-Q"}
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="submit"
+            disabled={loading || !allAnswered}
+            className="rounded-lg bg-sage px-6 py-4 text-sm font-semibold uppercase tracking-wider text-white shadow-md shadow-sage/15 transition hover:bg-sage-hover disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {loading ? "Saving…" : isUpdate || completed ? "Save updates" : "Submit PAR-Q"}
+          </button>
+          {(isUpdate || completed) && (
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => {
+                setEditing(false);
+                setSuccess(true);
+                setIsUpdate(false);
+                setError("");
+              }}
+              className="rounded-lg border border-plum/20 px-6 py-4 text-sm font-semibold uppercase tracking-wider text-plum hover:border-brand hover:text-brand disabled:opacity-60"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
       </div>
     </form>
   );

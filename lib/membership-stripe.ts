@@ -166,7 +166,12 @@ export async function activateMembershipFromSubscription(
 }
 
 export async function cancelMembershipFromSubscription(userId: string) {
-  await db.user.update({
+  const prior = await db.user.findUnique({
+    where: { id: userId },
+    select: { name: true, email: true, membershipStatus: true },
+  });
+
+  const updated = await db.user.update({
     where: { id: userId },
     data: {
       membershipPlan: MEMBERSHIP_PLAN.account,
@@ -175,6 +180,29 @@ export async function cancelMembershipFromSubscription(userId: string) {
       membershipRenewsAt: null,
     },
   });
+
+  if (
+    prior &&
+    prior.membershipStatus !== MEMBERSHIP_STATUS.cancelled
+  ) {
+    try {
+      const { notifyAdminOfMembershipCancelled } = await import(
+        "@/lib/member-notifications"
+      );
+      await notifyAdminOfMembershipCancelled({
+        name: prior.name,
+        email: prior.email,
+        cancelledBy: "system",
+        immediate: true,
+        finalAccessDate: new Date(),
+        reason: "Stripe subscription ended",
+      });
+    } catch (error) {
+      console.error("[email:membership-cancel]", userId, error);
+    }
+  }
+
+  return updated;
 }
 
 export async function syncMembershipFromStripeSubscription(

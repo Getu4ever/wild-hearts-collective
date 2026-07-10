@@ -16,15 +16,24 @@ export default async function ParQPage() {
   if (!session) redirect("/login?next=/account/parq");
 
   const status = await getParQStatus(session.userId);
+  const initialData =
+    status?.data && typeof status.data === "object"
+      ? (status.data as Record<string, unknown>)
+      : null;
 
   return (
     <ContentSection>
       <SectionHeading
         title="Health questionnaire"
-        subtitle="Required before booking pole, aerial hoop, or aerial silks classes."
+        subtitle="Required before booking pole, aerial hoop, or aerial silks classes. Update it anytime your health changes."
       />
       <div className="mt-10 max-w-3xl">
-        <ParQForm completed={status?.completed} />
+        <ParQForm
+          key={status?.completedAt ?? "new"}
+          completed={status?.completed}
+          completedAt={status?.completedAt}
+          initialData={initialData}
+        />
       </div>
     </ContentSection>
   );

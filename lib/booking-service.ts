@@ -10,7 +10,7 @@ import {
 } from "@/lib/booking-advanced-config";
 import { db } from "@/lib/db";
 import {
-  sendBookingCancelledEmail,
+  sendBookingCancelledEmails,
   sendBookingConfirmedEmails,
   sendWaitlistSpotAvailableEmail,
 } from "@/lib/email";
@@ -175,7 +175,13 @@ export async function confirmBooking(
   return booking;
 }
 
-export async function cancelBooking(bookingId: string) {
+export async function cancelBooking(
+  bookingId: string,
+  options?: {
+    cancelledBy?: "member" | "admin" | "system";
+    creditRefunded?: boolean;
+  },
+) {
   const booking = await db.booking.update({
     where: { id: bookingId },
     data: { status: BOOKING_STATUS.cancelled },
@@ -184,11 +190,16 @@ export async function cancelBooking(bookingId: string) {
     },
   });
 
-  await sendBookingCancelledEmail(
+  await sendBookingCancelledEmails(
     { name: booking.name, email: booking.email },
     {
       classTitle: booking.session.class.title,
       startsAt: booking.session.startsAt,
+    },
+    {
+      cancelledBy: options?.cancelledBy ?? "member",
+      cancellationType: booking.cancellationType,
+      creditRefunded: options?.creditRefunded,
     },
   );
 
@@ -284,7 +295,7 @@ export async function updateBookingStatus(
     if (existing.status === BOOKING_STATUS.cancelled) {
       return existing;
     }
-    return cancelBooking(bookingId);
+    return cancelBooking(bookingId, { cancelledBy: "admin" });
   }
 
   return db.booking.update({

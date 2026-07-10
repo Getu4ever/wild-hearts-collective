@@ -5,7 +5,7 @@ import { CANCELLATION_TYPE } from "@/lib/booking-advanced-config";
 import { refundCreditForCancellation } from "@/lib/credit-service";
 import { db } from "@/lib/db";
 import {
-  sendBookingCancelledEmail,
+  sendBookingCancelledEmails,
   sendBookingConfirmedEmails,
 } from "@/lib/email";
 
@@ -49,11 +49,16 @@ export async function removeBookingAsAdmin(
     creditRefunded = result.refunded;
   }
 
-  await sendBookingCancelledEmail(
+  await sendBookingCancelledEmails(
     { name: booking.name, email: booking.email },
     {
       classTitle: booking.session.class.title,
       startsAt: booking.session.startsAt,
+    },
+    {
+      cancelledBy: "admin",
+      cancellationType,
+      creditRefunded,
     },
   );
 

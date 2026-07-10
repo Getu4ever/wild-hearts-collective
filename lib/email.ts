@@ -200,28 +200,93 @@ export async function sendBookingPendingEmails(
   return sendBookingReceivedEmails(customer, session);
 }
 
+export async function sendBookingCancelledEmails(
+  customer: CustomerDetails,
+  session: SessionDetails,
+  meta?: {
+    cancelledBy?: "member" | "admin" | "system";
+    cancellationType?: string | null;
+    creditRefunded?: boolean;
+  },
+) {
+  const cancelledBy = meta?.cancelledBy ?? "member";
+  const cancelledByLabel =
+    cancelledBy === "admin"
+      ? "Studio admin"
+      : cancelledBy === "system"
+        ? "System"
+        : "Member";
+  const cancellationLabel =
+    meta?.cancellationType === "late_cancelled"
+      ? "Late cancellation (within 24 hours)"
+      : meta?.cancellationType === "on_time"
+        ? "On-time cancellation"
+        : meta?.cancellationType === "payment_expired"
+          ? "Unpaid booking expired"
+          : "Cancellation";
+  const creditLabel =
+    meta?.creditRefunded === true
+      ? "Yes — class credit returned"
+      : meta?.creditRefunded === false
+        ? "No"
+        : "—";
+
+  await Promise.all([
+    sendEmail({
+      to: customer.email,
+      subject: "Your Wild Hearts class booking was cancelled",
+      html: buildBrandedEmail({
+        previewText: `Your booking for ${session.classTitle} has been cancelled.`,
+        heading: "Booking cancelled",
+        bodyHtml: `
+          <p>Hi ${customer.name},</p>
+          <p>Your booking for the session below has been cancelled.</p>
+          ${sessionDetailBlock(session.classTitle, session.startsAt)}
+          <p>If this was unexpected, please contact us and we will be happy to help.</p>
+        `,
+        cta: {
+          label: "Book another class",
+          href: `${getAppBaseUrl()}/book`,
+        },
+      }),
+    }),
+    sendEmail({
+      to: getStudioEmail(),
+      subject: `Booking cancelled — ${customer.name}`,
+      html: buildBrandedEmail({
+        previewText: `${customer.name} cancelled ${session.classTitle}.`,
+        heading: "Booking cancelled",
+        bodyHtml: `
+          <p>A class booking has been cancelled.</p>
+          <p>
+            <strong>Member:</strong> ${customer.name}<br />
+            <strong>Email:</strong> ${customer.email}<br />
+            <strong>Cancelled by:</strong> ${cancelledByLabel}<br />
+            <strong>Type:</strong> ${cancellationLabel}<br />
+            <strong>Credit refunded:</strong> ${creditLabel}
+          </p>
+          ${sessionDetailBlock(session.classTitle, session.startsAt)}
+        `,
+        cta: {
+          label: "Open admin dashboard",
+          href: `${getAppBaseUrl()}/admin`,
+        },
+      }),
+    }),
+  ]);
+}
+
+/** @deprecated Use sendBookingCancelledEmails */
 export async function sendBookingCancelledEmail(
   customer: CustomerDetails,
   session: SessionDetails,
+  meta?: {
+    cancelledBy?: "member" | "admin" | "system";
+    cancellationType?: string | null;
+    creditRefunded?: boolean;
+  },
 ) {
-  await sendEmail({
-    to: customer.email,
-    subject: "Your Wild Hearts class booking was cancelled",
-    html: buildBrandedEmail({
-      previewText: `Your booking for ${session.classTitle} has been cancelled.`,
-      heading: "Booking cancelled",
-      bodyHtml: `
-        <p>Hi ${customer.name},</p>
-        <p>Your booking for the session below has been cancelled.</p>
-        ${sessionDetailBlock(session.classTitle, session.startsAt)}
-        <p>If this was unexpected, please contact us and we will be happy to help.</p>
-      `,
-      cta: {
-        label: "Book another class",
-        href: `${getAppBaseUrl()}/book`,
-      },
-    }),
-  });
+  return sendBookingCancelledEmails(customer, session, meta);
 }
 
 export async function sendSessionCancelledEmail(
@@ -615,4 +680,88 @@ export async function sendMembershipWelcomeEmails(
       }),
     }),
   ]);
+}
+
+type MembershipChangeDetails = {
+  cancelledBy?: "member" | "admin" | "system";
+  reason?: string | null;
+  immediate?: boolean;
+  finalAccessDate?: Date | null;
+  pauseStart?: Date | null;
+  resumeAt?: Date | null;
+};
+
+export async function sendMembershipCancelledAdminEmail(
+  customer: CustomerDetails,
+  details: MembershipChangeDetails = {},
+) {
+  const cancelledBy =
+    details.cancelledBy === "admin"
+      ? "Studio admin"
+      : details.cancelledBy === "system"
+        ? "System / Stripe"
+        : "Member";
+  const accessLabel = details.finalAccessDate
+    ? formatUkDateLong(details.finalAccessDate)
+    : "—";
+
+  await sendEmail({
+    to: getStudioEmail(),
+    subject: `Membership cancelled — ${customer.name}`,
+    html: buildBrandedEmail({
+      previewText: `${customer.name} cancelled their membership.`,
+      heading: "Membership cancelled",
+      bodyHtml: `
+        <p>A monthly membership has been cancelled.</p>
+        <p>
+          <strong>Member:</strong> ${customer.name}<br />
+          <strong>Email:</strong> ${customer.email}<br />
+          <strong>Cancelled by:</strong> ${cancelledBy}<br />
+          <strong>Immediate:</strong> ${details.immediate ? "Yes" : "No — ends at period end"}<br />
+          <strong>Final access:</strong> ${accessLabel}<br />
+          <strong>Reason:</strong> ${details.reason?.trim() || "—"}
+        </p>
+      `,
+      cta: {
+        label: "View members",
+        href: `${getAppBaseUrl()}/admin/members`,
+      },
+    }),
+  });
+}
+
+export async function sendMembershipPausedAdminEmail(
+  customer: CustomerDetails,
+  details: MembershipChangeDetails = {},
+) {
+  const pausedBy = details.cancelledBy === "admin" ? "Studio admin" : "Member";
+  const pauseLabel = details.pauseStart
+    ? formatUkDateLong(details.pauseStart)
+    : "—";
+  const resumeLabel = details.resumeAt
+    ? formatUkDateLong(details.resumeAt)
+    : "Open-ended";
+
+  await sendEmail({
+    to: getStudioEmail(),
+    subject: `Membership paused — ${customer.name}`,
+    html: buildBrandedEmail({
+      previewText: `${customer.name} paused their membership.`,
+      heading: "Membership paused",
+      bodyHtml: `
+        <p>A monthly membership has been paused.</p>
+        <p>
+          <strong>Member:</strong> ${customer.name}<br />
+          <strong>Email:</strong> ${customer.email}<br />
+          <strong>Paused by:</strong> ${pausedBy}<br />
+          <strong>Pause start:</strong> ${pauseLabel}<br />
+          <strong>Resume date:</strong> ${resumeLabel}
+        </p>
+      `,
+      cta: {
+        label: "View members",
+        href: `${getAppBaseUrl()}/admin/members`,
+      },
+    }),
+  });
 }

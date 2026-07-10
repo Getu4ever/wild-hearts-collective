@@ -1,6 +1,10 @@
 import { logAdminAction } from "@/lib/admin-audit";
 import { MEMBERSHIP_EVENT_TYPE } from "@/lib/profile-config";
 import { MEMBERSHIP_PLAN, MEMBERSHIP_STATUS } from "@/lib/membership-config";
+import {
+  notifyAdminOfMembershipCancelled,
+  notifyAdminOfMembershipPaused,
+} from "@/lib/member-notifications";
 import { db } from "@/lib/db";
 import { getStripeClient } from "@/lib/stripe";
 
@@ -75,6 +79,14 @@ export async function pauseMemberMembership(input: {
       details: { pauseStart: input.pauseStart, resumeAt: input.resumeAt ?? null },
     });
   }
+
+  await notifyAdminOfMembershipPaused({
+    name: updated.name,
+    email: updated.email,
+    pausedBy: input.createdBy === "admin" ? "admin" : "member",
+    pauseStart: input.pauseStart,
+    resumeAt: input.resumeAt ?? null,
+  });
 
   return updated;
 }
@@ -169,6 +181,15 @@ export async function cancelMemberMembership(input: {
       details: { immediate: Boolean(input.immediate), reason: input.reason ?? null },
     });
   }
+
+  await notifyAdminOfMembershipCancelled({
+    name: updated.name,
+    email: updated.email,
+    cancelledBy: input.createdBy === "admin" ? "admin" : "member",
+    reason: input.reason,
+    immediate: Boolean(input.immediate),
+    finalAccessDate,
+  });
 
   return { user: updated, finalAccessDate };
 }
