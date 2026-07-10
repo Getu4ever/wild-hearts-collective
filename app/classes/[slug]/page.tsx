@@ -4,6 +4,7 @@ import { ClassDetailContent } from "@/app/components/class-detail-content";
 import { PageHero } from "@/app/components/page-hero";
 import { classes } from "@/lib/site-data";
 import { classSlugToHero } from "@/lib/hero-images";
+import { getClassVideo } from "@/lib/site-videos";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -36,6 +37,7 @@ export default async function ClassDetailPage({ params }: PageProps) {
   }
 
   const heroImage = classSlugToHero[classItem.slug] ?? classItem.imageKey;
+  const video = getClassVideo(classItem.slug);
 
   return (
     <>
@@ -45,7 +47,14 @@ export default async function ClassDetailPage({ params }: PageProps) {
         image={heroImage}
       />
 
-      <ClassDetailContent classItem={classItem} />
+      <ClassDetailContent
+        classItem={{
+          ...classItem,
+          imageKey: heroImage,
+          videoSrc: video?.src,
+          videoTitle: video?.title,
+        }}
+      />
     </>
   );
 }

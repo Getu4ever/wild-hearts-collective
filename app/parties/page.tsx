@@ -4,6 +4,7 @@ import { ContentSection } from "@/app/components/content-section";
 import { IntroSection } from "@/app/components/intro-section";
 import { PageHero } from "@/app/components/page-hero";
 import { SectionHeading } from "@/app/components/section-heading";
+import { getSiteVideo } from "@/lib/site-videos";
 
 export const metadata: Metadata = {
   title: "Parties & Events",
@@ -30,6 +31,8 @@ const packages = [
 ];
 
 export default function PartiesPage() {
+  const partyVideo = getSiteVideo("parties");
+
   return (
     <>
       <PageHero
@@ -42,6 +45,8 @@ export default function PartiesPage() {
         title="Party packages"
         imageKey="parties"
         imageAlt="Children's party at Wild Hearts Collective"
+        videoSrc={partyVideo.src}
+        videoTitle={partyVideo.title}
       >
         <p>
           Add something unique to your next celebration. Our party packages

@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ClassCard } from "@/app/components/class-card";
 import { ContentSection } from "@/app/components/content-section";
+import { FeatureVideo } from "@/app/components/feature-video";
 import { PageHero } from "@/app/components/page-hero";
 import { SectionHeading } from "@/app/components/section-heading";
 import { BookButton } from "@/app/components/book-button";
 import { classes, siteConfig } from "@/lib/site-data";
 import { classSlugToHero, type HeroImageKey } from "@/lib/hero-images";
+import { getSiteVideo } from "@/lib/site-videos";
 
 function getClassHeroKey(slug: string): HeroImageKey {
   return classSlugToHero[slug] ?? "community";
@@ -19,6 +21,8 @@ export const metadata: Metadata = {
 };
 
 export default function ClassesPage() {
+  const overviewVideo = getSiteVideo("services");
+
   return (
     <>
       <PageHero
@@ -55,6 +59,50 @@ export default function ClassesPage() {
             </li>
           ))}
         </ul>
+      </ContentSection>
+
+      <ContentSection className="bg-pink-soft">
+        <div className="grid items-start gap-12 lg:grid-cols-2 lg:gap-16">
+          <div>
+            <SectionHeading
+              title="See what we offer"
+              subtitle="A quick look inside the studio"
+            />
+            <div className="mt-6 max-w-xl space-y-5 text-base leading-relaxed text-foreground">
+              <p>
+                From first-time pole and aerial sessions to creative arts
+                workshops, Wild Hearts Collective is built for every body and
+                every pace. Watch a short overview of the classes and creative
+                sessions waiting for you in Mansfield.
+              </p>
+              <p>
+                Our qualified instructors teach with patience, clear
+                progressions, and a body-positive approach — so you can build
+                strength, confidence, and community without pressure.
+              </p>
+              <p className="text-sm text-muted">
+                Prefer to dive straight in? Explore each class above, or{" "}
+                <Link
+                  href="/book"
+                  className="font-medium text-plum hover:text-pink hover:underline"
+                >
+                  book a session
+                </Link>{" "}
+                when you are ready.
+              </p>
+            </div>
+            <div className="mt-8">
+              <BookButton>Book a class</BookButton>
+            </div>
+          </div>
+
+          <FeatureVideo
+            src={overviewVideo.src}
+            poster={overviewVideo.poster}
+            title={overviewVideo.title}
+            aspectClassName="aspect-video"
+          />
+        </div>
       </ContentSection>
     </>
   );

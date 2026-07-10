@@ -4,6 +4,7 @@ import {
   ContentSection,
   ProseBlock,
 } from "@/app/components/content-section";
+import { FeatureVideo } from "@/app/components/feature-video";
 import { SectionHeading } from "@/app/components/section-heading";
 import { BookButton } from "@/app/components/book-button";
 import type { HeroImageKey } from "@/lib/hero-images";
@@ -22,9 +23,13 @@ export type ClassDetailData = {
   whatToWear: string;
   whoFor: string;
   imageKey: HeroImageKey;
+  videoSrc?: string;
+  videoTitle?: string;
 };
 
 export function ClassDetailContent({ classItem }: { classItem: ClassDetailData }) {
+  const poster = heroImages[classItem.imageKey];
+
   return (
     <>
       <ContentSection>
@@ -40,19 +45,28 @@ export function ClassDetailContent({ classItem }: { classItem: ClassDetailData }
             </div>
           </div>
 
-          <div className="relative aspect-[4/3] overflow-hidden rounded-lg shadow-lg ring-1 ring-plum/10">
-            <Image
-              src={heroImages[classItem.imageKey]}
-              alt={classItem.title}
-              fill
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              className="object-cover"
+          {classItem.videoSrc ? (
+            <FeatureVideo
+              src={classItem.videoSrc}
+              poster={poster}
+              title={classItem.videoTitle ?? classItem.title}
+              aspectClassName="aspect-[4/3]"
             />
-            <div
-              aria-hidden="true"
-              className="absolute inset-0 bg-gradient-to-t from-plum/50 via-transparent to-transparent"
-            />
-          </div>
+          ) : (
+            <div className="relative aspect-[4/3] overflow-hidden rounded-lg shadow-lg ring-1 ring-plum/10">
+              <Image
+                src={poster}
+                alt={classItem.title}
+                fill
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="object-cover"
+              />
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 bg-gradient-to-t from-plum/50 via-transparent to-transparent"
+              />
+            </div>
+          )}
         </div>
       </ContentSection>
 
