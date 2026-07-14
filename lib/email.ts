@@ -804,6 +804,8 @@ type ShopGiftOrderLine = {
   giftCode: string;
   priceLabel: string;
   quantity: number;
+  /** Public path under the site, e.g. /shop/art-kit-class-bundle.svg */
+  image?: string;
 };
 
 type ShopGiftVoucherDetails = {
@@ -818,18 +820,46 @@ export async function sendShopGiftVoucherEmail(
   customer: CustomerDetails,
   voucher: ShopGiftVoucherDetails,
 ) {
+  const baseUrl = getAppBaseUrl();
   const itemRows = voucher.lines
-    .map(
-      (line) => `
-        <p style="margin: 0 0 12px;">
-          <strong>${line.quantity}× ${line.productName}</strong><br />
-          ${line.priceLabel} each<br />
-          Gift code:
-          <span style="font-size: 16px; letter-spacing: 0.08em; font-weight: 700;">
-            ${line.giftCode}
-          </span>
-        </p>`,
-    )
+    .map((line) => {
+      const imagePath = line.image?.startsWith("/")
+        ? line.image
+        : line.image
+          ? `/${line.image}`
+          : null;
+      const imageUrl = imagePath ? `${baseUrl}${imagePath}` : null;
+      const imageCell = imageUrl
+        ? `<td style="width:72px;padding:0 14px 0 0;vertical-align:top;">
+            <img
+              src="${imageUrl}"
+              alt=""
+              width="72"
+              height="72"
+              style="display:block;width:72px;height:72px;object-fit:cover;border-radius:6px;border:1px solid #e8dfd4;background:#F6F2EC;"
+            />
+          </td>`
+        : "";
+
+      return `
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width:100%;margin:0 0 16px;">
+          <tr>
+            ${imageCell}
+            <td style="vertical-align:top;padding:0;">
+              <p style="margin:0 0 4px;">
+                <strong>${line.quantity}× ${line.productName}</strong>
+              </p>
+              <p style="margin:0 0 4px;">${line.priceLabel} each</p>
+              <p style="margin:0;">
+                Gift code:
+                <span style="font-size:16px;letter-spacing:0.08em;font-weight:700;">
+                  ${line.giftCode}
+                </span>
+              </p>
+            </td>
+          </tr>
+        </table>`;
+    })
     .join("");
 
   const summary = voucher.lines

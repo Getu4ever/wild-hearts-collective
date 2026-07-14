@@ -20,6 +20,8 @@ type FulfilledLine = {
   giftCode: string;
   priceLabel: string;
   quantity: number;
+  /** Public path under the site, e.g. /shop/art-kit-class-bundle.svg */
+  image?: string;
 };
 
 function parseCartMetadata(session: Stripe.Checkout.Session): CartMetaItem[] {
@@ -108,6 +110,7 @@ export async function fulfillShopVoucherCheckout(sessionInput: Stripe.Checkout.S
       giftCode: generateGiftCode(),
       priceLabel: formatMoneyFromPence(pricePence),
       quantity,
+      image: product?.image,
     });
   }
 
