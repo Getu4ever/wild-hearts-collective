@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="Carabiners">
+  <defs>
+    <linearGradient id="bg-professional-carabiners" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ebe4da"/>
+      <stop offset="100%" stop-color="#f8f5f0"/>
+    </linearGradient>
+    <linearGradient id="sheen-professional-carabiners" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4"/>
+      <stop offset="60%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="soft-professional-carabiners" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#4a433c" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg-professional-carabiners)"/>
+  <rect width="800" height="600" fill="url(#sheen-professional-carabiners)"/>
+  <circle cx="700" cy="60" r="140" fill="#6b5f54" fill-opacity="0.14"/>
+  <circle cx="40" cy="540" r="110" fill="#6b5f54" fill-opacity="0.1"/>
+  <g filter="url(#soft-professional-carabiners)" transform="translate(0, 40)">
+    <g transform="translate(300,80)"><path d="M45 20 C10 20 0 55 0 100 C0 155 28 190 60 190 C92 190 120 155 120 100 C120 55 110 20 75 20" fill="none" stroke="#6b5f54" stroke-width="20" stroke-linecap="round"/>
+      <path d="M45 20 L75 20" fill="none" stroke="#8a8178" stroke-width="16" stroke-linecap="round"/><rect x="52" y="6" width="16" height="45" rx="4" fill="#8a9a85"/></g>
+      <g transform="translate(420,120) rotate(28)"><path d="M35 15 C8 15 0 45 0 80 C0 125 22 155 50 155 C78 155 100 125 100 80 C100 45 92 15 65 15" fill="none" stroke="#8a8178" stroke-width="16" stroke-linecap="round"/></g>
+  </g>
+</svg>

@@ -14,6 +14,7 @@ import {
   activateMembershipFromSubscription,
   syncMembershipFromStripeSubscription,
 } from "@/lib/membership-stripe";
+import { fulfillShopVoucherCheckout } from "@/lib/shop-checkout";
 import { getStripeClient, verifyStripeWebhook } from "@/lib/stripe";
 
 async function refundCheckoutPayment(session: Stripe.Checkout.Session) {
@@ -83,6 +84,12 @@ export async function POST(request: Request) {
           session.id,
         );
       }
+    } else if (session.metadata?.type === "shop_voucher") {
+      try {
+        await fulfillShopVoucherCheckout(session);
+      } catch (error) {
+        console.error("Failed to fulfill shop voucher checkout:", error);
+      }
     } else {
       const bookingId =
         session.metadata?.bookingId ?? session.client_reference_id ?? undefined;
@@ -116,7 +123,12 @@ export async function POST(request: Request) {
     const bookingId =
       session.metadata?.bookingId ?? session.client_reference_id ?? undefined;
 
-    if (bookingId && session.metadata?.type !== "class_pack" && session.metadata?.type !== "membership") {
+    if (
+      bookingId &&
+      session.metadata?.type !== "class_pack" &&
+      session.metadata?.type !== "membership" &&
+      session.metadata?.type !== "shop_voucher"
+    ) {
       await cancelPendingBookingForExpiredCheckout(bookingId);
     }
   }

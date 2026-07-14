@@ -81,6 +81,29 @@ body {
   .animate-page-enter {
     animation: none;
   }
+
+  .animate-basket-bump {
+    animation: none;
+  }
+}
+
+@keyframes basket-bump {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.14);
+  }
+  70% {
+    transform: scale(0.96);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-basket-bump {
+  animation: basket-bump 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Tint header logo to soft sage green */

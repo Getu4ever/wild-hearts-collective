@@ -37,6 +37,7 @@ export const navLinks = [
   { href: "/community", label: "Community" },
   { href: "/parties", label: "Parties" },
   { href: "/hire", label: "Hire" },
+  { href: "/shop", label: "Shop" },
   { href: "/contact", label: "Contact" },
   { href: "/book", label: "Book" },
 ];
@@ -47,6 +48,7 @@ export const mainNavLinks = [
   { href: "/community", label: "Community" },
   { href: "/parties", label: "Parties" },
   { href: "/hire", label: "Hire" },
+  { href: "/shop", label: "Shop" },
   { href: "/contact", label: "Contact" },
 ];
 
@@ -86,6 +88,7 @@ export const footerQuickLinks = [
   { href: "/about", label: "About Us" },
   { href: "/classes", label: "Our Classes" },
   { href: "/membership", label: "Membership" },
+  { href: "/shop", label: "Shop" },
   { href: "/book", label: "Book a Class" },
   { href: "/community", label: "Community Hub" },
   { href: "/faqs", label: "FAQs" },

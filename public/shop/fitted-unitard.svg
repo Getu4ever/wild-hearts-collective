@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="Unitard">
+  <defs>
+    <linearGradient id="bg-fitted-unitard" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f5e6e9"/>
+      <stop offset="100%" stop-color="#eef2ec"/>
+    </linearGradient>
+    <linearGradient id="sheen-fitted-unitard" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4"/>
+      <stop offset="60%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="soft-fitted-unitard" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#4a433c" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg-fitted-unitard)"/>
+  <rect width="800" height="600" fill="url(#sheen-fitted-unitard)"/>
+  <circle cx="700" cy="60" r="140" fill="#d58a94" fill-opacity="0.14"/>
+  <circle cx="40" cy="540" r="110" fill="#d58a94" fill-opacity="0.1"/>
+  <g filter="url(#soft-fitted-unitard)" transform="translate(0, 40)">
+    <ellipse cx="400" cy="75" rx="30" ry="34" fill="#6b5f54"/>
+      <path d="M350 105 L450 105 L468 220 L480 360 L412 360 L400 230 L388 360 L320 360 L332 220 Z" fill="#4a433c"/>
+      <path d="M350 105 C320 130 308 170 315 210" fill="none" stroke="#4a433c" stroke-width="24" stroke-linecap="round"/>
+      <path d="M450 105 C480 130 492 170 485 210" fill="none" stroke="#4a433c" stroke-width="24" stroke-linecap="round"/>
+      <path d="M365 150 Q400 175 435 150" fill="none" stroke="#d58a94" stroke-width="5" opacity="0.75"/>
+  </g>
+</svg>

@@ -11,7 +11,8 @@ export type HeroImageKey =
   | "hire"
   | "contact"
   | "faqs"
-  | "terms";
+  | "terms"
+  | "shop";
 
 export const heroImages: Record<HeroImageKey, string> = {
   home: "/hero/hero-home.jpg",
@@ -27,6 +28,7 @@ export const heroImages: Record<HeroImageKey, string> = {
   contact: "/hero/hero-contact.jpg",
   faqs: "/hero/hero-faqs.jpg",
   terms: "/hero/hero-terms.jpg",
+  shop: "/hero/hero-shop.jpg",
 };
 
 export const classSlugToHero: Record<string, HeroImageKey> = {

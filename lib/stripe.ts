@@ -131,3 +131,66 @@ export async function createClassPackCheckoutSession(pack: ClassPackCheckout) {
     return_url: `${baseUrl}/account/credits/success?purchase=${pack.purchaseId}&session_id={CHECKOUT_SESSION_ID}`,
   });
 }
+
+type ShopVoucherCheckoutItem = {
+  productId: string;
+  productName: string;
+  productSlug: string;
+  pricePence: number;
+  description: string;
+  quantity: number;
+};
+
+/**
+ * Hosted Stripe Checkout for one or more digital gift vouchers.
+ * No shipping — digital delivery only.
+ */
+export async function createShopVoucherCheckoutSession(
+  items: ShopVoucherCheckoutItem[],
+) {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new Error("Stripe is not configured.");
+  }
+
+  if (items.length === 0) {
+    throw new Error("Basket is empty.");
+  }
+
+  const stripe = getStripeClient();
+  const baseUrl = getAppBaseUrl();
+  const summary = items
+    .map((item) => `${item.quantity}× ${item.productName}`)
+    .join(", ");
+
+  return stripe.checkout.sessions.create({
+    mode: "payment",
+    billing_address_collection: "auto",
+    customer_creation: "if_required",
+    metadata: {
+      type: "shop_voucher",
+      emailDelivered: "false",
+      // Stripe metadata values max 500 chars — keep a compact cart payload.
+      cart: JSON.stringify(
+        items.map((item) => ({
+          id: item.productId,
+          q: item.quantity,
+          n: item.productName.slice(0, 40),
+        })),
+      ),
+      productName: summary.slice(0, 450),
+    },
+    line_items: items.map((item) => ({
+      quantity: item.quantity,
+      price_data: {
+        currency: "gbp",
+        unit_amount: item.pricePence,
+        product_data: {
+          name: item.productName,
+          description: `${item.description} — Digital delivery by email (no shipping).`,
+        },
+      },
+    })),
+    success_url: `${baseUrl}/shop/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${baseUrl}/shop?cancelled=1`,
+  });
+}

@@ -798,3 +798,94 @@ export async function sendMembershipPausedAdminEmail(
     }),
   });
 }
+
+type ShopGiftOrderLine = {
+  productName: string;
+  giftCode: string;
+  priceLabel: string;
+  quantity: number;
+};
+
+type ShopGiftVoucherDetails = {
+  lines: ShopGiftOrderLine[];
+  totalLabel: string;
+  shopUrl: string;
+  bookUrl: string;
+};
+
+/** Digital delivery email for shop gift vouchers / e-gift cards. */
+export async function sendShopGiftVoucherEmail(
+  customer: CustomerDetails,
+  voucher: ShopGiftVoucherDetails,
+) {
+  const itemRows = voucher.lines
+    .map(
+      (line) => `
+        <p style="margin: 0 0 12px;">
+          <strong>${line.quantity}× ${line.productName}</strong><br />
+          ${line.priceLabel} each<br />
+          Gift code:
+          <span style="font-size: 16px; letter-spacing: 0.08em; font-weight: 700;">
+            ${line.giftCode}
+          </span>
+        </p>`,
+    )
+    .join("");
+
+  const summary = voucher.lines
+    .map((line) => `${line.quantity}× ${line.productName}`)
+    .join(", ");
+
+  await Promise.all([
+    sendEmail({
+      to: customer.email,
+      subject:
+        voucher.lines.length === 1
+          ? `Your ${voucher.lines[0].productName} is ready`
+          : "Your Wild Hearts gift vouchers are ready",
+      html: buildBrandedEmail({
+        previewText: `Digital gift delivery — ${summary}`,
+        heading: "Digital gift delivered",
+        bodyHtml: `
+          <p>Hi ${customer.name},</p>
+          <p>
+            Thank you for your purchase from the Wild Hearts Collective shop.
+            Your digital voucher${voucher.lines.length === 1 ? " has" : "s have"} been
+            delivered by email — no shipping required.
+          </p>
+          ${itemRows}
+          <p><strong>Order total:</strong> ${voucher.totalLabel}</p>
+          <p>
+            Present these codes when booking, or contact the studio if you are gifting
+            them to someone else. We cannot wait to welcome you (or your recipient) in.
+          </p>
+        `,
+        cta: {
+          label: "Book a class",
+          href: voucher.bookUrl,
+        },
+      }),
+    }),
+    sendEmail({
+      to: getStudioEmail(),
+      subject: `Shop voucher order — ${summary}`.slice(0, 120),
+      html: buildBrandedEmail({
+        previewText: `${customer.name} purchased ${summary}`,
+        heading: "Shop voucher purchase",
+        bodyHtml: `
+          <p>A digital shop order was purchased and emailed to the buyer.</p>
+          <p>
+            <strong>Buyer:</strong> ${customer.name}<br />
+            <strong>Email:</strong> ${customer.email}<br />
+            <strong>Total:</strong> ${voucher.totalLabel}
+          </p>
+          ${itemRows}
+        `,
+        cta: {
+          label: "View shop",
+          href: voucher.shopUrl,
+        },
+      }),
+    }),
+  ]);
+}

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="Art Kit Bundle">
+  <defs>
+    <linearGradient id="bg-art-kit-class-bundle" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8f5f0"/>
+      <stop offset="100%" stop-color="#f5e6e9"/>
+    </linearGradient>
+    <linearGradient id="sheen-art-kit-class-bundle" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4"/>
+      <stop offset="60%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="soft-art-kit-class-bundle" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#4a433c" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg-art-kit-class-bundle)"/>
+  <rect width="800" height="600" fill="url(#sheen-art-kit-class-bundle)"/>
+  <circle cx="700" cy="60" r="140" fill="#d58a94" fill-opacity="0.14"/>
+  <circle cx="40" cy="540" r="110" fill="#d58a94" fill-opacity="0.1"/>
+  <g filter="url(#soft-art-kit-class-bundle)" transform="translate(0, 40)">
+    <rect x="240" y="90" width="170" height="220" rx="10" fill="#fffcf9" stroke="#d58a94" stroke-width="2"/>
+      <rect x="260" y="115" width="130" height="90" rx="6" fill="#f5e6e9"/>
+      <circle cx="305" cy="155" r="22" fill="#d58a94" fill-opacity="0.75"/><circle cx="340" cy="170" r="16" fill="#8a9a85" fill-opacity="0.75"/>
+      <rect x="270" y="230" width="110" height="12" rx="3" fill="#ebe4da"/><rect x="270" y="255" width="80" height="12" rx="3" fill="#ebe4da"/>
+      <rect x="450" y="120" width="32" height="170" rx="5" fill="#d58a94"/><rect x="495" y="145" width="32" height="145" rx="5" fill="#8a9a85"/><rect x="540" y="170" width="32" height="120" rx="5" fill="#6b5f54"/>
+      <polygon points="466,120 466,95 495,120" fill="#c27580"/>
+  </g>
+</svg>

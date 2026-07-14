@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" role="img" aria-label="Dust Mask">
+  <defs>
+    <linearGradient id="bg-dust-mask" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ebe4da"/>
+      <stop offset="100%" stop-color="#f8f5f0"/>
+    </linearGradient>
+    <linearGradient id="sheen-dust-mask" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4"/>
+      <stop offset="60%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="soft-dust-mask" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#4a433c" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg-dust-mask)"/>
+  <rect width="800" height="600" fill="url(#sheen-dust-mask)"/>
+  <circle cx="700" cy="60" r="140" fill="#6b5f54" fill-opacity="0.14"/>
+  <circle cx="40" cy="540" r="110" fill="#6b5f54" fill-opacity="0.1"/>
+  <g filter="url(#soft-dust-mask)" transform="translate(0, 40)">
+    <ellipse cx="400" cy="190" rx="135" ry="90" fill="#fffcf9" stroke="#8a8178" stroke-width="5"/>
+      <path d="M265 165 Q215 140 190 115" fill="none" stroke="#8a8178" stroke-width="7" stroke-linecap="round"/>
+      <path d="M535 165 Q585 140 610 115" fill="none" stroke="#8a8178" stroke-width="7" stroke-linecap="round"/>
+      <path d="M265 215 Q215 245 190 275" fill="none" stroke="#8a8178" stroke-width="7" stroke-linecap="round"/>
+      <path d="M535 215 Q585 245 610 275" fill="none" stroke="#8a8178" stroke-width="7" stroke-linecap="round"/>
+      <ellipse cx="400" cy="205" rx="55" ry="35" fill="#eef2ec"/>
+  </g>
+</svg>
