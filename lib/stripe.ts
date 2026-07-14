@@ -136,6 +136,8 @@ type ShopVoucherCheckoutItem = {
   productId: string;
   productName: string;
   productSlug: string;
+  /** Public path under the site, e.g. /shop/art-kit-class-bundle.svg */
+  image: string;
   pricePence: number;
   description: string;
   quantity: number;
@@ -187,6 +189,8 @@ export async function createShopVoucherCheckoutSession(
         product_data: {
           name: item.productName,
           description: `${item.description} — Digital delivery by email (no shipping).`,
+          // Stripe needs absolute, publicly reachable HTTPS URLs.
+          images: [`${baseUrl}${item.image.startsWith("/") ? item.image : `/${item.image}`}`],
         },
       },
     })),

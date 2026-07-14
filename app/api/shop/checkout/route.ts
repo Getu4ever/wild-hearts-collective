@@ -70,6 +70,7 @@ export async function POST(request: Request) {
       productId: product.id,
       productName: product.name,
       productSlug: product.slug,
+      image: product.image,
       pricePence: product.pricePence,
       description: product.description,
       quantity,
