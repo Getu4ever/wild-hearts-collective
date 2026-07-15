@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { formatMoneyFromPence } from "@/lib/booking-config";
 import { fulfillPendingClassPackPurchase } from "@/lib/credit-service";
 import { getMemberSession } from "@/lib/member-auth";
 import { getMemberCreditsOverview } from "@/lib/member-credits-service";
@@ -23,7 +24,7 @@ export default async function CreditsSuccessPage({ searchParams }: SuccessPagePr
   let purchase = purchaseId
     ? await db.classPackPurchase.findFirst({
         where: { id: purchaseId, userId: session.userId },
-        include: { pack: true },
+        include: { pack: true, giftCard: { select: { code: true } } },
       })
     : null;
 
@@ -31,19 +32,23 @@ export default async function CreditsSuccessPage({ searchParams }: SuccessPagePr
     await fulfillPendingClassPackPurchase(purchaseId!, undefined, stripeSessionId);
     purchase = await db.classPackPurchase.findFirst({
       where: { id: purchaseId, userId: session.userId },
-      include: { pack: true },
+      include: { pack: true, giftCard: { select: { code: true } } },
     });
   }
 
   const overview = await getMemberCreditsOverview(session.userId);
   const isFulfilled = purchase?.status === "active";
+  const giftApplied =
+    purchase?.giftAmountApplied && purchase.giftAmountApplied > 0
+      ? formatMoneyFromPence(purchase.giftAmountApplied)
+      : null;
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
       <div className="overflow-hidden rounded-2xl border border-plum/10 bg-surface shadow-sm">
         <div className="bg-gradient-to-r from-sage to-sage/80 px-8 py-6 text-white">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-pink-light">
-            {isFulfilled ? "Payment complete" : "Processing payment"}
+            {isFulfilled ? "Purchase complete" : "Processing payment"}
           </p>
           <h1 className="mt-2 font-display text-4xl">
             {isFulfilled ? "Credits added" : "Thank you"}
@@ -70,6 +75,12 @@ export default async function CreditsSuccessPage({ searchParams }: SuccessPagePr
                   </>
                 )}
               </p>
+              {giftApplied ? (
+                <p className="rounded-lg bg-pink-soft/50 px-4 py-3 text-sm text-plum">
+                  Gift card applied: <strong>{giftApplied}</strong>
+                  {purchase.giftCard?.code ? ` (${purchase.giftCard.code})` : ""}.
+                </p>
+              ) : null}
               <p className="rounded-lg bg-pink-soft/50 px-4 py-3 text-sm text-plum">
                 Current balance: <strong>{overview.balance}</strong>{" "}
                 {overview.balance === 1 ? "credit" : "credits"}

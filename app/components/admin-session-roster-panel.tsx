@@ -14,6 +14,9 @@ type RosterBooking = {
   status: string;
   attendance: string | null;
   paidWithCredit: boolean;
+  giftAmountApplied?: number | null;
+  voucherId?: string | null;
+  amountPaid?: number | null;
   user: {
     id: string;
     parQCompleted: boolean;
@@ -113,7 +116,13 @@ export function AdminSessionRosterPanel({
                       />
                     </td>
                     <td className="px-4 py-4 text-muted">
-                      {booking.paidWithCredit ? "Credit used" : "Paid in full"}
+                      {booking.paidWithCredit
+                        ? "Credit used"
+                        : booking.giftAmountApplied && booking.giftAmountApplied > 0
+                          ? "Gift card"
+                          : booking.voucherId
+                            ? "Reward voucher"
+                            : "Paid in full"}
                       {booking.user && (
                         <p className="mt-1 text-xs">
                           Balance: {booking.user.creditsRemaining}

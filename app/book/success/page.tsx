@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentSection } from "@/app/components/content-section";
 import { PageHero } from "@/app/components/page-hero";
-import { BOOKING_STATUS, formatSessionDateTime } from "@/lib/booking-config";
+import {
+  BOOKING_STATUS,
+  formatMoneyFromPence,
+  formatSessionDateTime,
+} from "@/lib/booking-config";
 import { finalizeBookingPayment } from "@/lib/booking-payment";
 import { db } from "@/lib/db";
 
@@ -21,7 +25,10 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
   let booking = bookingId
     ? await db.booking.findUnique({
         where: { id: bookingId },
-        include: { session: { include: { class: true } } },
+        include: {
+          session: { include: { class: true } },
+          giftCard: { select: { code: true, balancePence: true } },
+        },
       })
     : null;
 
@@ -33,10 +40,34 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
       });
     }
 
-    booking = await finalizeBookingPayment(booking.id);
+    const finalized = await finalizeBookingPayment(booking.id);
+    if (finalized) {
+      booking = await db.booking.findUnique({
+        where: { id: booking.id },
+        include: {
+          session: { include: { class: true } },
+          giftCard: { select: { code: true, balancePence: true } },
+        },
+      });
+    }
   }
 
   const isConfirmed = booking?.status === BOOKING_STATUS.confirmed;
+
+  let paymentNote: string | null = null;
+  if (booking?.paidWithCredit) {
+    paymentNote = "Paid with 1 class credit.";
+  } else if (booking?.giftAmountApplied && booking.giftAmountApplied > 0) {
+    paymentNote = `Paid with gift card (${formatMoneyFromPence(booking.giftAmountApplied)} applied)${
+      booking.amountPaid && booking.amountPaid > 0
+        ? ` plus ${formatMoneyFromPence(booking.amountPaid)} card payment`
+        : ""
+    }.`;
+  } else if (booking?.voucherId) {
+    paymentNote = "Paid with a reward voucher.";
+  } else if (isConfirmed && booking.amountPaid != null) {
+    paymentNote = `Amount paid: ${formatMoneyFromPence(booking.amountPaid)}.`;
+  }
 
   return (
     <>
@@ -69,6 +100,11 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
                 on {formatSessionDateTime(booking.session.startsAt)}{" "}
                 {isConfirmed ? "is confirmed." : "is being processed."}
               </p>
+              {paymentNote ? (
+                <p className="mt-4 rounded-sm bg-pink-soft px-4 py-3 text-sm text-plum">
+                  {paymentNote}
+                </p>
+              ) : null}
               {isConfirmed ? (
                 <p className="mt-4 text-sm text-muted">
                   A confirmation email has been sent to you and the studio. Please arrive

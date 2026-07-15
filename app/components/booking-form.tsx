@@ -25,6 +25,22 @@ type BookingConfig = {
   emailEnabled: boolean;
 };
 
+type BookingResult = {
+  type: "booking" | "waitlist";
+  id: string;
+  name: string;
+  email: string;
+  classTitle: string;
+  startsAt: string;
+  status?: string;
+  paymentSkipped?: boolean;
+  paidWithCredit?: boolean;
+  voucherApplied?: boolean;
+  giftCardApplied?: boolean;
+  giftAmountAppliedLabel?: string;
+  giftBalanceRemainingLabel?: string;
+};
+
 type PendingPayment = {
   clientSecret: string;
   booking: {
@@ -35,17 +51,8 @@ type PendingPayment = {
     startsAt: string;
     classPriceLabel: string;
   };
-};
-
-type BookingResult = {
-  type: "booking" | "waitlist";
-  id: string;
-  name: string;
-  email: string;
-  classTitle: string;
-  startsAt: string;
-  status?: string;
-  paymentSkipped?: boolean;
+  giftAmountAppliedLabel?: string;
+  giftBalanceRemainingLabel?: string;
 };
 
 type MemberProfile = {
@@ -247,12 +254,16 @@ export function BookingForm() {
             startsAt: data.startsAt,
             classPriceLabel: data.classPriceLabel ?? data.depositLabel ?? priceNote,
           },
+          giftAmountAppliedLabel: data.giftAmountAppliedLabel,
+          giftBalanceRemainingLabel: data.giftBalanceRemainingLabel,
         });
         return;
       }
 
       setResult(data as BookingResult);
       setNotes("");
+      setVoucherCode("");
+      setUseCredit(false);
       if (!member) {
         setContact({ name: "", email: "", phone: "" });
       }
@@ -278,9 +289,9 @@ export function BookingForm() {
               Pay for your class
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
-              Complete payment below within 10 minutes to secure your place. The
-              lesson will be cancelled without notice if payment is not completed
-              in time.
+              {pendingPayment.giftAmountAppliedLabel
+                ? `Your gift card covered ${pendingPayment.giftAmountAppliedLabel}. Complete the remaining payment below within 10 minutes to secure your place.`
+                : "Complete payment below within 10 minutes to secure your place. The lesson will be cancelled without notice if payment is not completed in time."}
             </p>
           </div>
 
@@ -293,8 +304,19 @@ export function BookingForm() {
               <p className="mt-1 text-sm text-muted">
                 {date.weekday}, {date.shortDate} · {date.time}
               </p>
+              {pendingPayment.giftAmountAppliedLabel && (
+                <p className="mt-2 text-sm text-muted">
+                  Gift card applied:{" "}
+                  <strong className="text-foreground">
+                    {pendingPayment.giftAmountAppliedLabel}
+                  </strong>
+                  {pendingPayment.giftBalanceRemainingLabel
+                    ? ` · ${pendingPayment.giftBalanceRemainingLabel} left on code`
+                    : null}
+                </p>
+              )}
               <p className="mt-2 text-sm text-muted">
-                Amount due:{" "}
+                Amount due now:{" "}
                 <strong className="text-foreground">{pendingPayment.booking.classPriceLabel}</strong>
               </p>
             </div>
@@ -344,6 +366,32 @@ export function BookingForm() {
   if (result) {
     const date = formatSessionDate(result.startsAt);
     const isWaitlist = result.type === "waitlist";
+    const isPaidWithoutCard =
+      Boolean(result.paidWithCredit) ||
+      Boolean(result.voucherApplied) ||
+      Boolean(result.giftCardApplied) ||
+      Boolean(result.paymentSkipped) ||
+      result.status === "confirmed";
+
+    let statusMessage = `Complete payment within 10 minutes. The lesson will be cancelled without notice if unpaid. We will email ${result.email} once payment is complete.`;
+
+    if (isWaitlist) {
+      statusMessage = `We have recorded ${result.email} on the waitlist.`;
+    } else if (result.paidWithCredit) {
+      statusMessage = `Your booking is confirmed — paid with 1 class credit. A confirmation email has been sent to ${result.email}.`;
+    } else if (result.giftCardApplied) {
+      const applied = result.giftAmountAppliedLabel
+        ? ` (${result.giftAmountAppliedLabel} applied)`
+        : "";
+      const remaining = result.giftBalanceRemainingLabel
+        ? ` Remaining gift card balance: ${result.giftBalanceRemainingLabel}.`
+        : "";
+      statusMessage = `Your booking is confirmed — paid with your gift card${applied}.${remaining} A confirmation email has been sent to ${result.email}.`;
+    } else if (result.voucherApplied) {
+      statusMessage = `Your booking is confirmed — your reward voucher covered this class. A confirmation email has been sent to ${result.email}.`;
+    } else if (result.paymentSkipped || result.status === "confirmed") {
+      statusMessage = `Your booking is confirmed. A confirmation email has been sent to ${result.email}.`;
+    }
 
     return (
       <div className="overflow-hidden rounded-2xl border border-plum/10 bg-surface shadow-lg ring-1 ring-plum/5">
@@ -352,7 +400,11 @@ export function BookingForm() {
             {isWaitlist ? "Waitlist" : "Success"}
           </p>
           <h2 className="mt-2 font-display text-4xl">
-            {isWaitlist ? "You are on the waitlist" : "Thank you for booking"}
+            {isWaitlist
+              ? "You are on the waitlist"
+              : isPaidWithoutCard
+                ? "Booking confirmed"
+                : "Thank you for booking"}
           </h2>
         </div>
         <div className="space-y-4 px-8 py-8">
@@ -366,18 +418,15 @@ export function BookingForm() {
               </>
             ) : (
               <>
-                Hi {result.name}, your request for{" "}
+                Hi {result.name}, your booking for{" "}
                 <strong className="text-foreground">{result.classTitle}</strong> on{" "}
-                {date.weekday} {date.shortDate} at {date.time} has been received.
+                {date.weekday} {date.shortDate} at {date.time}{" "}
+                {isPaidWithoutCard ? "is confirmed." : "has been received."}
               </>
             )}
           </p>
           <p className="rounded-lg bg-pink-soft/80 px-4 py-3 text-sm leading-relaxed text-plum">
-            {isWaitlist
-              ? `We have recorded ${result.email} on the waitlist.`
-              : result.paymentSkipped
-                ? `Your booking is confirmed. A confirmation email has been sent to ${result.email}.`
-                : `Complete payment within 10 minutes. The lesson will be cancelled without notice if unpaid. We will email ${result.email} once payment is complete.`}
+            {statusMessage}
           </p>
           <div className="flex flex-col gap-3 pt-2 sm:flex-row">
             <button
@@ -838,6 +887,12 @@ export function BookingForm() {
                     <>
                       Payment: <strong className="text-foreground">1 class credit</strong> (no card payment)
                     </>
+                  ) : voucherCode.trim() ? (
+                    <>
+                      Payment:{" "}
+                      <strong className="text-foreground">gift card / voucher</strong>
+                      {" "}— leftover gift balance stays on the code
+                    </>
                   ) : (
                     <>
                       Amount due today:{" "}
@@ -875,9 +930,11 @@ export function BookingForm() {
                 ? "Join waitlist"
                 : useCredit && isSignedIn
                   ? "Confirm with class credit"
-                  : config?.stripeEnabled
-                    ? `Continue to pay ${priceNote}`
-                    : "Confirm booking"}
+                  : voucherCode.trim()
+                    ? "Apply code & confirm"
+                    : config?.stripeEnabled
+                      ? `Continue to pay ${priceNote}`
+                      : "Confirm booking"}
           </button>
           <p className="text-center text-xs leading-relaxed text-muted">
             Secure online payment. {siteConfig.arrivalNote}
@@ -959,15 +1016,21 @@ export function BookingForm() {
 
         <div className="rounded-2xl border border-plum/10 bg-gradient-to-br from-sage/90 to-sage p-6 text-white shadow-lg">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-pink-light">
-            {isSignedIn && useCredit ? "Payment" : "Amount due"}
+            {isSignedIn && useCredit
+              ? "Payment"
+              : voucherCode.trim()
+                ? "Gift / voucher"
+                : "Amount due"}
           </p>
           <p className="mt-2 text-3xl font-semibold">
-            {isSignedIn && useCredit ? "1 credit" : priceNote}
+            {isSignedIn && useCredit ? "1 credit" : voucherCode.trim() ? "Code entered" : priceNote}
           </p>
           <p className="mt-2 text-sm leading-relaxed text-white/85">
             {isSignedIn && useCredit
               ? "Your booking confirms instantly when you use a class credit — no card payment needed."
-              : "Pay online when you book. You will receive a confirmation email once payment is complete."}
+              : voucherCode.trim()
+                ? "If your gift card or voucher covers the class fee, your booking confirms immediately. Any leftover gift balance stays on the code."
+                : "Pay online when you book, or enter a gift card / reward code. You will receive a confirmation email once payment is complete."}
           </p>
         </div>
 

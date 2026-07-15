@@ -139,14 +139,16 @@ export async function sendBookingConfirmedEmails(
   customer: CustomerDetails,
   session: SessionDetails,
   amountPaidPence?: number | null,
+  paymentSummary?: string | null,
 ) {
   const paidAmount =
-    amountPaidPence != null
+    paymentSummary?.trim() ||
+    (amountPaidPence != null
       ? new Intl.NumberFormat("en-GB", {
           style: "currency",
           currency: "GBP",
         }).format(amountPaidPence / 100)
-      : classPaymentLabel();
+      : classPaymentLabel());
 
   await Promise.all([
     sendEmail({
@@ -163,7 +165,7 @@ export async function sendBookingConfirmedEmails(
           </p>
           ${sessionDetailBlock(session.classTitle, session.startsAt)}
           <p>
-            <strong>Amount paid:</strong> ${paidAmount}<br />
+            <strong>Payment:</strong> ${paidAmount}<br />
             <strong>Status:</strong> Confirmed
           </p>
           <p>
@@ -189,7 +191,7 @@ export async function sendBookingConfirmedEmails(
           <p>
             <strong>Name:</strong> ${customer.name}<br />
             <strong>Email:</strong> ${customer.email}<br />
-            <strong>Amount paid:</strong> ${paidAmount}
+            <strong>Payment:</strong> ${paidAmount}
           </p>
         `,
       }),

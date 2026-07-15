@@ -1,6 +1,7 @@
 import {
   BOOKING_STATUS,
   WAITLIST_STATUS,
+  formatMoneyFromPence,
   getAppBaseUrl,
   isStripeConfigured,
 } from "@/lib/booking-config";
@@ -200,7 +201,12 @@ export async function sessionHasCapacity(sessionId: string, capacity: number) {
 
 export async function confirmBooking(
   bookingId: string,
-  options?: { stripePaymentId?: string; amountPaid?: number },
+  options?: {
+    stripePaymentId?: string;
+    amountPaid?: number;
+    /** Human-readable payment line for confirmation emails (gift card, credit, etc.). */
+    paymentSummary?: string;
+  },
 ) {
   const booking = await db.booking.update({
     where: { id: bookingId },
@@ -211,8 +217,27 @@ export async function confirmBooking(
     },
     include: {
       session: { include: { class: true } },
+      giftCard: { select: { code: true } },
     },
   });
+
+  let paymentSummary = options?.paymentSummary;
+  if (!paymentSummary) {
+    if (booking.paidWithCredit) {
+      paymentSummary = "Paid with 1 class credit";
+    } else if (booking.giftAmountApplied && booking.giftAmountApplied > 0) {
+      const giftLabel = formatMoneyFromPence(booking.giftAmountApplied);
+      const cardPaid =
+        options?.amountPaid && options.amountPaid > 0
+          ? ` + ${formatMoneyFromPence(options.amountPaid)} card`
+          : "";
+      paymentSummary = `Gift card ${giftLabel}${cardPaid}${
+        booking.giftCard?.code ? ` (${booking.giftCard.code})` : ""
+      }`;
+    } else if (booking.voucherId) {
+      paymentSummary = "Complimentary (reward voucher)";
+    }
+  }
 
   await sendBookingConfirmedEmails(
     { name: booking.name, email: booking.email },
@@ -221,6 +246,7 @@ export async function confirmBooking(
       startsAt: booking.session.startsAt,
     },
     options?.amountPaid ?? booking.amountPaid,
+    paymentSummary,
   );
 
   return booking;
