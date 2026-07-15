@@ -65,7 +65,7 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
     }.`;
   } else if (booking?.voucherId) {
     paymentNote = "Paid with a reward voucher.";
-  } else if (isConfirmed && booking.amountPaid != null) {
+  } else if (isConfirmed && booking?.amountPaid != null) {
     paymentNote = `Amount paid: ${formatMoneyFromPence(booking.amountPaid)}.`;
   }
 
