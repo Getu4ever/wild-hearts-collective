@@ -804,6 +804,7 @@ type ShopGiftOrderLine = {
   giftCode: string;
   priceLabel: string;
   quantity: number;
+  balanceLabel?: string;
   /** Public path under the site, e.g. /shop/art-kit-class-bundle.svg */
   image?: string;
 };
@@ -813,6 +814,7 @@ type ShopGiftVoucherDetails = {
   totalLabel: string;
   shopUrl: string;
   bookUrl: string;
+  creditsUrl?: string;
 };
 
 /** Digital delivery email for shop gift vouchers / e-gift cards. */
@@ -841,21 +843,26 @@ export async function sendShopGiftVoucherEmail(
           </td>`
         : "";
 
+      const balanceLine = line.balanceLabel
+        ? `<p style="margin:4px 0 0;">Balance on code: <strong>${line.balanceLabel}</strong></p>`
+        : "";
+
       return `
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width:100%;margin:0 0 16px;">
           <tr>
             ${imageCell}
             <td style="vertical-align:top;padding:0;">
               <p style="margin:0 0 4px;">
-                <strong>${line.quantity}× ${line.productName}</strong>
+                <strong>${line.productName}</strong>
               </p>
-              <p style="margin:0 0 4px;">${line.priceLabel} each</p>
+              <p style="margin:0 0 4px;">Value ${line.priceLabel}</p>
               <p style="margin:0;">
                 Gift code:
                 <span style="font-size:16px;letter-spacing:0.08em;font-weight:700;">
                   ${line.giftCode}
                 </span>
               </p>
+              ${balanceLine}
             </td>
           </tr>
         </table>`;
@@ -863,8 +870,10 @@ export async function sendShopGiftVoucherEmail(
     .join("");
 
   const summary = voucher.lines
-    .map((line) => `${line.quantity}× ${line.productName}`)
+    .map((line) => line.productName)
     .join(", ");
+
+  const creditsUrl = voucher.creditsUrl ?? `${baseUrl}/account/credits`;
 
   await Promise.all([
     sendEmail({
@@ -880,14 +889,18 @@ export async function sendShopGiftVoucherEmail(
           <p>Hi ${customer.name},</p>
           <p>
             Thank you for your purchase from the Wild Hearts Collective shop.
-            Your digital voucher${voucher.lines.length === 1 ? " has" : "s have"} been
+            Your digital gift card${voucher.lines.length === 1 ? " has" : "s have"} been
             delivered by email — no shipping required.
           </p>
           ${itemRows}
           <p><strong>Order total:</strong> ${voucher.totalLabel}</p>
           <p>
-            Present these codes when booking, or contact the studio if you are gifting
-            them to someone else. We cannot wait to welcome you (or your recipient) in.
+            Use these codes when booking a class or buying a class pack.
+            If you spend less than the full balance (for example a £25 card on a £10 class),
+            the remaining balance stays on the same code for next time.
+          </p>
+          <p>
+            Present these codes to the recipient if you are gifting them to someone else.
           </p>
         `,
         cta: {
@@ -910,6 +923,10 @@ export async function sendShopGiftVoucherEmail(
             <strong>Total:</strong> ${voucher.totalLabel}
           </p>
           ${itemRows}
+          <p>
+            Codes are stored in the system with remaining balances.
+            Class packs checkout: ${creditsUrl}
+          </p>
         `,
         cta: {
           label: "View shop",

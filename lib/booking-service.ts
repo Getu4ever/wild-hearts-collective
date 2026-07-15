@@ -15,6 +15,7 @@ import {
   sendUnpaidBookingExpiredAdminEmail,
   sendWaitlistSpotAvailableEmail,
 } from "@/lib/email";
+import { restoreGiftCardBalance } from "@/lib/gift-card-service";
 
 export function paymentHoldCutoff(now = new Date()) {
   return new Date(now.getTime() - PAYMENT_HOLD_MS);
@@ -57,6 +58,17 @@ export async function cancelBookingForPaymentExpiry(bookingId: string) {
       session: { include: { class: true } },
     },
   });
+
+  if (booking.giftCardId && booking.giftAmountApplied && booking.giftAmountApplied > 0) {
+    try {
+      await restoreGiftCardBalance(booking.giftCardId, booking.giftAmountApplied, {
+        bookingId: booking.id,
+        userId: booking.userId,
+      });
+    } catch (error) {
+      console.error("[gift-card:restore-on-expiry]", bookingId, error);
+    }
+  }
 
   try {
     await sendUnpaidBookingExpiredAdminEmail(

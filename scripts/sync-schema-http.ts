@@ -203,6 +203,76 @@ async function main() {
     'ALTER TABLE "OAuthAccount" ADD COLUMN IF NOT EXISTS "profileImageUrl" TEXT',
   );
 
+  await run(`
+    CREATE TABLE IF NOT EXISTS "GiftCard" (
+      "id" TEXT NOT NULL,
+      "code" TEXT NOT NULL,
+      "initialBalancePence" INTEGER NOT NULL,
+      "balancePence" INTEGER NOT NULL,
+      "productId" TEXT,
+      "productName" TEXT NOT NULL,
+      "purchaserEmail" TEXT,
+      "purchaserName" TEXT,
+      "stripeSessionId" TEXT,
+      "expiresAt" TIMESTAMP(3),
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "GiftCard_pkey" PRIMARY KEY ("id")
+    )
+  `);
+  await run('CREATE UNIQUE INDEX IF NOT EXISTS "GiftCard_code_key" ON "GiftCard"("code")');
+  await run(
+    'CREATE INDEX IF NOT EXISTS "GiftCard_stripeSessionId_idx" ON "GiftCard"("stripeSessionId")',
+  );
+  await run(
+    'CREATE INDEX IF NOT EXISTS "GiftCard_balancePence_idx" ON "GiftCard"("balancePence")',
+  );
+  await run('CREATE INDEX IF NOT EXISTS "GiftCard_expiresAt_idx" ON "GiftCard"("expiresAt")');
+
+  await run(`
+    CREATE TABLE IF NOT EXISTS "GiftCardRedemption" (
+      "id" TEXT NOT NULL,
+      "giftCardId" TEXT NOT NULL,
+      "amountPence" INTEGER NOT NULL,
+      "balanceAfter" INTEGER NOT NULL,
+      "reason" TEXT NOT NULL,
+      "bookingId" TEXT,
+      "packPurchaseId" TEXT,
+      "userId" TEXT,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "GiftCardRedemption_pkey" PRIMARY KEY ("id")
+    )
+  `);
+  await run(
+    'CREATE INDEX IF NOT EXISTS "GiftCardRedemption_giftCardId_createdAt_idx" ON "GiftCardRedemption"("giftCardId", "createdAt")',
+  );
+  await run(
+    'CREATE INDEX IF NOT EXISTS "GiftCardRedemption_bookingId_idx" ON "GiftCardRedemption"("bookingId")',
+  );
+  await run(
+    'CREATE INDEX IF NOT EXISTS "GiftCardRedemption_packPurchaseId_idx" ON "GiftCardRedemption"("packPurchaseId")',
+  );
+
+  await run(
+    'ALTER TABLE "Booking" ADD COLUMN IF NOT EXISTS "giftCardId" TEXT',
+  );
+  await run(
+    'ALTER TABLE "Booking" ADD COLUMN IF NOT EXISTS "giftAmountApplied" INTEGER',
+  );
+  await run(
+    'CREATE INDEX IF NOT EXISTS "Booking_giftCardId_idx" ON "Booking"("giftCardId")',
+  );
+
+  await run(
+    'ALTER TABLE "ClassPackPurchase" ADD COLUMN IF NOT EXISTS "giftCardId" TEXT',
+  );
+  await run(
+    'ALTER TABLE "ClassPackPurchase" ADD COLUMN IF NOT EXISTS "giftAmountApplied" INTEGER',
+  );
+  await run(
+    'CREATE INDEX IF NOT EXISTS "ClassPackPurchase_giftCardId_idx" ON "ClassPackPurchase"("giftCardId")',
+  );
+
   console.log("Schema sync complete.");
 }
 

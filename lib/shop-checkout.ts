@@ -2,12 +2,10 @@ import { randomBytes } from "crypto";
 import type Stripe from "stripe";
 import { formatMoneyFromPence, getAppBaseUrl } from "@/lib/booking-config";
 import { sendShopGiftVoucherEmail } from "@/lib/email";
+import { generateGiftCardCode, issueGiftCard } from "@/lib/gift-card-service";
+import { db } from "@/lib/db";
 import { getPurchasableShopProduct } from "@/lib/shop-data";
 import { getStripeClient } from "@/lib/stripe";
-
-function generateGiftCode() {
-  return `GIFT-${randomBytes(4).toString("hex").toUpperCase()}`;
-}
 
 type CartMetaItem = {
   id: string;
@@ -20,6 +18,7 @@ type FulfilledLine = {
   giftCode: string;
   priceLabel: string;
   quantity: number;
+  balanceLabel?: string;
   /** Public path under the site, e.g. /shop/art-kit-class-bundle.svg */
   image?: string;
 };
@@ -48,9 +47,8 @@ function parseCartMetadata(session: Stripe.Checkout.Session): CartMetaItem[] {
 }
 
 /**
- * After Stripe payment: mark session fulfilled and send digital voucher email.
- * Idempotent via metadata.emailDelivered. Always re-fetches the session so
- * success-page and webhook callers cannot double-send.
+ * After Stripe payment: create redeemable gift cards, mark session fulfilled,
+ * and send digital voucher email. Idempotent via metadata.emailDelivered.
  */
 export async function fulfillShopVoucherCheckout(sessionInput: Stripe.Checkout.Session) {
   const stripe = getStripeClient();
@@ -77,6 +75,64 @@ export async function fulfillShopVoucherCheckout(sessionInput: Stripe.Checkout.S
       }
     }
 
+    if (lines.length === 0 && session.metadata.giftCode) {
+      lines = [
+        {
+          productName: session.metadata.productName ?? "Gift voucher",
+          giftCode: session.metadata.giftCode,
+          priceLabel: formatMoneyFromPence(session.amount_total ?? 0),
+          quantity: 1,
+        },
+      ];
+    }
+
+    // Backfill redeemable cards for purchases completed before gift cards were stored in DB.
+    for (const line of lines) {
+      if (!line.giftCode) continue;
+      const code = line.giftCode.trim().toUpperCase();
+      const existing = await db.giftCard.findUnique({ where: { code } });
+      if (existing) continue;
+
+      const parsedPence = Math.round(
+        Number.parseFloat((line.priceLabel || "").replace(/[^0-9.]/g, "")) * 100,
+      );
+      const balancePence =
+        Number.isFinite(parsedPence) && parsedPence > 0
+          ? parsedPence
+          : session.amount_total && lines.length === 1
+            ? session.amount_total
+            : 0;
+
+      if (balancePence <= 0) continue;
+
+      try {
+        await issueGiftCard({
+          code,
+          balancePence,
+          productName: line.productName || "Gift voucher",
+          purchaserEmail: email,
+          stripeSessionId: session.id,
+        });
+      } catch {
+        // Unique conflicts / partial metadata — ignore
+      }
+    }
+
+    const cards = await db.giftCard.findMany({
+      where: { stripeSessionId: session.id },
+      orderBy: { createdAt: "asc" },
+    });
+
+    if (cards.length > 0) {
+      lines = cards.map((card) => ({
+        productName: card.productName,
+        giftCode: card.code,
+        priceLabel: formatMoneyFromPence(card.initialBalancePence),
+        balanceLabel: formatMoneyFromPence(card.balancePence),
+        quantity: 1,
+      }));
+    }
+
     return {
       alreadyDelivered: true as const,
       productName: session.metadata.productName ?? "Gift voucher",
@@ -98,33 +154,61 @@ export async function fulfillShopVoucherCheckout(sessionInput: Stripe.Checkout.S
   const name = session.customer_details?.name?.trim() || "Friend";
   const lines: FulfilledLine[] = [];
 
-  for (const item of cart) {
-    const product = getPurchasableShopProduct(item.id);
-    const quantity = Math.max(1, Math.floor(item.q || 1));
-    const productName = product?.name ?? item.n ?? "Gift voucher";
-    const pricePence = product?.pricePence ?? 0;
+  await db.$transaction(async (tx) => {
+    for (const item of cart) {
+      const product = getPurchasableShopProduct(item.id);
+      const quantity = Math.max(1, Math.floor(item.q || 1));
+      const productName = product?.name ?? item.n ?? "Gift voucher";
+      const pricePence = product?.pricePence ?? 0;
 
-    // One redeemable code per line (covers the purchased quantity).
-    lines.push({
-      productName,
-      giftCode: generateGiftCode(),
-      priceLabel: formatMoneyFromPence(pricePence),
-      quantity,
-      image: product?.image,
-    });
-  }
+      if (pricePence <= 0) {
+        throw new Error(`Unable to issue gift card for ${productName}.`);
+      }
+
+      // One redeemable code per purchased unit, each with its own balance.
+      for (let i = 0; i < quantity; i += 1) {
+        const giftCard = await issueGiftCard(
+          {
+            code: generateGiftCardCode(),
+            balancePence: pricePence,
+            productId: product?.id ?? item.id,
+            productName,
+            purchaserEmail: email,
+            purchaserName: name,
+            stripeSessionId: session.id,
+          },
+          tx,
+        );
+
+        lines.push({
+          productName,
+          giftCode: giftCard.code,
+          priceLabel: formatMoneyFromPence(pricePence),
+          balanceLabel: formatMoneyFromPence(giftCard.balancePence),
+          quantity: 1,
+          image: product?.image,
+        });
+      }
+    }
+  });
 
   const totalLabel = formatMoneyFromPence(session.amount_total ?? 0);
-  const summary = lines
-    .map((line) => `${line.quantity}× ${line.productName}`)
+  const summary = cart
+    .map((item) => {
+      const product = getPurchasableShopProduct(item.id);
+      const quantity = Math.max(1, Math.floor(item.q || 1));
+      return `${quantity}× ${product?.name ?? item.n ?? "Gift voucher"}`;
+    })
     .join(", ");
+
+  const giftCodesPayload = JSON.stringify(lines).slice(0, 500);
 
   await stripe.checkout.sessions.update(session.id, {
     metadata: {
       ...session.metadata,
       emailDelivered: "true",
       giftCode: lines[0]?.giftCode ?? "",
-      giftCodes: JSON.stringify(lines).slice(0, 500),
+      giftCodes: giftCodesPayload,
       productName: summary.slice(0, 450),
     },
   });
@@ -137,6 +221,7 @@ export async function fulfillShopVoucherCheckout(sessionInput: Stripe.Checkout.S
         totalLabel,
         shopUrl: `${getAppBaseUrl()}/shop`,
         bookUrl: `${getAppBaseUrl()}/book`,
+        creditsUrl: `${getAppBaseUrl()}/account/credits`,
       },
     );
   } catch (error) {
@@ -145,7 +230,7 @@ export async function fulfillShopVoucherCheckout(sessionInput: Stripe.Checkout.S
         ...session.metadata,
         emailDelivered: "false",
         giftCode: lines[0]?.giftCode ?? "",
-        giftCodes: JSON.stringify(lines).slice(0, 500),
+        giftCodes: giftCodesPayload,
       },
     });
     throw error;
@@ -164,4 +249,9 @@ export async function fulfillShopVoucherBySessionId(sessionId: string) {
   const stripe = getStripeClient();
   const session = await stripe.checkout.sessions.retrieve(sessionId);
   return fulfillShopVoucherCheckout(session);
+}
+
+/** @deprecated Prefer generateGiftCardCode from gift-card-service. */
+export function generateGiftCode() {
+  return `GIFT-${randomBytes(4).toString("hex").toUpperCase()}`;
 }

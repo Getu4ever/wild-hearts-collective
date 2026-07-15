@@ -4,7 +4,6 @@ import {
   formatSessionDateTime,
   getAppBaseUrl,
   getClassPaymentAmountPence,
-  isStripeConfigured,
 } from "@/lib/booking-config";
 
 let stripeClient: Stripe | null = null;
@@ -29,14 +28,21 @@ type CheckoutBooking = {
   startsAt: Date;
 };
 
-export async function createBookingCheckoutSession(booking: CheckoutBooking) {
+export async function createBookingCheckoutSession(
+  booking: CheckoutBooking,
+  options?: { amountPence?: number; giftCardId?: string; giftAmountApplied?: number },
+) {
   if (!process.env.STRIPE_SECRET_KEY) {
     throw new Error("Stripe is not configured.");
   }
 
   const stripe = getStripeClient();
-  const amount = getClassPaymentAmountPence();
+  const amount = options?.amountPence ?? getClassPaymentAmountPence();
   const baseUrl = getAppBaseUrl();
+
+  if (amount <= 0) {
+    throw new Error("Checkout amount must be greater than zero.");
+  }
 
   return stripe.checkout.sessions.create({
     ui_mode: "embedded_page",
@@ -45,6 +51,12 @@ export async function createBookingCheckoutSession(booking: CheckoutBooking) {
     client_reference_id: booking.id,
     metadata: {
       bookingId: booking.id,
+      ...(options?.giftCardId
+        ? {
+            giftCardId: options.giftCardId,
+            giftAmountApplied: String(options.giftAmountApplied ?? 0),
+          }
+        : {}),
     },
     line_items: [
       {
@@ -96,13 +108,21 @@ type ClassPackCheckout = {
   pricePence: number;
 };
 
-export async function createClassPackCheckoutSession(pack: ClassPackCheckout) {
+export async function createClassPackCheckoutSession(
+  pack: ClassPackCheckout,
+  options?: { amountPence?: number; giftCardId?: string; giftAmountApplied?: number },
+) {
   if (!process.env.STRIPE_SECRET_KEY) {
     throw new Error("Stripe is not configured.");
   }
 
   const stripe = getStripeClient();
   const baseUrl = getAppBaseUrl();
+  const amount = options?.amountPence ?? pack.pricePence;
+
+  if (amount <= 0) {
+    throw new Error("Checkout amount must be greater than zero.");
+  }
 
   return stripe.checkout.sessions.create({
     ui_mode: "embedded_page",
@@ -114,16 +134,24 @@ export async function createClassPackCheckoutSession(pack: ClassPackCheckout) {
       purchaseId: pack.purchaseId,
       userId: pack.userId,
       packId: pack.packId,
+      ...(options?.giftCardId
+        ? {
+            giftCardId: options.giftCardId,
+            giftAmountApplied: String(options.giftAmountApplied ?? 0),
+          }
+        : {}),
     },
     line_items: [
       {
         quantity: 1,
         price_data: {
           currency: "gbp",
-          unit_amount: pack.pricePence,
+          unit_amount: amount,
           product_data: {
             name: `${pack.packName} — ${pack.credits} class credits`,
-            description: "Class credit bundle for Wild Hearts Collective",
+            description: options?.giftAmountApplied
+              ? `Class credit bundle — ${formatMoneyFromPence(options.giftAmountApplied)} applied from gift card`
+              : "Class credit bundle for Wild Hearts Collective",
           },
         },
       },

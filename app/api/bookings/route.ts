@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { BOOKING_STATUS, isStripeConfigured } from "@/lib/booking-config";
+import {
+  BOOKING_STATUS,
+  formatMoneyFromPence,
+  getClassPaymentAmountPence,
+  isStripeConfigured,
+} from "@/lib/booking-config";
 import {
   countHeldBookings,
   confirmBooking,
@@ -10,9 +15,15 @@ import {
   sendBookingReceivedEmails,
   sendWaitlistJoinedEmails,
 } from "@/lib/email";
+import {
+  applyGiftCodeToCharge,
+  GIFT_REDEMPTION_REASON,
+  looksLikeGiftCardCode,
+  restoreGiftCardBalance,
+} from "@/lib/gift-card-service";
 import { getMemberSession } from "@/lib/member-auth";
 import { assertParQCompleteForSession, ParQRequiredError } from "@/lib/parq-service";
-import { createBookingCheckoutSession, classPaymentLabel } from "@/lib/stripe";
+import { createBookingCheckoutSession } from "@/lib/stripe";
 import { redeemVoucherForBooking } from "@/lib/voucher-service";
 
 type BookingBody = {
@@ -204,33 +215,107 @@ export async function POST(request: Request) {
     });
   }
 
-  if (voucherCode?.trim() && userId) {
-    try {
-      const voucher = await redeemVoucherForBooking(userId, voucherCode, booking.id);
+  const trimmedCode = voucherCode?.trim();
+  const classPricePence = getClassPaymentAmountPence();
+  let amountDuePence = classPricePence;
+  let giftApplied: {
+    giftCardId: string;
+    appliedPence: number;
+    balanceAfter: number;
+    balanceAfterLabel: string;
+    appliedLabel: string;
+  } | null = null;
 
-      if (voucher.discountPercent >= 100) {
-        const confirmed = await confirmBooking(booking.id, { amountPaid: 0 });
+  if (trimmedCode) {
+    const treatAsGift =
+      looksLikeGiftCardCode(trimmedCode) ||
+      Boolean(await db.giftCard.findUnique({ where: { code: trimmedCode.toUpperCase() } }));
 
-        return NextResponse.json({
-          type: "booking",
-          id: confirmed.id,
-          name: confirmed.name,
-          email: confirmed.email,
-          status: confirmed.status,
-          classTitle: confirmed.session.class.title,
-          startsAt: confirmed.session.startsAt.toISOString(),
-          voucherApplied: true,
+    if (treatAsGift) {
+      try {
+        const applied = await applyGiftCodeToCharge(trimmedCode, classPricePence, {
+          reason: GIFT_REDEMPTION_REASON.booking,
+          bookingId: booking.id,
+          userId,
         });
+
+        giftApplied = {
+          giftCardId: applied.giftCardId,
+          appliedPence: applied.appliedPence,
+          balanceAfter: applied.balanceAfter,
+          balanceAfterLabel: applied.balanceAfterLabel,
+          appliedLabel: applied.appliedLabel,
+        };
+        amountDuePence = applied.amountDuePence;
+
+        await db.booking.update({
+          where: { id: booking.id },
+          data: {
+            giftCardId: applied.giftCardId,
+            giftAmountApplied: applied.appliedPence,
+          },
+        });
+
+        if (applied.fullyCovered) {
+          const confirmed = await confirmBooking(booking.id, { amountPaid: 0 });
+
+          return NextResponse.json({
+            type: "booking",
+            id: confirmed.id,
+            name: confirmed.name,
+            email: confirmed.email,
+            status: confirmed.status,
+            classTitle: confirmed.session.class.title,
+            startsAt: confirmed.session.startsAt.toISOString(),
+            giftCardApplied: true,
+            giftAmountAppliedLabel: applied.appliedLabel,
+            giftBalanceRemainingLabel: applied.balanceAfterLabel,
+          });
+        }
+      } catch (error) {
+        await db.booking.delete({ where: { id: booking.id } });
+        const message = error instanceof Error ? error.message : "Invalid gift card code.";
+        return NextResponse.json({ error: message }, { status: 400 });
       }
-    } catch (error) {
+    } else if (userId) {
+      try {
+        const voucher = await redeemVoucherForBooking(userId, trimmedCode, booking.id);
+
+        if (voucher.discountPercent >= 100) {
+          const confirmed = await confirmBooking(booking.id, { amountPaid: 0 });
+
+          return NextResponse.json({
+            type: "booking",
+            id: confirmed.id,
+            name: confirmed.name,
+            email: confirmed.email,
+            status: confirmed.status,
+            classTitle: confirmed.session.class.title,
+            startsAt: confirmed.session.startsAt.toISOString(),
+            voucherApplied: true,
+          });
+        }
+      } catch (error) {
+        await db.booking.delete({ where: { id: booking.id } });
+        const message = error instanceof Error ? error.message : "Invalid voucher code.";
+        return NextResponse.json({ error: message }, { status: 400 });
+      }
+    } else {
       await db.booking.delete({ where: { id: booking.id } });
-      const message = error instanceof Error ? error.message : "Invalid voucher code.";
-      return NextResponse.json({ error: message }, { status: 400 });
+      return NextResponse.json(
+        {
+          error:
+            "Sign in to use reward voucher codes, or enter a gift card code (starts with GIFT-).",
+        },
+        { status: 401 },
+      );
     }
   }
 
   if (!isStripeConfigured()) {
-    const confirmed = await confirmBooking(booking.id);
+    const confirmed = await confirmBooking(booking.id, {
+      amountPaid: giftApplied ? amountDuePence : undefined,
+    });
 
     return NextResponse.json({
       type: "booking",
@@ -241,47 +326,79 @@ export async function POST(request: Request) {
       classTitle: confirmed.session.class.title,
       startsAt: confirmed.session.startsAt.toISOString(),
       paymentSkipped: true,
+      giftCardApplied: Boolean(giftApplied),
+      giftBalanceRemainingLabel: giftApplied?.balanceAfterLabel,
     });
   }
 
-  const checkout = await createBookingCheckoutSession({
-    id: booking.id,
-    email: booking.email,
-    name: booking.name,
-    classTitle: booking.session.class.title,
-    startsAt: booking.session.startsAt,
-  });
-
-  if (!checkout.client_secret) {
-    return NextResponse.json(
-      { error: "Unable to start embedded checkout. Please try again." },
-      { status: 503 },
+  try {
+    const checkout = await createBookingCheckoutSession(
+      {
+        id: booking.id,
+        email: booking.email,
+        name: booking.name,
+        classTitle: booking.session.class.title,
+        startsAt: booking.session.startsAt,
+      },
+      giftApplied
+        ? {
+            amountPence: amountDuePence,
+            giftCardId: giftApplied.giftCardId,
+            giftAmountApplied: giftApplied.appliedPence,
+          }
+        : undefined,
     );
-  }
 
-  await db.booking.update({
-    where: { id: booking.id },
-    data: { stripeSessionId: checkout.id },
-  });
+    if (!checkout.client_secret) {
+      if (giftApplied) {
+        await restoreGiftCardBalance(giftApplied.giftCardId, giftApplied.appliedPence, {
+          bookingId: booking.id,
+          userId,
+        });
+      }
+      return NextResponse.json(
+        { error: "Unable to start embedded checkout. Please try again." },
+        { status: 503 },
+      );
+    }
 
-  await sendBookingReceivedEmails(
-    { name: booking.name, email: booking.email },
-    {
+    await db.booking.update({
+      where: { id: booking.id },
+      data: { stripeSessionId: checkout.id },
+    });
+
+    await sendBookingReceivedEmails(
+      { name: booking.name, email: booking.email },
+      {
+        classTitle: booking.session.class.title,
+        startsAt: booking.session.startsAt,
+      },
+    );
+
+    return NextResponse.json({
+      type: "booking",
+      id: booking.id,
+      name: booking.name,
+      email: booking.email,
+      status: booking.status,
       classTitle: booking.session.class.title,
-      startsAt: booking.session.startsAt,
-    },
-  );
-
-  return NextResponse.json({
-    type: "booking",
-    id: booking.id,
-    name: booking.name,
-    email: booking.email,
-    status: booking.status,
-    classTitle: booking.session.class.title,
-    startsAt: booking.session.startsAt.toISOString(),
-    clientSecret: checkout.client_secret,
-    classPriceLabel: classPaymentLabel(),
-    depositLabel: classPaymentLabel(),
-  });
+      startsAt: booking.session.startsAt.toISOString(),
+      clientSecret: checkout.client_secret,
+      classPriceLabel: formatMoneyFromPence(amountDuePence),
+      depositLabel: formatMoneyFromPence(amountDuePence),
+      giftCardApplied: Boolean(giftApplied),
+      giftAmountAppliedLabel: giftApplied?.appliedLabel,
+      giftBalanceRemainingLabel: giftApplied?.balanceAfterLabel,
+    });
+  } catch (error) {
+    if (giftApplied) {
+      await restoreGiftCardBalance(giftApplied.giftCardId, giftApplied.appliedPence, {
+        bookingId: booking.id,
+        userId,
+      });
+    }
+    await db.booking.delete({ where: { id: booking.id } });
+    const message = error instanceof Error ? error.message : "Unable to start checkout.";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

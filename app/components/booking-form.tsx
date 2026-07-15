@@ -690,10 +690,11 @@ export function BookingForm() {
 
                 <div className="rounded-xl border border-plum/10 bg-surface px-5 py-5 shadow-sm">
                   <label htmlFor="voucherCode" className="text-xs font-semibold uppercase tracking-[0.14em] text-brand">
-                    Voucher or reward code
+                    Gift card or reward code
                   </label>
                   <p className="mt-2 text-sm text-muted">
-                    Have a birthday treat or milestone reward? Enter it here for a complimentary class.
+                    Use a shop gift card (GIFT-…), or a birthday / milestone reward. Gift cards keep
+                    any leftover balance for next time.
                   </p>
                   <input
                     id="voucherCode"
@@ -701,8 +702,9 @@ export function BookingForm() {
                     type="text"
                     value={voucherCode}
                     onChange={(event) => setVoucherCode(event.target.value.toUpperCase())}
-                    placeholder="e.g. BDAY-XXXX"
+                    placeholder="e.g. GIFT-XXXXXXXX"
                     className={`${fieldClassName()} mt-3 uppercase tracking-wider`}
+                    disabled={useCredit}
                   />
                 </div>
 
@@ -727,7 +729,28 @@ export function BookingForm() {
                   <Link href="/login?next=/book" className="font-semibold text-brand hover:underline">
                     Sign in
                   </Link>{" "}
-                  to use class credits, vouchers, and save your details for next time.
+                  to use class credits, reward vouchers, and save your details for next time. Gift
+                  card codes can be used without signing in.
+                </div>
+                <div className="sm:col-span-2 rounded-xl border border-plum/10 bg-surface px-5 py-5 shadow-sm">
+                  <label
+                    htmlFor="voucherCodeGuest"
+                    className="text-xs font-semibold uppercase tracking-[0.14em] text-brand"
+                  >
+                    Gift card code
+                  </label>
+                  <p className="mt-2 text-sm text-muted">
+                    Enter your GIFT-… code here. Any unused balance stays on the card after booking.
+                  </p>
+                  <input
+                    id="voucherCodeGuest"
+                    name="voucherCode"
+                    type="text"
+                    value={voucherCode}
+                    onChange={(event) => setVoucherCode(event.target.value.toUpperCase())}
+                    placeholder="e.g. GIFT-XXXXXXXX"
+                    className={`${fieldClassName()} mt-3 uppercase tracking-wider`}
+                  />
                 </div>
                 <div className="sm:col-span-2 sm:max-w-md">
                   <label htmlFor="name" className="text-sm font-medium text-foreground">

@@ -197,13 +197,18 @@ model ClassPackPurchase {
   stripeSessionId    String?             @unique
   stripePaymentId    String?
   status             String              @default("active")
+  giftCardId         String?
+  giftCard           GiftCard?           @relation(fields: [giftCardId], references: [id], onDelete: SetNull)
+  giftAmountApplied  Int?
   createdAt          DateTime            @default(now())
   bookings           Booking[]
   creditTransactions CreditTransaction[]
+  giftRedemptions    GiftCardRedemption[]
 
   @@index([userId])
   @@index([status])
   @@index([expiresAt])
+  @@index([giftCardId])
 }
 
 model CreditTransaction {
@@ -240,6 +245,48 @@ model Voucher {
   @@index([userId])
   @@index([type])
   @@index([expiresAt])
+}
+
+/** Monetised shop e-gift cards with a remaining balance in pence. */
+model GiftCard {
+  id                  String              @id @default(cuid())
+  code                String              @unique
+  initialBalancePence Int
+  balancePence        Int
+  productId           String?
+  productName         String
+  purchaserEmail      String?
+  purchaserName       String?
+  stripeSessionId     String?
+  expiresAt           DateTime?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  redemptions         GiftCardRedemption[]
+  bookings            Booking[]
+  packPurchases       ClassPackPurchase[]
+
+  @@index([stripeSessionId])
+  @@index([balancePence])
+  @@index([expiresAt])
+}
+
+model GiftCardRedemption {
+  id             String            @id @default(cuid())
+  giftCardId     String
+  giftCard       GiftCard          @relation(fields: [giftCardId], references: [id], onDelete: Cascade)
+  amountPence    Int
+  balanceAfter   Int
+  reason         String
+  bookingId      String?
+  booking        Booking?          @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  packPurchaseId String?
+  packPurchase   ClassPackPurchase? @relation(fields: [packPurchaseId], references: [id], onDelete: SetNull)
+  userId         String?
+  createdAt      DateTime          @default(now())
+
+  @@index([giftCardId, createdAt])
+  @@index([bookingId])
+  @@index([packPurchaseId])
 }
 
 model ParQResponse {
@@ -283,18 +330,23 @@ model Booking {
   packPurchase     ClassPackPurchase?  @relation(fields: [packPurchaseId], references: [id], onDelete: SetNull)
   voucherId        String?
   voucher          Voucher?
+  giftCardId       String?
+  giftCard         GiftCard?           @relation(fields: [giftCardId], references: [id], onDelete: SetNull)
+  giftAmountApplied Int?
   stripeSessionId  String?             @unique
   stripePaymentId  String?
   amountPaid       Int?
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @default(now()) @updatedAt
   creditTransactions CreditTransaction[]
+  giftRedemptions  GiftCardRedemption[]
 
   @@index([sessionId])
   @@index([email])
   @@index([userId])
   @@index([status])
   @@index([attendance])
+  @@index([giftCardId])
 }
 
 model WaitlistEntry {

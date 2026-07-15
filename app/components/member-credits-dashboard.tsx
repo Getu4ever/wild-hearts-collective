@@ -39,6 +39,8 @@ export function MemberCreditsDashboard({
 }: MemberCreditsDashboardProps) {
   const [pendingCheckout, setPendingCheckout] = useState<PendingCheckout | null>(null);
   const [loadingPackId, setLoadingPackId] = useState<string | null>(null);
+  const [giftCode, setGiftCode] = useState("");
+  const [giftNotice, setGiftNotice] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -69,15 +71,33 @@ export function MemberCreditsDashboard({
     (purchase) => purchase.status === "active" && purchase.creditsRemaining > 0,
   );
 
+  async function cancelPendingCheckout(purchaseId: string) {
+    try {
+      await fetch("/api/bundles/checkout/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ purchaseId }),
+      });
+    } catch {
+      // Best-effort restore of any reserved gift balance.
+    }
+    sessionStorage.removeItem(`pack-checkout-${purchaseId}`);
+    setPendingCheckout(null);
+  }
+
   async function startPurchase(packId: string) {
     setLoadingPackId(packId);
     setError("");
+    setGiftNotice("");
 
     try {
       const response = await fetch("/api/bundles/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ packId }),
+        body: JSON.stringify({
+          packId,
+          giftCode: giftCode.trim() || undefined,
+        }),
       });
 
       const data = await response.json();
@@ -85,12 +105,48 @@ export function MemberCreditsDashboard({
         throw new Error(data.error || "Unable to start checkout.");
       }
 
-      setPendingCheckout({
-        purchaseId: data.purchaseId,
-        clientSecret: data.clientSecret,
-        packName: data.packName,
-        credits: data.credits,
-      });
+      if (data.paidWithGiftCard) {
+        setGiftNotice(
+          data.giftBalanceRemainingLabel
+            ? `Pack unlocked with your gift card. Remaining balance: ${data.giftBalanceRemainingLabel}.`
+            : "Pack unlocked with your gift card.",
+        );
+        setGiftCode("");
+        window.location.reload();
+        return;
+      }
+
+      if (!data.clientSecret) {
+        throw new Error("Unable to start checkout.");
+      }
+
+      const nextCheckout = {
+        purchaseId: data.purchaseId as string,
+        clientSecret: data.clientSecret as string,
+        packName: data.packName as string,
+        credits: data.credits as number,
+      };
+
+      sessionStorage.setItem(
+        `pack-checkout-${nextCheckout.purchaseId}`,
+        JSON.stringify({
+          clientSecret: nextCheckout.clientSecret,
+          packName: nextCheckout.packName,
+          credits: nextCheckout.credits,
+        }),
+      );
+
+      if (data.giftCardApplied && data.giftAmountAppliedLabel) {
+        setGiftNotice(
+          `Applied ${data.giftAmountAppliedLabel} from your gift card${
+            data.giftBalanceRemainingLabel
+              ? ` · ${data.giftBalanceRemainingLabel} left on the code`
+              : ""
+          }. Pay the remaining ${data.amountDueLabel ?? "balance"} below.`,
+        );
+      }
+
+      setPendingCheckout(nextCheckout);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to start checkout.");
     } finally {
@@ -109,9 +165,12 @@ export function MemberCreditsDashboard({
           <p className="mt-2 text-sm text-muted">
             {pendingCheckout.credits} class credits will be added to your account after payment.
           </p>
+          {giftNotice && (
+            <p className="mt-3 rounded-lg bg-pink-soft/50 px-4 py-3 text-sm text-plum">{giftNotice}</p>
+          )}
           <button
             type="button"
-            onClick={() => setPendingCheckout(null)}
+            onClick={() => cancelPendingCheckout(pendingCheckout.purchaseId)}
             className="mt-4 text-sm font-semibold text-brand hover:underline"
           >
             Cancel and go back
@@ -235,7 +294,29 @@ export function MemberCreditsDashboard({
         <h2 className="font-display text-2xl text-plum">Buy a class pack</h2>
         <p className="mt-2 text-sm text-muted">
           One credit equals one class booking. Pay with a pack to skip paying the class fee each time.
+          Gift cards can cover part or all of a pack — leftover balance stays on the same code.
         </p>
+
+        <div className="mt-5 max-w-md">
+          <label
+            htmlFor="packGiftCode"
+            className="text-xs font-semibold uppercase tracking-[0.14em] text-brand"
+          >
+            Gift card code (optional)
+          </label>
+          <input
+            id="packGiftCode"
+            type="text"
+            value={giftCode}
+            onChange={(event) => setGiftCode(event.target.value.toUpperCase())}
+            placeholder="e.g. GIFT-XXXXXXXX"
+            className="mt-2 w-full rounded-lg border border-plum/15 bg-white px-4 py-3 text-sm uppercase tracking-wider text-plum outline-none ring-brand/30 placeholder:normal-case placeholder:tracking-normal focus:ring-2"
+          />
+        </div>
+
+        {giftNotice && !pendingCheckout && (
+          <p className="mt-4 rounded-lg bg-pink-soft/50 px-4 py-3 text-sm text-plum">{giftNotice}</p>
+        )}
 
         {overview.packs.length === 0 ? (
           <p className="mt-6 rounded-lg border border-dashed border-plum/15 px-4 py-8 text-center text-sm text-muted">

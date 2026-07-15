@@ -24,6 +24,7 @@ export default async function ShopSuccessPage({ searchParams }: SuccessPageProps
     giftCode: string;
     priceLabel: string;
     quantity: number;
+    balanceLabel?: string;
   }[] = [];
   let email: string | null = null;
   let deliveryOk = false;
@@ -93,23 +94,26 @@ export default async function ShopSuccessPage({ searchParams }: SuccessPageProps
                       key={`${line.giftCode}-${line.productName}`}
                       className="rounded-sm bg-pink-soft px-4 py-4"
                     >
-                      <p className="text-sm text-plum">
-                        {line.quantity}× {line.productName}
-                      </p>
+                      <p className="text-sm text-plum">{line.productName}</p>
                       <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-muted">
                         Gift code
                       </p>
                       <p className="font-display text-2xl tracking-wide text-plum">
                         {line.giftCode}
                       </p>
+                      {line.balanceLabel ? (
+                        <p className="mt-2 text-sm text-muted">
+                          Balance: <strong className="text-plum">{line.balanceLabel}</strong>
+                        </p>
+                      ) : null}
                     </li>
                   ))}
                 </ul>
               )}
 
               <p className="mt-4 text-sm text-muted">
-                Keep these codes safe — use them when booking, or forward the email if
-                a gift is for someone else.
+                Keep these codes safe — use them when booking a class or buying a class pack.
+                Spending less than the full value leaves the remaining balance on the same code.
               </p>
             </>
           ) : (
