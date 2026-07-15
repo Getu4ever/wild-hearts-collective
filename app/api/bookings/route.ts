@@ -77,6 +77,7 @@ export async function POST(request: Request) {
   let normalizedName = name.trim();
   let normalizedEmail = email.trim().toLowerCase();
   let normalizedPhone = phone?.trim() || null;
+  let profilePhone: string | null = null;
 
   if (memberSession) {
     const member = await db.user.findUnique({
@@ -88,7 +89,8 @@ export async function POST(request: Request) {
       userId = member.id;
       normalizedName = member.name;
       normalizedEmail = member.email.toLowerCase();
-      normalizedPhone = phone?.trim() || member.phone?.trim() || null;
+      profilePhone = member.phone?.trim() || null;
+      normalizedPhone = phone?.trim() || profilePhone;
     }
   }
 
@@ -97,6 +99,14 @@ export async function POST(request: Request) {
       { error: "Telephone number is required." },
       { status: 400 },
     );
+  }
+
+  // Persist phone on the member profile so they are not asked again next booking.
+  if (userId && (!profilePhone || profilePhone !== normalizedPhone)) {
+    await db.user.update({
+      where: { id: userId },
+      data: { phone: normalizedPhone },
+    });
   }
 
   try {

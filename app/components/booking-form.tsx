@@ -264,7 +264,13 @@ export function BookingForm() {
       setNotes("");
       setVoucherCode("");
       setUseCredit(false);
-      if (!member) {
+      if (member) {
+        const savedPhone = trimmedPhone;
+        setMember((current) =>
+          current ? { ...current, phone: savedPhone } : current,
+        );
+        setContact((current) => ({ ...current, phone: savedPhone }));
+      } else {
         setContact({ name: "", email: "", phone: "" });
       }
       setSelectedSessionId("");
@@ -647,10 +653,14 @@ export function BookingForm() {
                     }
                     className={fieldClassName()}
                   />
-                  {!member.phone && (
+                  {!member.phone ? (
                     <p className="mt-2 text-xs text-muted">
                       Add your telephone number to complete your booking. It will be saved to your
-                      profile.
+                      profile for next time.
+                    </p>
+                  ) : (
+                    <p className="mt-2 text-xs text-muted">
+                      Saved on your profile. Update it here if it has changed.
                     </p>
                   )}
                 </div>
