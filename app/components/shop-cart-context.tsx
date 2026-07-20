@@ -10,7 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { getShopProductById, type ShopProduct } from "@/lib/shop-data";
+import type { ShopProduct } from "@/lib/shop-data";
 
 const STORAGE_KEY = "whc-shop-basket";
 
@@ -54,7 +54,7 @@ type ShopCartContextValue = {
 
 const ShopCartContext = createContext<ShopCartContextValue | null>(null);
 
-function readStoredLines(): BasketLine[] {
+function readStoredLines(productById: Map<string, ShopProduct>): BasketLine[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -66,14 +66,25 @@ function readStoredLines(): BasketLine[] {
         typeof line.productId === "string" &&
         typeof line.quantity === "number" &&
         line.quantity > 0 &&
-        Boolean(getShopProductById(line.productId)?.isAvailable),
+        Boolean(productById.get(line.productId)?.isAvailable),
     );
   } catch {
     return [];
   }
 }
 
-export function ShopCartProvider({ children }: { children: ReactNode }) {
+export function ShopCartProvider({
+  children,
+  products,
+}: {
+  children: ReactNode;
+  products: ShopProduct[];
+}) {
+  const productById = useMemo(
+    () => new Map(products.map((product) => [product.id, product])),
+    [products],
+  );
+
   const [lines, setLines] = useState<BasketLine[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -83,9 +94,9 @@ export function ShopCartProvider({ children }: { children: ReactNode }) {
   const bumpTimer = useRef<number | null>(null);
 
   useEffect(() => {
-    setLines(readStoredLines());
+    setLines(readStoredLines(productById));
     setHydrated(true);
-  }, []);
+  }, [productById]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -168,12 +179,12 @@ export function ShopCartProvider({ children }: { children: ReactNode }) {
   const productLines = useMemo(() => {
     return lines
       .map((line) => {
-        const product = getShopProductById(line.productId);
+        const product = productById.get(line.productId);
         if (!product) return null;
         return { ...line, product };
       })
       .filter((line): line is BasketProductLine => line !== null);
-  }, [lines]);
+  }, [lines, productById]);
 
   const itemCount = useMemo(
     () => productLines.reduce((sum, line) => sum + line.quantity, 0),

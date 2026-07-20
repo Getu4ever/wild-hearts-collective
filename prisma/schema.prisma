@@ -271,10 +271,11 @@ model ShopOrder {
 }
 
 model ShopOrderItem {
-  id               String    @id @default(cuid())
+  id               String       @id @default(cuid())
   orderId          String
-  order            ShopOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order            ShopOrder    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productId        String?
+  product          ShopProduct? @relation(fields: [productId], references: [id], onDelete: SetNull)
   productName      String
   productSlug      String?
   category         String?
@@ -289,6 +290,31 @@ model ShopOrderItem {
   @@index([orderId])
   @@index([productId])
   @@index([giftCardId])
+}
+
+/** Client-managed shop catalog — editable in admin. */
+model ShopProduct {
+  id              String           @id @default(cuid())
+  slug            String           @unique
+  name            String
+  description     String
+  category        String
+  pricePence      Int
+  isAvailable     Boolean          @default(false)
+  digitalDelivery Boolean          @default(false)
+  image           String
+  imageGradient   String           @default("from-pink-soft via-cream to-sage-light")
+  variants        Json?
+  sortOrder       Int              @default(0)
+  isArchived      Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  orderItems      ShopOrderItem[]
+
+  @@index([category])
+  @@index([isAvailable, isArchived])
+  @@index([sortOrder])
+  @@index([createdAt])
 }
 
 /** Monetised shop e-gift cards with a remaining balance in pence. */

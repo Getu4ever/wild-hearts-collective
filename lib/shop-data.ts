@@ -622,19 +622,6 @@ export const productsData: ShopProduct[] = [
 
 export type ShopSortOption = "newest" | "price-asc" | "price-desc";
 
-export function getShopProductById(id: string) {
-  return productsData.find((product) => product.id === id) ?? null;
-}
-
-/** Any catalog item marked available for online purchase. */
-export function getPurchasableShopProduct(id: string) {
-  const product = getShopProductById(id);
-  if (!product || !product.isAvailable) {
-    return null;
-  }
-  return product;
-}
-
 /** Digital gift vouchers / e-gift cards that issue redeemable codes. */
 export function isGiftVoucherProduct(product: Pick<ShopProduct, "digitalDelivery">) {
   return product.digitalDelivery;
@@ -646,13 +633,22 @@ export function getShopFulfillmentType(
   return product.digitalDelivery ? "gift_card" : "physical";
 }
 
+export function slugifyProductName(name: string) {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
 export function filterAndSortProducts({
-  products = productsData,
+  products,
   category,
   query,
   sort = "newest",
 }: {
-  products?: ShopProduct[];
+  products: ShopProduct[];
   category?: ShopCategoryId | "all";
   query?: string;
   sort?: ShopSortOption;

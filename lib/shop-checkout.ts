@@ -8,8 +8,10 @@ import {
 import { generateGiftCardCode, issueGiftCard } from "@/lib/gift-card-service";
 import { db } from "@/lib/db";
 import {
-  getShopFulfillmentType,
   getShopProductById,
+} from "@/lib/shop-catalog-service";
+import {
+  getShopFulfillmentType,
   isGiftVoucherProduct,
 } from "@/lib/shop-data";
 import {
@@ -66,14 +68,25 @@ function parseCartMetadata(session: Stripe.Checkout.Session): CartMetaItem[] {
   return [];
 }
 
+import type { ShopProduct } from "@/lib/shop-data";
+
 function resolveDigitalDelivery(
   item: CartMetaItem,
-  product: ReturnType<typeof getShopProductById>,
+  product: ShopProduct | null,
 ) {
   if (typeof item.d === "number") return item.d === 1;
   if (product) return isGiftVoucherProduct(product);
   // Legacy carts without `d` were gift vouchers only.
   return true;
+}
+
+async function resolveCartProducts(cart: CartMetaItem[]) {
+  return Promise.all(
+    cart.map(async (item) => ({
+      item,
+      product: await getShopProductById(item.id),
+    })),
+  );
 }
 
 /**
@@ -130,9 +143,10 @@ export async function fulfillShopVoucherCheckout(sessionInput: Stripe.Checkout.S
       ? SHOP_ORDER_SOURCE.product
       : SHOP_ORDER_SOURCE.voucher;
 
+  const resolvedCart = await resolveCartProducts(cart);
+
   await db.$transaction(async (tx) => {
-    for (const item of cart) {
-      const product = getShopProductById(item.id);
+    for (const { item, product } of resolvedCart) {
       const quantity = Math.max(1, Math.floor(item.q || 1));
       const productName = product?.name ?? item.n ?? "Shop item";
       const pricePence = product?.pricePence ?? 0;
@@ -424,6 +438,13 @@ async function loadAlreadyFulfilledResult(
       })) ?? [];
 
   if (!existingOrder && cards.length > 0) {
+    const cardProducts = await Promise.all(
+      cards.map(async (card) => ({
+        card,
+        product: card.productId ? await getShopProductById(card.productId) : null,
+      })),
+    );
+
     await recordShopOrder({
       stripeSessionId: session.id,
       sourceType:
@@ -436,28 +457,25 @@ async function loadAlreadyFulfilledResult(
       totalPence:
         session.amount_total ??
         cards.reduce((sum, card) => sum + card.initialBalancePence, 0),
-      items: cards.map((card) => {
-        const product = card.productId ? getShopProductById(card.productId) : null;
-        return {
-          productId: card.productId,
-          productName: card.productName,
-          productSlug: product?.slug ?? null,
-          category: product?.category ?? "gift-vouchers",
-          quantity: 1,
-          unitPricePence: card.initialBalancePence,
-          fulfillmentType: SHOP_FULFILLMENT_TYPE.giftCard,
-          giftCardId: card.id,
-        };
-      }),
+      items: cardProducts.map(({ card, product }) => ({
+        productId: card.productId,
+        productName: card.productName,
+        productSlug: product?.slug ?? null,
+        category: product?.category ?? "gift-vouchers",
+        quantity: 1,
+        unitPricePence: card.initialBalancePence,
+        fulfillmentType: SHOP_FULFILLMENT_TYPE.giftCard,
+        giftCardId: card.id,
+      })),
     });
   }
 
   if (!existingOrder && physicalLines.length === 0) {
     const cart = parseCartMetadata(session);
-    physicalLines = cart
-      .filter((item) => !resolveDigitalDelivery(item, getShopProductById(item.id)))
-      .map((item) => {
-        const product = getShopProductById(item.id);
+    const resolvedLegacyCart = await resolveCartProducts(cart);
+    physicalLines = resolvedLegacyCart
+      .filter(({ item, product }) => !resolveDigitalDelivery(item, product))
+      .map(({ item, product }) => {
         const quantity = Math.max(1, Math.floor(item.q || 1));
         const pricePence = product?.pricePence ?? 0;
         return {

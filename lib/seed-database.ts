@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { UK_TIMEZONE, ukLocalToUtc } from "@/lib/booking-config";
 import { db } from "@/lib/db";
+import { seedShopProductsIfEmpty } from "@/lib/shop-catalog-service";
 
 const classSeed = [
   {
@@ -194,6 +195,7 @@ export async function ensureSeededDatabase() {
     seedPromise = seedDatabaseIfEmpty(db)
       .then(async () => {
         await seedClassPacks(db);
+        await seedShopProductsIfEmpty();
       })
       .catch((error) => {
         seedPromise = null;

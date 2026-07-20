@@ -334,6 +334,48 @@ async function main() {
     ON DELETE CASCADE ON UPDATE CASCADE
   `);
 
+  await run(`
+    CREATE TABLE IF NOT EXISTS "ShopProduct" (
+      "id" TEXT NOT NULL,
+      "slug" TEXT NOT NULL,
+      "name" TEXT NOT NULL,
+      "description" TEXT NOT NULL,
+      "category" TEXT NOT NULL,
+      "pricePence" INTEGER NOT NULL,
+      "isAvailable" BOOLEAN NOT NULL DEFAULT false,
+      "digitalDelivery" BOOLEAN NOT NULL DEFAULT false,
+      "image" TEXT NOT NULL,
+      "imageGradient" TEXT NOT NULL DEFAULT 'from-pink-soft via-cream to-sage-light',
+      "variants" JSONB,
+      "sortOrder" INTEGER NOT NULL DEFAULT 0,
+      "isArchived" BOOLEAN NOT NULL DEFAULT false,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "ShopProduct_pkey" PRIMARY KEY ("id")
+    )
+  `);
+  await run(
+    'CREATE UNIQUE INDEX IF NOT EXISTS "ShopProduct_slug_key" ON "ShopProduct"("slug")',
+  );
+  await run(
+    'CREATE INDEX IF NOT EXISTS "ShopProduct_category_idx" ON "ShopProduct"("category")',
+  );
+  await run(
+    'CREATE INDEX IF NOT EXISTS "ShopProduct_isAvailable_isArchived_idx" ON "ShopProduct"("isAvailable", "isArchived")',
+  );
+  await run(
+    'CREATE INDEX IF NOT EXISTS "ShopProduct_sortOrder_idx" ON "ShopProduct"("sortOrder")',
+  );
+  await run(
+    'CREATE INDEX IF NOT EXISTS "ShopProduct_createdAt_idx" ON "ShopProduct"("createdAt")',
+  );
+  await runOptional(`
+    ALTER TABLE "ShopOrderItem"
+    ADD CONSTRAINT "ShopOrderItem_productId_fkey"
+    FOREIGN KEY ("productId") REFERENCES "ShopProduct"("id")
+    ON DELETE SET NULL ON UPDATE CASCADE
+  `);
+
   console.log("Schema sync complete.");
 }
 

@@ -26,7 +26,7 @@ const SORT_OPTIONS: { value: ShopSortOption; label: string }[] = [
 
 export function ShopStorefront({ products, cancelled = false }: ShopStorefrontProps) {
   return (
-    <ShopCartProvider>
+    <ShopCartProvider products={products}>
       <ShopStorefrontInner products={products} cancelled={cancelled} />
       <ShopFlyToBasket />
       <ShopFloatingBasket />

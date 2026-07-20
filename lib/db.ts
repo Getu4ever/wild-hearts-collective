@@ -70,8 +70,18 @@ function createPrismaClient() {
   });
 }
 
-export const db = globalForPrisma.prisma ?? createPrismaClient();
+/** Dev HMR can keep an old Prisma client missing newly added models — recreate when stale. */
+function getPrismaClient() {
+  const cached = globalForPrisma.prisma;
+  if (cached && "shopProduct" in cached) {
+    return cached;
+  }
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = db;
+  const client = createPrismaClient();
+  if (process.env.NODE_ENV !== "production") {
+    globalForPrisma.prisma = client;
+  }
+  return client;
 }
+
+export const db = getPrismaClient();

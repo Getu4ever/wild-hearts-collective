@@ -3,7 +3,7 @@ import { ContentSection } from "@/app/components/content-section";
 import { PageHero } from "@/app/components/page-hero";
 import { SectionHeading } from "@/app/components/section-heading";
 import { ShopStorefront } from "@/app/components/shop-storefront";
-import { productsData } from "@/lib/shop-data";
+import { listStorefrontShopProducts } from "@/lib/shop-catalog-service";
 
 export const metadata: Metadata = {
   title: "Shop",
@@ -17,6 +17,7 @@ type ShopPageProps = {
 
 export default async function ShopPage({ searchParams }: ShopPageProps) {
   const { cancelled } = await searchParams;
+  const products = await listStorefrontShopProducts();
 
   return (
     <>
@@ -34,7 +35,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
 
         <div className="mt-10">
           <ShopStorefront
-            products={productsData}
+            products={products}
             cancelled={cancelled === "1"}
           />
         </div>
