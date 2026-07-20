@@ -938,3 +938,112 @@ export async function sendShopGiftVoucherEmail(
     }),
   ]);
 }
+
+type ShopProductOrderLine = {
+  productName: string;
+  priceLabel: string;
+  quantity: number;
+  image?: string;
+};
+
+type ShopProductOrderDetails = {
+  lines: ShopProductOrderLine[];
+  totalLabel: string;
+  shopUrl: string;
+  hasGiftVouchers?: boolean;
+};
+
+/** Confirmation email for physical / non-voucher shop catalog purchases. */
+export async function sendShopProductOrderEmail(
+  customer: CustomerDetails,
+  order: ShopProductOrderDetails,
+) {
+  const baseUrl = getAppBaseUrl();
+  const summary = order.lines
+    .map((line) => `${line.quantity}× ${line.productName}`)
+    .join(", ");
+  const itemRows = order.lines
+    .map((line) => {
+      const imagePath = line.image?.startsWith("/")
+        ? line.image
+        : line.image
+          ? `/${line.image}`
+          : null;
+      const imageUrl = imagePath ? `${baseUrl}${imagePath}` : null;
+      const imageCell = imageUrl
+        ? `<td style="width:72px;padding:0 14px 0 0;vertical-align:top;">
+            <img
+              src="${imageUrl}"
+              alt=""
+              width="72"
+              height="72"
+              style="display:block;width:72px;height:72px;object-fit:cover;border-radius:6px;border:1px solid #e8dfd4;background:#F6F2EC;"
+            />
+          </td>`
+        : "";
+
+      return `
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width:100%;margin:0 0 16px;">
+          <tr>
+            ${imageCell}
+            <td style="vertical-align:top;">
+              <p style="margin:0;font-weight:600;">${line.quantity}× ${line.productName}</p>
+              <p style="margin:4px 0 0;">${line.priceLabel}</p>
+            </td>
+          </tr>
+        </table>
+      `;
+    })
+    .join("");
+
+  const giftNote = order.hasGiftVouchers
+    ? `<p>Your gift voucher codes were sent in a separate email.</p>`
+    : "";
+
+  await Promise.all([
+    sendEmail({
+      to: customer.email,
+      subject: `Order confirmed — ${summary}`.slice(0, 120),
+      html: buildBrandedEmail({
+        previewText: `Thanks ${customer.name}, your Wild Hearts shop order is confirmed.`,
+        heading: "Order confirmed",
+        bodyHtml: `
+          <p>Hi ${customer.name},</p>
+          <p>
+            Thank you for your shop order. We&apos;ll prepare your items for UK shipping
+            and be in touch if we need anything else.
+          </p>
+          ${itemRows}
+          <p><strong>Total paid:</strong> ${order.totalLabel}</p>
+          ${giftNote}
+        `,
+        cta: {
+          label: "Back to shop",
+          href: order.shopUrl,
+        },
+      }),
+    }),
+    sendEmail({
+      to: getStudioEmail(),
+      subject: `Shop product order — ${summary}`.slice(0, 120),
+      html: buildBrandedEmail({
+        previewText: `${customer.name} purchased ${summary}`,
+        heading: "Shop product purchase",
+        bodyHtml: `
+          <p>A physical / catalog shop order was paid and needs fulfilment.</p>
+          <p>
+            <strong>Buyer:</strong> ${customer.name}<br />
+            <strong>Email:</strong> ${customer.email}<br />
+            <strong>Total:</strong> ${order.totalLabel}
+          </p>
+          ${itemRows}
+          <p>Shipping details are on the Stripe Checkout session. Sales also appear in Admin → Shop.</p>
+        `,
+        cta: {
+          label: "View shop",
+          href: order.shopUrl,
+        },
+      }),
+    }),
+  ]);
+}

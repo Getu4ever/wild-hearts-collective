@@ -273,6 +273,67 @@ async function main() {
     'CREATE INDEX IF NOT EXISTS "ClassPackPurchase_giftCardId_idx" ON "ClassPackPurchase"("giftCardId")',
   );
 
+  await run(`
+    CREATE TABLE IF NOT EXISTS "ShopOrder" (
+      "id" TEXT NOT NULL,
+      "stripeSessionId" TEXT NOT NULL,
+      "status" TEXT NOT NULL DEFAULT 'paid',
+      "sourceType" TEXT NOT NULL DEFAULT 'shop_voucher',
+      "purchaserEmail" TEXT,
+      "purchaserName" TEXT,
+      "totalPence" INTEGER NOT NULL,
+      "currency" TEXT NOT NULL DEFAULT 'gbp',
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "ShopOrder_pkey" PRIMARY KEY ("id")
+    )
+  `);
+  await run(
+    'CREATE UNIQUE INDEX IF NOT EXISTS "ShopOrder_stripeSessionId_key" ON "ShopOrder"("stripeSessionId")',
+  );
+  await run(
+    'CREATE INDEX IF NOT EXISTS "ShopOrder_createdAt_idx" ON "ShopOrder"("createdAt")',
+  );
+  await run(
+    'CREATE INDEX IF NOT EXISTS "ShopOrder_purchaserEmail_idx" ON "ShopOrder"("purchaserEmail")',
+  );
+  await run(
+    'CREATE INDEX IF NOT EXISTS "ShopOrder_status_idx" ON "ShopOrder"("status")',
+  );
+
+  await run(`
+    CREATE TABLE IF NOT EXISTS "ShopOrderItem" (
+      "id" TEXT NOT NULL,
+      "orderId" TEXT NOT NULL,
+      "productId" TEXT,
+      "productName" TEXT NOT NULL,
+      "productSlug" TEXT,
+      "category" TEXT,
+      "quantity" INTEGER NOT NULL DEFAULT 1,
+      "unitPricePence" INTEGER NOT NULL,
+      "lineTotalPence" INTEGER NOT NULL,
+      "fulfillmentType" TEXT NOT NULL DEFAULT 'gift_card',
+      "giftCardId" TEXT,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "ShopOrderItem_pkey" PRIMARY KEY ("id")
+    )
+  `);
+  await run(
+    'CREATE INDEX IF NOT EXISTS "ShopOrderItem_orderId_idx" ON "ShopOrderItem"("orderId")',
+  );
+  await run(
+    'CREATE INDEX IF NOT EXISTS "ShopOrderItem_productId_idx" ON "ShopOrderItem"("productId")',
+  );
+  await run(
+    'CREATE INDEX IF NOT EXISTS "ShopOrderItem_giftCardId_idx" ON "ShopOrderItem"("giftCardId")',
+  );
+  await runOptional(`
+    ALTER TABLE "ShopOrderItem"
+    ADD CONSTRAINT "ShopOrderItem_orderId_fkey"
+    FOREIGN KEY ("orderId") REFERENCES "ShopOrder"("id")
+    ON DELETE CASCADE ON UPDATE CASCADE
+  `);
+
   console.log("Schema sync complete.");
 }
 

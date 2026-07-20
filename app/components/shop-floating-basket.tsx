@@ -168,7 +168,7 @@ export function ShopFloatingBasket() {
                   Your basket is empty
                 </p>
                 <p className="mt-2 max-w-xs text-sm text-muted">
-                  Add gift vouchers from the shop, then checkout when you are ready.
+                  Add available products from the shop, then checkout when you are ready.
                 </p>
                 <button
                   type="button"

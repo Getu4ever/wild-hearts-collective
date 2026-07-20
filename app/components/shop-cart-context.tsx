@@ -100,7 +100,7 @@ export function ShopCartProvider({ children }: { children: ReactNode }) {
 
   const addToBasket = useCallback(
     (product: ShopProduct, options?: { imageEl?: HTMLElement | null }) => {
-      if (!product.isAvailable || !product.digitalDelivery) return;
+      if (!product.isAvailable) return;
 
       setLines((current) => {
         const existing = current.find((line) => line.productId === product.id);

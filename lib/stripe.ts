@@ -160,7 +160,7 @@ export async function createClassPackCheckoutSession(
   });
 }
 
-type ShopVoucherCheckoutItem = {
+type ShopCheckoutItem = {
   productId: string;
   productName: string;
   productSlug: string;
@@ -169,15 +169,14 @@ type ShopVoucherCheckoutItem = {
   pricePence: number;
   description: string;
   quantity: number;
+  digitalDelivery: boolean;
 };
 
 /**
- * Hosted Stripe Checkout for one or more digital gift vouchers.
- * No shipping — digital delivery only.
+ * Hosted Stripe Checkout for any purchasable shop basket.
+ * Gift vouchers stay digital-only; physical items collect a shipping address.
  */
-export async function createShopVoucherCheckoutSession(
-  items: ShopVoucherCheckoutItem[],
-) {
+export async function createShopCheckoutSession(items: ShopCheckoutItem[]) {
   if (!process.env.STRIPE_SECRET_KEY) {
     throw new Error("Stripe is not configured.");
   }
@@ -191,20 +190,33 @@ export async function createShopVoucherCheckoutSession(
   const summary = items
     .map((item) => `${item.quantity}× ${item.productName}`)
     .join(", ");
+  const hasPhysical = items.some((item) => !item.digitalDelivery);
+  const hasGiftVoucher = items.some((item) => item.digitalDelivery);
 
   return stripe.checkout.sessions.create({
     mode: "payment",
     billing_address_collection: "auto",
     customer_creation: "if_required",
+    ...(hasPhysical
+      ? {
+          shipping_address_collection: {
+            allowed_countries: ["GB"],
+          },
+        }
+      : {}),
     metadata: {
-      type: "shop_voucher",
+      // shop_voucher = gift cards only; shop_product = any physical / mixed catalog sale
+      type: hasPhysical ? "shop_product" : "shop_voucher",
       emailDelivered: "false",
+      hasPhysical: hasPhysical ? "true" : "false",
+      hasGiftVoucher: hasGiftVoucher ? "true" : "false",
       // Stripe metadata values max 500 chars — keep a compact cart payload.
       cart: JSON.stringify(
         items.map((item) => ({
           id: item.productId,
           q: item.quantity,
           n: item.productName.slice(0, 40),
+          d: item.digitalDelivery ? 1 : 0,
         })),
       ),
       productName: summary.slice(0, 450),
@@ -216,7 +228,9 @@ export async function createShopVoucherCheckoutSession(
         unit_amount: item.pricePence,
         product_data: {
           name: item.productName,
-          description: `${item.description} — Digital delivery by email (no shipping).`,
+          description: item.digitalDelivery
+            ? `${item.description} — Digital delivery by email (no shipping).`
+            : `${item.description} — Ships to a UK address.`,
           // Stripe needs absolute, publicly reachable HTTPS URLs.
           images: [`${baseUrl}${item.image.startsWith("/") ? item.image : `/${item.image}`}`],
         },
@@ -225,4 +239,13 @@ export async function createShopVoucherCheckoutSession(
     success_url: `${baseUrl}/shop/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${baseUrl}/shop?cancelled=1`,
   });
+}
+
+/** @deprecated Prefer createShopCheckoutSession. */
+export async function createShopVoucherCheckoutSession(
+  items: Omit<ShopCheckoutItem, "digitalDelivery">[],
+) {
+  return createShopCheckoutSession(
+    items.map((item) => ({ ...item, digitalDelivery: true })),
+  );
 }

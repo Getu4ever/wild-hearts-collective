@@ -1,6 +1,7 @@
 /**
- * Shop catalog — mock product data for the storefront.
- * Only Gift Vouchers are purchasable (Stripe). All other categories are Coming Soon.
+ * Shop catalog — product data for the storefront.
+ * Set `isAvailable: true` to go live. Digital gift vouchers use `digitalDelivery: true`
+ * (email codes). Physical catalog items use `digitalDelivery: false` (UK shipping).
  */
 
 export const SHOP_CATEGORIES = {
@@ -625,12 +626,24 @@ export function getShopProductById(id: string) {
   return productsData.find((product) => product.id === id) ?? null;
 }
 
+/** Any catalog item marked available for online purchase. */
 export function getPurchasableShopProduct(id: string) {
   const product = getShopProductById(id);
-  if (!product || !product.isAvailable || !product.digitalDelivery) {
+  if (!product || !product.isAvailable) {
     return null;
   }
   return product;
+}
+
+/** Digital gift vouchers / e-gift cards that issue redeemable codes. */
+export function isGiftVoucherProduct(product: Pick<ShopProduct, "digitalDelivery">) {
+  return product.digitalDelivery;
+}
+
+export function getShopFulfillmentType(
+  product: Pick<ShopProduct, "digitalDelivery">,
+): "gift_card" | "physical" {
+  return product.digitalDelivery ? "gift_card" : "physical";
 }
 
 export function filterAndSortProducts({

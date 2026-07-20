@@ -20,7 +20,7 @@ export function ShopProductCard({ product }: ShopProductCardProps) {
 
   const categoryLabel = SHOP_CATEGORIES[product.category].shortLabel;
   const priceLabel = formatMoneyFromPence(product.pricePence);
-  const canPurchase = product.isAvailable && product.digitalDelivery;
+  const canPurchase = product.isAvailable;
 
   function handleAddToBasket() {
     if (!canPurchase) return;
@@ -60,7 +60,7 @@ export function ShopProductCard({ product }: ShopProductCardProps) {
         <div className="absolute left-3 top-3 flex flex-wrap gap-2">
           {canPurchase ? (
             <span className="rounded-sm bg-sage px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white shadow-sm">
-              Digital delivery
+              {product.digitalDelivery ? "Digital delivery" : "Ready to ship"}
             </span>
           ) : (
             <span className="rounded-sm bg-plum/70 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/95 backdrop-blur-sm">

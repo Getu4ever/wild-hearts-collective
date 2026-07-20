@@ -247,6 +247,50 @@ model Voucher {
   @@index([expiresAt])
 }
 
+/**
+ * Shop checkout ledger — one row per paid Stripe session.
+ * Covers gift vouchers today and physical / other catalog items later.
+ */
+model ShopOrder {
+  id               String          @id @default(cuid())
+  stripeSessionId  String          @unique
+  status           String          @default("paid")
+  /** e.g. shop_voucher | shop_product */
+  sourceType       String          @default("shop_voucher")
+  purchaserEmail   String?
+  purchaserName    String?
+  totalPence       Int
+  currency         String          @default("gbp")
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  items            ShopOrderItem[]
+
+  @@index([createdAt])
+  @@index([purchaserEmail])
+  @@index([status])
+}
+
+model ShopOrderItem {
+  id               String    @id @default(cuid())
+  orderId          String
+  order            ShopOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId        String?
+  productName      String
+  productSlug      String?
+  category         String?
+  quantity         Int       @default(1)
+  unitPricePence   Int
+  lineTotalPence   Int
+  /** gift_card | physical | digital */
+  fulfillmentType  String    @default("gift_card")
+  giftCardId       String?
+  createdAt        DateTime  @default(now())
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([giftCardId])
+}
+
 /** Monetised shop e-gift cards with a remaining balance in pence. */
 model GiftCard {
   id                  String              @id @default(cuid())

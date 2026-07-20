@@ -84,11 +84,14 @@ export async function POST(request: Request) {
           session.id,
         );
       }
-    } else if (session.metadata?.type === "shop_voucher") {
+    } else if (
+      session.metadata?.type === "shop_voucher" ||
+      session.metadata?.type === "shop_product"
+    ) {
       try {
         await fulfillShopVoucherCheckout(session);
       } catch (error) {
-        console.error("Failed to fulfill shop voucher checkout:", error);
+        console.error("Failed to fulfill shop checkout:", error);
       }
     } else {
       const bookingId =
@@ -127,7 +130,8 @@ export async function POST(request: Request) {
       bookingId &&
       session.metadata?.type !== "class_pack" &&
       session.metadata?.type !== "membership" &&
-      session.metadata?.type !== "shop_voucher"
+      session.metadata?.type !== "shop_voucher" &&
+      session.metadata?.type !== "shop_product"
     ) {
       await cancelPendingBookingForExpiredCheckout(bookingId);
     }

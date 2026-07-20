@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { isStripeConfigured } from "@/lib/booking-config";
 import { getPurchasableShopProduct } from "@/lib/shop-data";
-import { createShopVoucherCheckoutSession } from "@/lib/stripe";
+import { createShopCheckoutSession } from "@/lib/stripe";
 
 type CheckoutBodyItem = {
   productId?: unknown;
@@ -9,8 +9,8 @@ type CheckoutBodyItem = {
 };
 
 /**
- * Starts Stripe Checkout for purchasable digital gift vouchers in the basket.
- * Physical / Coming soon categories are rejected server-side.
+ * Starts Stripe Checkout for any purchasable shop basket item.
+ * Coming-soon products (isAvailable: false) are rejected server-side.
  */
 export async function POST(request: Request) {
   if (!isStripeConfigured()) {
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error:
-            "One or more items are not available for online purchase. Physical products are coming soon.",
+            "One or more items are not available for online purchase yet.",
         },
         { status: 400 },
       );
@@ -74,11 +74,12 @@ export async function POST(request: Request) {
       pricePence: product.pricePence,
       description: product.description,
       quantity,
+      digitalDelivery: product.digitalDelivery,
     });
   }
 
   try {
-    const checkout = await createShopVoucherCheckoutSession(checkoutItems);
+    const checkout = await createShopCheckoutSession(checkoutItems);
 
     if (!checkout.url) {
       return NextResponse.json({ error: "Unable to start checkout." }, { status: 503 });
