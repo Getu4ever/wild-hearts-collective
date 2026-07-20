@@ -8,6 +8,7 @@ import {
 import { generateGiftCardCode, issueGiftCard } from "@/lib/gift-card-service";
 import { db } from "@/lib/db";
 import {
+  decrementProductStock,
   getShopProductById,
 } from "@/lib/shop-catalog-service";
 import {
@@ -241,6 +242,12 @@ export async function fulfillShopVoucherCheckout(sessionInput: Stripe.Checkout.S
       },
       tx,
     );
+
+    for (const { item, product } of resolvedCart) {
+      if (!product?.trackStock || !product.id) continue;
+      const quantity = Math.max(1, Math.floor(item.q || 1));
+      await decrementProductStock(product.id, quantity, tx);
+    }
   });
 
   const totalLabel = formatMoneyFromPence(session.amount_total ?? 0);

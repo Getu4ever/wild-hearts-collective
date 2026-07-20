@@ -14,6 +14,57 @@ export type ShopProductVariants = {
   colours?: string[];
 };
 
+export type StockStatus = "unlimited" | "in_stock" | "low" | "out";
+
+export function getProductStockStatus(product: {
+  trackStock: boolean;
+  stockQuantity: number;
+  lowStockThreshold: number;
+}): StockStatus {
+  if (!product.trackStock) return "unlimited";
+  if (product.stockQuantity <= 0) return "out";
+  if (product.stockQuantity <= product.lowStockThreshold) return "low";
+  return "in_stock";
+}
+
+export function stockStatusLabel(status: StockStatus) {
+  switch (status) {
+    case "unlimited":
+      return "Unlimited";
+    case "in_stock":
+      return "In stock";
+    case "low":
+      return "Low stock";
+    case "out":
+      return "Out of stock";
+  }
+}
+
+export function productHasStock(product: {
+  trackStock: boolean;
+  stockQuantity: number;
+  isAvailable: boolean;
+  isArchived?: boolean;
+}) {
+  if (product.isArchived || !product.isAvailable) return false;
+  if (!product.trackStock) return true;
+  return product.stockQuantity > 0;
+}
+
+export function productCanFulfillQuantity(
+  product: {
+    trackStock: boolean;
+    stockQuantity: number;
+    isAvailable: boolean;
+    isArchived?: boolean;
+  },
+  quantity: number,
+) {
+  if (!productHasStock(product)) return false;
+  if (!product.trackStock) return true;
+  return product.stockQuantity >= quantity;
+}
+
 export type AdminShopProductInput = {
   name: string;
   slug?: string;
@@ -26,6 +77,9 @@ export type AdminShopProductInput = {
   imageGradient?: string;
   variants?: ShopProductVariants | null;
   sortOrder?: number;
+  trackStock?: boolean;
+  stockQuantity?: number;
+  lowStockThreshold?: number;
 };
 
 function parseVariants(value: Prisma.JsonValue | null): ShopProductVariants | undefined {
@@ -55,9 +109,20 @@ export function mapShopProduct(record: {
   variants: Prisma.JsonValue | null;
   sortOrder: number;
   isArchived: boolean;
+  trackStock: boolean;
+  stockQuantity: number;
+  lowStockThreshold: number;
   createdAt: Date;
   updatedAt: Date;
-}): ShopProduct & { isArchived: boolean; sortOrder: number; updatedAt: string } {
+}): ShopProduct & {
+  isArchived: boolean;
+  sortOrder: number;
+  updatedAt: string;
+  stockStatus: StockStatus;
+  stockStatusLabel: string;
+  unitsSold: number;
+} {
+  const stockStatus = getProductStockStatus(record);
   return {
     id: record.id,
     slug: record.slug,
@@ -70,11 +135,40 @@ export function mapShopProduct(record: {
     image: record.image,
     imageGradient: record.imageGradient,
     variants: parseVariants(record.variants),
+    trackStock: record.trackStock,
+    stockQuantity: record.stockQuantity,
+    lowStockThreshold: record.lowStockThreshold,
     createdAt: record.createdAt.toISOString(),
     isArchived: record.isArchived,
     sortOrder: record.sortOrder,
     updatedAt: record.updatedAt.toISOString(),
+    stockStatus,
+    stockStatusLabel: stockStatusLabel(stockStatus),
+    unitsSold: 0,
   };
+}
+
+async function attachUnitsSold<T extends { id: string; unitsSold: number }>(
+  products: T[],
+): Promise<T[]> {
+  if (products.length === 0) return products;
+
+  const sold = await db.shopOrderItem.groupBy({
+    by: ["productId"],
+    where: { productId: { in: products.map((product) => product.id) } },
+    _sum: { quantity: true },
+  });
+
+  const soldByProductId = new Map(
+    sold
+      .filter((row) => row.productId)
+      .map((row) => [row.productId!, row._sum.quantity ?? 0]),
+  );
+
+  return products.map((product) => ({
+    ...product,
+    unitsSold: soldByProductId.get(product.id) ?? 0,
+  }));
 }
 
 async function ensureUniqueSlug(baseSlug: string, excludeId?: string) {
@@ -97,6 +191,20 @@ function validateProductInput(input: AdminShopProductInput) {
     throw new Error("Price must be zero or greater.");
   }
   if (!input.image.trim()) throw new Error("Product image path is required.");
+  if (input.trackStock) {
+    if (
+      input.stockQuantity != null &&
+      (!Number.isFinite(input.stockQuantity) || input.stockQuantity < 0)
+    ) {
+      throw new Error("Stock quantity cannot be negative.");
+    }
+    if (
+      input.lowStockThreshold != null &&
+      (!Number.isFinite(input.lowStockThreshold) || input.lowStockThreshold < 0)
+    ) {
+      throw new Error("Low stock threshold cannot be negative.");
+    }
+  }
 }
 
 function shopProductClient() {
@@ -127,6 +235,9 @@ export async function seedShopProductsIfEmpty() {
         imageGradient: product.imageGradient,
         variants: product.variants ?? undefined,
         sortOrder: index,
+        trackStock: !product.digitalDelivery,
+        stockQuantity: product.digitalDelivery ? 0 : 0,
+        lowStockThreshold: 5,
         createdAt: new Date(product.createdAt),
       },
     });
@@ -152,7 +263,35 @@ export async function listAdminShopProducts(options?: {
     where: options?.includeArchived ? undefined : { isArchived: false },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
   });
-  return records.map((record) => mapShopProduct(record));
+  return attachUnitsSold(records.map((record) => mapShopProduct(record)));
+}
+
+export async function getAdminShopInventoryOverview() {
+  const products = await listAdminShopProducts({ includeArchived: true });
+  const tracked = products.filter((product) => product.trackStock && !product.isArchived);
+
+  return {
+    summary: {
+      trackedProducts: tracked.length,
+      totalUnitsInStock: tracked.reduce((sum, product) => sum + product.stockQuantity, 0),
+      lowStockCount: tracked.filter((product) => product.stockStatus === "low").length,
+      outOfStockCount: tracked.filter((product) => product.stockStatus === "out").length,
+      unitsSold: products.reduce((sum, product) => sum + product.unitsSold, 0),
+    },
+    products: products
+      .filter((product) => !product.isArchived)
+      .sort((a, b) => {
+        const rank = (status: StockStatus) => {
+          if (status === "out") return 0;
+          if (status === "low") return 1;
+          if (status === "in_stock") return 2;
+          return 3;
+        };
+        const diff = rank(a.stockStatus) - rank(b.stockStatus);
+        if (diff !== 0) return diff;
+        return a.name.localeCompare(b.name);
+      }),
+  };
 }
 
 export async function getShopProductById(id: string) {
@@ -160,10 +299,53 @@ export async function getShopProductById(id: string) {
   return record ? mapShopProduct(record) : null;
 }
 
-export async function getPurchasableShopProduct(id: string) {
+export async function getPurchasableShopProduct(id: string, quantity = 1) {
   const product = await getShopProductById(id);
   if (!product || product.isArchived || !product.isAvailable) return null;
+  if (!productCanFulfillQuantity(product, quantity)) return null;
   return product;
+}
+
+export async function validateCheckoutStock(
+  items: Array<{ productId: string; quantity: number }>,
+) {
+  for (const item of items) {
+    const product = await getShopProductById(item.productId);
+    if (!product || !product.isAvailable || product.isArchived) {
+      throw new Error("One or more items are not available for online purchase yet.");
+    }
+    if (!productCanFulfillQuantity(product, item.quantity)) {
+      throw new Error(
+        product.trackStock
+          ? `Not enough stock for ${product.name}. Only ${product.stockQuantity} left.`
+          : `Unable to purchase ${product.name} right now.`,
+      );
+    }
+  }
+}
+
+export async function decrementProductStock(
+  productId: string,
+  quantity: number,
+  tx: Prisma.TransactionClient = db,
+) {
+  if (quantity <= 0) return;
+
+  const product = await tx.shopProduct.findUnique({ where: { id: productId } });
+  if (!product?.trackStock) return;
+
+  const updated = await tx.shopProduct.updateMany({
+    where: {
+      id: productId,
+      trackStock: true,
+      stockQuantity: { gte: quantity },
+    },
+    data: { stockQuantity: { decrement: quantity } },
+  });
+
+  if (updated.count !== 1) {
+    throw new Error(`Not enough stock remaining for ${product.name}.`);
+  }
 }
 
 export async function createAdminShopProduct(input: AdminShopProductInput) {
@@ -171,6 +353,15 @@ export async function createAdminShopProduct(input: AdminShopProductInput) {
   const baseSlug = slugifyProductName(input.slug?.trim() || input.name);
   const slug = await ensureUniqueSlug(baseSlug);
   const maxSort = await shopProductClient().aggregate({ _max: { sortOrder: true } });
+
+  const trackStock = input.trackStock ?? !input.digitalDelivery;
+  const stockQuantity = trackStock
+    ? Math.max(0, Math.round(input.stockQuantity ?? 0))
+    : 0;
+  const lowStockThreshold = Math.max(
+    0,
+    Math.round(input.lowStockThreshold ?? 5),
+  );
 
   const record = await shopProductClient().create({
     data: {
@@ -185,10 +376,13 @@ export async function createAdminShopProduct(input: AdminShopProductInput) {
       imageGradient: input.imageGradient?.trim() || "from-pink-soft via-cream to-sage-light",
       variants: input.variants ?? undefined,
       sortOrder: input.sortOrder ?? (maxSort._max.sortOrder ?? 0) + 1,
+      trackStock,
+      stockQuantity,
+      lowStockThreshold,
     },
   });
 
-  return mapShopProduct(record);
+  return attachUnitsSold([mapShopProduct(record)]).then(([product]) => product);
 }
 
 export async function updateAdminShopProduct(
@@ -201,19 +395,33 @@ export async function updateAdminShopProduct(
   const nextName = input.name?.trim() ?? existing.name;
   const nextCategory = (input.category ?? existing.category) as ShopCategoryId;
 
+  const nextDigital = input.digitalDelivery ?? existing.digitalDelivery;
+  const nextTrackStock = input.trackStock ?? existing.trackStock;
+  const nextStockQuantity =
+    input.stockQuantity != null
+      ? Math.max(0, Math.round(input.stockQuantity))
+      : existing.stockQuantity;
+  const nextLowStockThreshold =
+    input.lowStockThreshold != null
+      ? Math.max(0, Math.round(input.lowStockThreshold))
+      : existing.lowStockThreshold;
+
   validateProductInput({
     name: nextName,
     description: input.description ?? existing.description,
     category: nextCategory,
     pricePence: input.pricePence ?? existing.pricePence,
     isAvailable: input.isAvailable ?? existing.isAvailable,
-    digitalDelivery: input.digitalDelivery ?? existing.digitalDelivery,
+    digitalDelivery: nextDigital,
     image: input.image ?? existing.image,
     imageGradient: input.imageGradient ?? existing.imageGradient,
     variants:
       input.variants === undefined
         ? parseVariants(existing.variants ?? null)
         : input.variants ?? undefined,
+    trackStock: nextTrackStock,
+    stockQuantity: nextStockQuantity,
+    lowStockThreshold: nextLowStockThreshold,
   });
 
   let slug = existing.slug;
@@ -231,7 +439,7 @@ export async function updateAdminShopProduct(
       pricePence:
         input.pricePence != null ? Math.round(input.pricePence) : existing.pricePence,
       isAvailable: input.isAvailable ?? existing.isAvailable,
-      digitalDelivery: input.digitalDelivery ?? existing.digitalDelivery,
+      digitalDelivery: nextDigital,
       image: (input.image ?? existing.image).trim(),
       imageGradient:
         input.imageGradient?.trim() ?? existing.imageGradient,
@@ -241,10 +449,13 @@ export async function updateAdminShopProduct(
           : input.variants ?? PrismaNamespace.JsonNull,
       sortOrder: input.sortOrder ?? existing.sortOrder,
       isArchived: input.isArchived ?? existing.isArchived,
+      trackStock: nextTrackStock,
+      stockQuantity: nextTrackStock ? nextStockQuantity : 0,
+      lowStockThreshold: nextLowStockThreshold,
     },
   });
 
-  return mapShopProduct(record);
+  return attachUnitsSold([mapShopProduct(record)]).then(([product]) => product);
 }
 
 export async function archiveAdminShopProduct(id: string) {

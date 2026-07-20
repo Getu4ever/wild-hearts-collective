@@ -84,6 +84,27 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (typeof body.imageGradient === "string") payload.imageGradient = body.imageGradient;
     if ("sizes" in body || "colours" in body) payload.variants = parseVariants(body);
     if (typeof body.isArchived === "boolean") payload.isArchived = body.isArchived;
+    if (typeof body.trackStock === "boolean") payload.trackStock = body.trackStock;
+    if (body.stockQuantity != null) {
+      payload.stockQuantity = Math.max(
+        0,
+        Math.round(
+          typeof body.stockQuantity === "number"
+            ? body.stockQuantity
+            : Number.parseInt(String(body.stockQuantity), 10) || 0,
+        ),
+      );
+    }
+    if (body.lowStockThreshold != null) {
+      payload.lowStockThreshold = Math.max(
+        0,
+        Math.round(
+          typeof body.lowStockThreshold === "number"
+            ? body.lowStockThreshold
+            : Number.parseInt(String(body.lowStockThreshold), 10) || 0,
+        ),
+      );
+    }
 
     const product = await updateAdminShopProduct(id, payload);
     return NextResponse.json({ product });

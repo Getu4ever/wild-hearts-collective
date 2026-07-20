@@ -73,9 +73,19 @@ export type ShopProduct = {
     sizes?: string[];
     colours?: string[];
   };
+  /** When false, stock is unlimited (typical for digital gift vouchers). */
+  trackStock: boolean;
+  stockQuantity: number;
+  lowStockThreshold: number;
 };
 
-export const productsData: ShopProduct[] = [
+/** Static catalog entries used only for first-time DB seeding. */
+export type ShopProductSeed = Omit<
+  ShopProduct,
+  "trackStock" | "stockQuantity" | "lowStockThreshold"
+>;
+
+export const productsData: ShopProductSeed[] = [
   // ── Category 1: Gift Vouchers (purchasable) ─────────────────────────────
   {
     id: "gv-25",

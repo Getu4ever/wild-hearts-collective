@@ -307,6 +307,10 @@ model ShopProduct {
   variants        Json?
   sortOrder       Int              @default(0)
   isArchived      Boolean          @default(false)
+  /** When true, stockQuantity is enforced and decremented on sale. */
+  trackStock      Boolean          @default(false)
+  stockQuantity   Int              @default(0)
+  lowStockThreshold Int            @default(5)
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   orderItems      ShopOrderItem[]

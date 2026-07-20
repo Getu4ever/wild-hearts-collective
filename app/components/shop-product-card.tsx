@@ -20,7 +20,8 @@ export function ShopProductCard({ product }: ShopProductCardProps) {
 
   const categoryLabel = SHOP_CATEGORIES[product.category].shortLabel;
   const priceLabel = formatMoneyFromPence(product.pricePence);
-  const canPurchase = product.isAvailable;
+  const outOfStock = product.trackStock && product.stockQuantity <= 0;
+  const canPurchase = product.isAvailable && !outOfStock;
 
   function handleAddToBasket() {
     if (!canPurchase) return;
@@ -61,6 +62,10 @@ export function ShopProductCard({ product }: ShopProductCardProps) {
           {canPurchase ? (
             <span className="rounded-sm bg-sage px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white shadow-sm">
               {product.digitalDelivery ? "Digital delivery" : "Ready to ship"}
+            </span>
+          ) : outOfStock ? (
+            <span className="rounded-sm bg-brand/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white shadow-sm">
+              Out of stock
             </span>
           ) : (
             <span className="rounded-sm bg-plum/70 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/95 backdrop-blur-sm">
@@ -140,6 +145,14 @@ export function ShopProductCard({ product }: ShopProductCardProps) {
             }`}
           >
             {justAdded ? "Added" : "Add to basket"}
+          </button>
+        ) : outOfStock ? (
+          <button
+            type="button"
+            disabled
+            className="mt-5 w-full cursor-not-allowed rounded-sm border border-brand/20 bg-brand/5 px-4 py-3 text-sm font-semibold uppercase tracking-wider text-brand"
+          >
+            Out of stock
           </button>
         ) : (
           <button

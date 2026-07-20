@@ -71,6 +71,30 @@ export async function POST(request: Request) {
       imageGradient:
         typeof body.imageGradient === "string" ? body.imageGradient : undefined,
       variants: parseVariants(body),
+      trackStock:
+        typeof body.trackStock === "boolean" ? body.trackStock : undefined,
+      stockQuantity:
+        body.stockQuantity != null
+          ? Math.max(
+              0,
+              Math.round(
+                typeof body.stockQuantity === "number"
+                  ? body.stockQuantity
+                  : Number.parseInt(String(body.stockQuantity), 10) || 0,
+              ),
+            )
+          : undefined,
+      lowStockThreshold:
+        body.lowStockThreshold != null
+          ? Math.max(
+              0,
+              Math.round(
+                typeof body.lowStockThreshold === "number"
+                  ? body.lowStockThreshold
+                  : Number.parseInt(String(body.lowStockThreshold), 10) || 0,
+              ),
+            )
+          : undefined,
     });
 
     return NextResponse.json({ product }, { status: 201 });

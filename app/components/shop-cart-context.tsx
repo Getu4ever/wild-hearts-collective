@@ -66,7 +66,9 @@ function readStoredLines(productById: Map<string, ShopProduct>): BasketLine[] {
         typeof line.productId === "string" &&
         typeof line.quantity === "number" &&
         line.quantity > 0 &&
-        Boolean(productById.get(line.productId)?.isAvailable),
+        Boolean(productById.get(line.productId)?.isAvailable) &&
+        (!productById.get(line.productId)?.trackStock ||
+          (productById.get(line.productId)?.stockQuantity ?? 0) > 0),
     );
   } catch {
     return [];
@@ -112,6 +114,7 @@ export function ShopCartProvider({
   const addToBasket = useCallback(
     (product: ShopProduct, options?: { imageEl?: HTMLElement | null }) => {
       if (!product.isAvailable) return;
+      if (product.trackStock && product.stockQuantity <= 0) return;
 
       setLines((current) => {
         const existing = current.find((line) => line.productId === product.id);

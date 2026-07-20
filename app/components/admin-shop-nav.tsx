@@ -3,11 +3,12 @@ import Link from "next/link";
 export function AdminShopNav({
   active,
 }: {
-  active: "sales" | "products";
+  active: "sales" | "products" | "inventory";
 }) {
   const links = [
     { href: "/admin/shop", label: "Sales", id: "sales" as const },
     { href: "/admin/shop/products", label: "Products", id: "products" as const },
+    { href: "/admin/shop/inventory", label: "Inventory", id: "inventory" as const },
   ];
 
   return (

@@ -55,6 +55,9 @@ export default async function AdminShopProductEditPage({ params }: PageProps) {
             imageGradient: product.imageGradient,
             sizes: product.variants?.sizes?.join(", ") ?? "",
             colours: product.variants?.colours?.join(", ") ?? "",
+            trackStock: product.trackStock,
+            stockQuantity: product.stockQuantity,
+            lowStockThreshold: product.lowStockThreshold,
             isArchived: product.isArchived,
           }}
         />

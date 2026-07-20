@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { isStripeConfigured } from "@/lib/booking-config";
-import { getPurchasableShopProduct } from "@/lib/shop-catalog-service";
+import { getPurchasableShopProduct, validateCheckoutStock } from "@/lib/shop-catalog-service";
 import { createShopCheckoutSession } from "@/lib/stripe";
 
 type CheckoutBodyItem = {
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const product = await getPurchasableShopProduct(productId);
+    const product = await getPurchasableShopProduct(productId, quantity);
     if (!product) {
       return NextResponse.json(
         {
@@ -79,6 +79,13 @@ export async function POST(request: Request) {
   }
 
   try {
+    await validateCheckoutStock(
+      checkoutItems.map((item) => ({
+        productId: item.productId,
+        quantity: item.quantity,
+      })),
+    );
+
     const checkout = await createShopCheckoutSession(checkoutItems);
 
     if (!checkout.url) {

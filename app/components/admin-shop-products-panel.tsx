@@ -22,6 +22,12 @@ export type AdminCatalogProduct = {
   isArchived: boolean;
   sortOrder: number;
   updatedAt: string;
+  trackStock: boolean;
+  stockQuantity: number;
+  lowStockThreshold: number;
+  stockStatus: "unlimited" | "in_stock" | "low" | "out";
+  stockStatusLabel: string;
+  unitsSold: number;
 };
 
 type StatusFilter = "all" | "live" | "draft" | "archived";
@@ -263,6 +269,7 @@ export function AdminShopProductsPanel({
                   <th className="px-4 py-3 font-semibold">Product</th>
                   <th className="px-4 py-3 font-semibold">Category</th>
                   <th className="px-4 py-3 font-semibold">Price</th>
+                  <th className="px-4 py-3 font-semibold">Stock</th>
                   <th className="px-4 py-3 font-semibold">Status</th>
                   <th className="px-4 py-3 font-semibold">Updated</th>
                   <th className="px-4 py-3 font-semibold">
@@ -318,6 +325,16 @@ export function AdminShopProductsPanel({
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap font-medium text-plum">
                         {formatMoneyFromPence(product.pricePence)}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <p className="font-medium text-plum">
+                          {product.trackStock ? product.stockQuantity : "∞"}
+                        </p>
+                        {product.trackStock ? (
+                          <p className="mt-0.5 text-xs text-muted">
+                            {product.unitsSold} sold
+                          </p>
+                        ) : null}
                       </td>
                       <td className="px-4 py-4">
                         <span

@@ -376,6 +376,16 @@ async function main() {
     ON DELETE SET NULL ON UPDATE CASCADE
   `);
 
+  await run(
+    'ALTER TABLE "ShopProduct" ADD COLUMN IF NOT EXISTS "trackStock" BOOLEAN NOT NULL DEFAULT false',
+  );
+  await run(
+    'ALTER TABLE "ShopProduct" ADD COLUMN IF NOT EXISTS "stockQuantity" INTEGER NOT NULL DEFAULT 0',
+  );
+  await run(
+    'ALTER TABLE "ShopProduct" ADD COLUMN IF NOT EXISTS "lowStockThreshold" INTEGER NOT NULL DEFAULT 5',
+  );
+
   console.log("Schema sync complete.");
 }
 

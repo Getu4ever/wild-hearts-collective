@@ -34,6 +34,9 @@ export type AdminShopProductFormValues = {
   imageGradient: string;
   sizes: string;
   colours: string;
+  trackStock: boolean;
+  stockQuantity: number;
+  lowStockThreshold: number;
   isArchived?: boolean;
 };
 
@@ -64,6 +67,13 @@ export function AdminShopProductForm({ mode, initial }: AdminShopProductFormProp
   );
   const [sizes, setSizes] = useState(initial?.sizes ?? "");
   const [colours, setColours] = useState(initial?.colours ?? "");
+  const [trackStock, setTrackStock] = useState(initial?.trackStock ?? !initial?.digitalDelivery);
+  const [stockQuantity, setStockQuantity] = useState(
+    initial ? String(initial.stockQuantity) : "0",
+  );
+  const [lowStockThreshold, setLowStockThreshold] = useState(
+    initial ? String(initial.lowStockThreshold ?? 5) : "5",
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -106,6 +116,9 @@ export function AdminShopProductForm({ mode, initial }: AdminShopProductFormProp
           imageGradient,
           sizes,
           colours,
+          trackStock,
+          stockQuantity: Number.parseInt(stockQuantity, 10) || 0,
+          lowStockThreshold: Number.parseInt(lowStockThreshold, 10) || 0,
         }),
       });
 
@@ -249,6 +262,49 @@ export function AdminShopProductForm({ mode, initial }: AdminShopProductFormProp
         </section>
 
         <section className="rounded-lg border border-plum/10 bg-surface p-6 shadow-sm">
+          <h2 className="font-display text-2xl text-plum">Inventory</h2>
+          <p className="mt-2 text-sm text-muted">
+            Physical products usually track stock. Digital gift vouchers can stay unlimited.
+          </p>
+          <div className="mt-6 space-y-5">
+            <ToggleCard
+              label="Track stock"
+              description="When enabled, sales reduce the quantity on hand and out-of-stock items cannot be bought."
+              checked={trackStock}
+              onChange={setTrackStock}
+            />
+            {trackStock ? (
+              <div className="grid gap-5 sm:grid-cols-2">
+                <label className="block">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+                    Quantity in stock
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={stockQuantity}
+                    onChange={(event) => setStockQuantity(event.target.value)}
+                    className="mt-1.5 w-full rounded-sm border border-plum/15 bg-white px-3 py-2.5 text-sm text-plum outline-none focus:border-pink focus:ring-2 focus:ring-pink/20"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+                    Low stock alert at
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={lowStockThreshold}
+                    onChange={(event) => setLowStockThreshold(event.target.value)}
+                    className="mt-1.5 w-full rounded-sm border border-plum/15 bg-white px-3 py-2.5 text-sm text-plum outline-none focus:border-pink focus:ring-2 focus:ring-pink/20"
+                  />
+                </label>
+              </div>
+            ) : null}
+          </div>
+        </section>
+
+        <section className="rounded-lg border border-plum/10 bg-surface p-6 shadow-sm">
           <h2 className="font-display text-2xl text-plum">Media</h2>
           <div className="mt-6 space-y-5">
             <label className="block">
@@ -343,6 +399,11 @@ export function AdminShopProductForm({ mode, initial }: AdminShopProductFormProp
               <span className="rounded-full border border-plum/15 px-2.5 py-1 text-xs font-semibold text-muted">
                 {digitalDelivery ? "Digital delivery" : "Physical item"}
               </span>
+              {trackStock ? (
+                <span className="rounded-full border border-plum/15 px-2.5 py-1 text-xs font-semibold text-muted">
+                  {stockQuantity} in stock
+                </span>
+              ) : null}
             </div>
           </div>
         </section>
