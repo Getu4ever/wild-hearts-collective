@@ -1,6 +1,6 @@
 import type Stripe from "stripe";
 import { formatMoneyFromPence, isStripeConfigured } from "@/lib/booking-config";
-import { MEMBERSHIP_PLAN, MEMBERSHIP_STATUS, getMonthlyMembershipPricePence } from "@/lib/membership-config";
+import { MEMBERSHIP_PLAN, MEMBERSHIP_STATUS } from "@/lib/membership-config";
 import {
   getOrCreateStripeCustomer,
   getSubscriptionPeriodEnd,
@@ -8,6 +8,7 @@ import {
 } from "@/lib/membership-stripe";
 import { db } from "@/lib/db";
 import { getStripeClient } from "@/lib/stripe";
+import { resolveMonthlyMembershipPricePence } from "@/lib/studio-pricing-service";
 
 export type BillingPaymentMethod = {
   id: string;
@@ -65,7 +66,7 @@ function getInvoiceClientSecret(invoice: Stripe.Invoice) {
 
 export async function getOrCreateMembershipPriceId() {
   const stripe = getStripeClient();
-  const amount = getMonthlyMembershipPricePence();
+  const amount = await resolveMonthlyMembershipPricePence();
 
   const products = await stripe.products.list({ limit: 100, active: true });
   let product = products.data.find((item) => item.metadata.whc_plan === MEMBERSHIP_PLAN.monthly);
@@ -101,7 +102,9 @@ export async function getOrCreateMembershipPriceId() {
 export async function getMemberBillingSummary(userId: string): Promise<MemberBillingSummary> {
   const publishableKey = getPublishableKey();
   const configured = isStripeConfigured() && Boolean(publishableKey);
-  const membershipPriceLabel = formatMoneyFromPence(getMonthlyMembershipPricePence());
+  const membershipPriceLabel = formatMoneyFromPence(
+    await resolveMonthlyMembershipPricePence(),
+  );
 
   const user = await db.user.findUnique({
     where: { id: userId },

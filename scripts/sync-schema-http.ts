@@ -386,6 +386,15 @@ async function main() {
     'ALTER TABLE "ShopProduct" ADD COLUMN IF NOT EXISTS "lowStockThreshold" INTEGER NOT NULL DEFAULT 5',
   );
 
+  await run(`
+    CREATE TABLE IF NOT EXISTS "StudioSetting" (
+      "key" TEXT NOT NULL,
+      "value" TEXT NOT NULL,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "StudioSetting_pkey" PRIMARY KEY ("key")
+    )
+  `);
+
   console.log("Schema sync complete.");
 }
 

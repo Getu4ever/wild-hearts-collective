@@ -11,8 +11,9 @@ import { SectionHeading } from "@/app/components/section-heading";
 import { formatMoneyFromPence } from "@/lib/booking-config";
 import { BOOKING_URL } from "@/lib/constants";
 import { db } from "@/lib/db";
-import { membershipPlans } from "@/lib/membership-config";
+import { buildMembershipPlans } from "@/lib/membership-config";
 import { seedClassPacks } from "@/lib/seed-database";
+import { resolveMonthlyMembershipPricePence } from "@/lib/studio-pricing-service";
 
 export const metadata: Metadata = {
   title: "Membership",
@@ -55,6 +56,10 @@ export default async function MembershipPage() {
     priceLabel: formatMoneyFromPence(pack.pricePence),
     validDays: pack.validDays,
   }));
+
+  const membershipPlans = buildMembershipPlans(
+    formatMoneyFromPence(await resolveMonthlyMembershipPricePence()),
+  );
 
   return (
     <>

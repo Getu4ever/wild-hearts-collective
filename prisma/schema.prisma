@@ -185,6 +185,12 @@ model ClassPack {
   purchases   ClassPackPurchase[]
 }
 
+model StudioSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
 model ClassPackPurchase {
   id                 String              @id @default(cuid())
   userId             String

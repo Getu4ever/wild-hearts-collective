@@ -1,13 +1,15 @@
 import type Stripe from "stripe";
-import { getAppBaseUrl } from "@/lib/booking-config";
+import {
+  getAppBaseUrl,
+} from "@/lib/booking-config";
 import { db } from "@/lib/db";
 import { sendMembershipWelcomeEmails } from "@/lib/email";
 import {
-  getMonthlyMembershipPricePence,
   MEMBERSHIP_PLAN,
   MEMBERSHIP_STATUS,
 } from "@/lib/membership-config";
 import { getStripeClient } from "@/lib/stripe";
+import { resolveMonthlyMembershipPricePence } from "@/lib/studio-pricing-service";
 
 export function getSubscriptionPeriodEnd(subscription: Stripe.Subscription) {
   const item = subscription.items?.data?.[0];
@@ -48,7 +50,7 @@ export async function createMembershipCheckoutSession(user: {
   const stripe = getStripeClient();
   const customerId = await getOrCreateStripeCustomer(user);
   const baseUrl = getAppBaseUrl();
-  const amount = getMonthlyMembershipPricePence();
+  const amount = await resolveMonthlyMembershipPricePence();
 
   return stripe.checkout.sessions.create({
     mode: "subscription",

@@ -3,8 +3,8 @@ import {
   formatMoneyFromPence,
   formatSessionDateTime,
   getAppBaseUrl,
-  getClassPaymentAmountPence,
 } from "@/lib/booking-config";
+import { resolveClassPaymentAmountPence } from "@/lib/studio-pricing-service";
 
 let stripeClient: Stripe | null = null;
 
@@ -37,7 +37,7 @@ export async function createBookingCheckoutSession(
   }
 
   const stripe = getStripeClient();
-  const amount = options?.amountPence ?? getClassPaymentAmountPence();
+  const amount = options?.amountPence ?? (await resolveClassPaymentAmountPence());
   const baseUrl = getAppBaseUrl();
 
   if (amount <= 0) {
@@ -88,12 +88,12 @@ export function verifyStripeWebhook(payload: string, signature: string) {
   );
 }
 
-export function classPaymentLabel() {
-  return formatMoneyFromPence(getClassPaymentAmountPence());
+export async function classPaymentLabel() {
+  return formatMoneyFromPence(await resolveClassPaymentAmountPence());
 }
 
 /** @deprecated Use classPaymentLabel — classes are paid in full in advance. */
-export function depositLabel() {
+export async function depositLabel() {
   return classPaymentLabel();
 }
 

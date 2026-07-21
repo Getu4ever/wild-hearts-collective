@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
-import {
-  getClassPaymentAmountPence,
-  isStripeConfigured,
-} from "@/lib/booking-config";
+import { isStripeConfigured } from "@/lib/booking-config";
 import { isEmailConfigured } from "@/lib/email";
-import { classPaymentLabel } from "@/lib/stripe";
+import {
+  resolveClassPaymentAmountPence,
+} from "@/lib/studio-pricing-service";
+import { formatMoneyFromPence } from "@/lib/booking-config";
 
 export async function GET() {
-  const amountPence = getClassPaymentAmountPence();
-  const priceLabel = classPaymentLabel();
+  const amountPence = await resolveClassPaymentAmountPence();
+  const priceLabel = formatMoneyFromPence(amountPence);
 
   return NextResponse.json({
     classAmountPence: amountPence,

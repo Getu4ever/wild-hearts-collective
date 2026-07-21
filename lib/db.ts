@@ -73,7 +73,7 @@ function createPrismaClient() {
 /** Dev HMR can keep an old Prisma client missing newly added models — recreate when stale. */
 function getPrismaClient() {
   const cached = globalForPrisma.prisma;
-  if (cached && "shopProduct" in cached) {
+  if (cached && "shopProduct" in cached && "studioSetting" in cached) {
     return cached;
   }
 

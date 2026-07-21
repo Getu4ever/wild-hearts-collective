@@ -4,15 +4,16 @@ import {
   formatSessionDateTime,
   formatUkDateLong,
   getAppBaseUrl,
-  getClassPaymentAmountPence,
   getStudioEmail,
 } from "@/lib/booking-config";
 import {
   buildBrandedEmail,
   sessionDetailBlock,
 } from "@/lib/email-template";
-import { monthlyMembershipLabel } from "@/lib/membership-config";
-import { classPaymentLabel } from "@/lib/stripe";
+import {
+  resolveClassPaymentAmountPence,
+  resolveMonthlyMembershipPricePence,
+} from "@/lib/studio-pricing-service";
 
 type SessionDetails = {
   classTitle: string;
@@ -83,6 +84,7 @@ export async function sendBookingReceivedEmails(
   session: SessionDetails,
 ) {
   const bookUrl = `${getAppBaseUrl()}/book`;
+  const priceLabel = formatMoneyFromPence(await resolveClassPaymentAmountPence());
 
   await Promise.all([
     sendEmail({
@@ -100,7 +102,7 @@ export async function sendBookingReceivedEmails(
           ${sessionDetailBlock(session.classTitle, session.startsAt)}
           <p>
             Your place is held for <strong>10 minutes</strong> while you complete
-            your ${classPaymentLabel()} payment. Once payment is processed, we will
+            your ${priceLabel} payment. Once payment is processed, we will
             send you another email to confirm your booking.
           </p>
           <p>
@@ -127,7 +129,7 @@ export async function sendBookingReceivedEmails(
           <p>
             <strong>Name:</strong> ${customer.name}<br />
             <strong>Email:</strong> ${customer.email}<br />
-            <strong>Amount due:</strong> ${classPaymentLabel()}
+            <strong>Amount due:</strong> ${priceLabel}
           </p>
         `,
       }),
@@ -148,7 +150,7 @@ export async function sendBookingConfirmedEmails(
           style: "currency",
           currency: "GBP",
         }).format(amountPaidPence / 100)
-      : classPaymentLabel());
+      : formatMoneyFromPence(await resolveClassPaymentAmountPence()));
 
   await Promise.all([
     sendEmail({
@@ -395,6 +397,8 @@ export async function sendWaitlistSpotAvailableEmail(
   session: SessionDetails,
   bookUrl: string,
 ) {
+  const priceLabel = formatMoneyFromPence(await resolveClassPaymentAmountPence());
+
   await sendEmail({
     to: customer.email,
     subject: "A place is available — book your Wild Hearts class",
@@ -406,7 +410,7 @@ export async function sendWaitlistSpotAvailableEmail(
         <p>Good news — a place has opened up for the session below.</p>
         ${sessionDetailBlock(session.classTitle, session.startsAt)}
         <p>
-          Book now to secure your spot. The full class fee of ${classPaymentLabel()} is
+          Book now to secure your spot. The full class fee of ${priceLabel} is
           required to confirm your booking.
         </p>
       `,
@@ -500,13 +504,13 @@ export function isEmailConfigured() {
   return Boolean(process.env.RESEND_API_KEY);
 }
 
-export function getDefaultClassPaymentPence() {
-  return getClassPaymentAmountPence();
+export async function getDefaultClassPaymentPence() {
+  return resolveClassPaymentAmountPence();
 }
 
 /** @deprecated Use getDefaultClassPaymentPence */
-export function getDefaultDepositPence() {
-  return getClassPaymentAmountPence();
+export async function getDefaultDepositPence() {
+  return resolveClassPaymentAmountPence();
 }
 
 type VoucherEmailDetails = {
@@ -662,7 +666,9 @@ export async function sendMembershipWelcomeEmails(
   customer: CustomerDetails,
   membership: MembershipWelcomeDetails,
 ) {
-  const priceLabel = monthlyMembershipLabel();
+  const priceLabel = formatMoneyFromPence(
+    await resolveMonthlyMembershipPricePence(),
+  );
   const renewsLabel = membership.renewsAt
     ? formatUkDateLong(membership.renewsAt)
     : null;

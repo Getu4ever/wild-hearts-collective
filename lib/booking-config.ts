@@ -14,17 +14,22 @@ export const WAITLIST_STATUS = {
 
 export type WaitlistStatus = (typeof WAITLIST_STATUS)[keyof typeof WAITLIST_STATUS];
 
-/** Full class price charged in advance (pence). */
-export function getClassPaymentAmountPence() {
+/** Full class price charged in advance (pence) — env fallback only. Prefer resolveClassPaymentAmountPence(). */
+export function getEnvClassPaymentAmountPence() {
   const raw =
     process.env.STRIPE_CLASS_AMOUNT ?? process.env.STRIPE_DEPOSIT_AMOUNT;
   const parsed = raw ? Number.parseInt(raw, 10) : 1000;
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1000;
 }
 
+/** @deprecated Prefer resolveClassPaymentAmountPence from studio-pricing-service. */
+export function getClassPaymentAmountPence() {
+  return getEnvClassPaymentAmountPence();
+}
+
 /** @deprecated Use getClassPaymentAmountPence — classes are paid in full in advance. */
 export function getDepositAmountPence() {
-  return getClassPaymentAmountPence();
+  return getEnvClassPaymentAmountPence();
 }
 
 export function formatMoneyFromPence(pence: number) {

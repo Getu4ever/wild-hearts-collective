@@ -174,16 +174,9 @@ export async function seedClassPacks(client: PrismaClient) {
   for (const pack of classPackSeed) {
     await client.classPack.upsert({
       where: { slug: pack.slug },
-      update: {
-        name: pack.name,
-        description: pack.description,
-        credits: pack.credits,
-        pricePence: pack.pricePence,
-        validDays: pack.validDays,
-        sortOrder: pack.sortOrder,
-        active: true,
-      },
-      create: pack,
+      // Preserve admin edits — only create missing default packs.
+      update: {},
+      create: { ...pack, active: true },
     });
   }
 }

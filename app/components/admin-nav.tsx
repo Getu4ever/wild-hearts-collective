@@ -9,6 +9,7 @@ export function AdminNav({
     | "bookings"
     | "members"
     | "shop"
+    | "pricing"
     | "analytics";
 }) {
   const links = [
@@ -17,6 +18,7 @@ export function AdminNav({
     { href: "/admin/bookings", label: "Bookings", id: "bookings" as const },
     { href: "/admin/members", label: "Members", id: "members" as const },
     { href: "/admin/shop", label: "Shop", id: "shop" as const },
+    { href: "/admin/pricing", label: "Passes & pricing", id: "pricing" as const },
     { href: "/admin/analytics", label: "Analytics", id: "analytics" as const },
   ];
 

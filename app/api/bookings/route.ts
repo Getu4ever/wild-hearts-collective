@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import {
   BOOKING_STATUS,
   formatMoneyFromPence,
-  getClassPaymentAmountPence,
   isStripeConfigured,
 } from "@/lib/booking-config";
 import {
@@ -24,6 +23,7 @@ import {
 import { getMemberSession } from "@/lib/member-auth";
 import { assertParQCompleteForSession, ParQRequiredError } from "@/lib/parq-service";
 import { createBookingCheckoutSession } from "@/lib/stripe";
+import { resolveClassPaymentAmountPence } from "@/lib/studio-pricing-service";
 import { redeemVoucherForBooking } from "@/lib/voucher-service";
 
 type BookingBody = {
@@ -226,7 +226,7 @@ export async function POST(request: Request) {
   }
 
   const trimmedCode = voucherCode?.trim();
-  const classPricePence = getClassPaymentAmountPence();
+  const classPricePence = await resolveClassPaymentAmountPence();
   let amountDuePence = classPricePence;
   let giftApplied: {
     giftCardId: string;
