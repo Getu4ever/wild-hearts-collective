@@ -97,7 +97,7 @@ export function AdminBookingActions({
         onCancel={() => setDeleteDialogOpen(false)}
       />
 
-      <div className="space-y-2 min-w-[9rem]">
+      <div className="min-w-0 space-y-2">
       <select
         value={status}
         disabled={loading}

@@ -121,16 +121,16 @@ export function AdminShopInventoryPanel({ data }: { data: InventoryOverview }) {
       </label>
 
       <div className="overflow-hidden rounded-lg border border-plum/10 bg-surface shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
+        <div className="min-w-0">
+          <table className="w-full table-fixed text-left text-sm">
             <thead className="border-b border-plum/10 bg-pink-soft/60 text-xs uppercase tracking-wider text-plum">
               <tr>
-                <th className="px-4 py-3 font-semibold">Product</th>
-                <th className="px-4 py-3 font-semibold">Category</th>
-                <th className="px-4 py-3 font-semibold">In stock</th>
-                <th className="px-4 py-3 font-semibold">Sold</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 font-semibold">Adjust</th>
+                <th className="w-[28%] px-3 py-3 font-semibold">Product</th>
+                <th className="w-[14%] px-3 py-3 font-semibold">Category</th>
+                <th className="w-[12%] px-3 py-3 font-semibold">In stock</th>
+                <th className="w-[10%] px-3 py-3 font-semibold">Sold</th>
+                <th className="w-[14%] px-3 py-3 font-semibold">Status</th>
+                <th className="w-[22%] px-3 py-3 font-semibold">Adjust</th>
               </tr>
             </thead>
             <tbody>
@@ -163,10 +163,11 @@ function InventoryRow({
 
   return (
     <tr className="border-b border-plum/8 align-top last:border-b-0">
-      <td className="px-4 py-4">
+      <td className="px-3 py-3">
         <Link
           href={`/admin/shop/products/${product.id}`}
-          className="font-semibold text-plum hover:text-brand hover:underline"
+          className="block truncate font-semibold text-plum hover:text-brand hover:underline"
+          title={product.name}
         >
           {product.name}
         </Link>
@@ -174,21 +175,21 @@ function InventoryRow({
           <p className="mt-1 text-xs text-muted">Not tracked — unlimited</p>
         ) : null}
       </td>
-      <td className="px-4 py-4 text-muted">
+      <td className="px-3 py-3 text-muted">
         {SHOP_CATEGORIES[product.category as ShopCategoryId].shortLabel}
       </td>
-      <td className="px-4 py-4 font-display text-2xl text-plum">
+      <td className="px-3 py-3 font-display text-2xl text-plum">
         {product.trackStock ? product.stockQuantity : "∞"}
       </td>
-      <td className="px-4 py-4 text-muted">{product.unitsSold}</td>
-      <td className="px-4 py-4">
+      <td className="px-3 py-3 text-muted">{product.unitsSold}</td>
+      <td className="px-3 py-3">
         <span
-          className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${stockTone(product.stockStatus)}`}
+          className={`inline-flex max-w-full truncate rounded-full border px-2.5 py-1 text-xs font-semibold ${stockTone(product.stockStatus)}`}
         >
           {product.stockStatusLabel}
         </span>
       </td>
-      <td className="px-4 py-4">
+      <td className="px-3 py-3">
         {product.trackStock ? (
           <div className="flex flex-wrap items-center gap-2">
             <button

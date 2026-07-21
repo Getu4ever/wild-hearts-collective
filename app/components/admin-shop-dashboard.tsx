@@ -147,16 +147,16 @@ export function AdminShopDashboard({ data }: { data: AdminShopOverview }) {
                 : "No sales match your search."}
             </p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-sm">
+            <div className="min-w-0">
+              <table className="w-full table-fixed text-left text-sm">
                 <thead className="border-b border-plum/10 bg-pink-soft/60 text-xs uppercase tracking-wider text-plum">
                   <tr>
-                    <th className="px-4 py-3 font-semibold">When</th>
-                    <th className="px-4 py-3 font-semibold">Order</th>
-                    <th className="px-4 py-3 font-semibold">Customer</th>
-                    <th className="px-4 py-3 font-semibold">Type</th>
-                    <th className="px-4 py-3 font-semibold">Total</th>
-                    <th className="px-4 py-3 font-semibold">
+                    <th className="w-[11%] px-3 py-3 font-semibold">When</th>
+                    <th className="w-[24%] px-3 py-3 font-semibold">Order</th>
+                    <th className="w-[22%] px-3 py-3 font-semibold">Customer</th>
+                    <th className="w-[14%] px-3 py-3 font-semibold">Type</th>
+                    <th className="w-[10%] px-3 py-3 font-semibold">Total</th>
+                    <th className="w-[9%] px-3 py-3 font-semibold">
                       <span className="sr-only">Details</span>
                     </th>
                   </tr>
@@ -181,7 +181,7 @@ export function AdminShopDashboard({ data }: { data: AdminShopOverview }) {
         </div>
       </section>
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+      <div className="space-y-12">
         <section className="min-w-0">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -239,18 +239,18 @@ export function AdminShopDashboard({ data }: { data: AdminShopOverview }) {
                   : "No vouchers match your filters."}
               </p>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-left text-sm">
+              <div className="min-w-0">
+                <table className="w-full table-fixed text-left text-sm">
                   <thead className="border-b border-plum/10 bg-pink-soft/60 text-xs uppercase tracking-wider text-plum">
                     <tr>
-                      <th className="px-4 py-3 font-semibold">Sold</th>
-                      <th className="px-4 py-3 font-semibold">Code</th>
-                      <th className="px-4 py-3 font-semibold">Product</th>
-                      <th className="px-4 py-3 font-semibold">Purchaser</th>
-                      <th className="px-4 py-3 font-semibold">Value</th>
-                      <th className="px-4 py-3 font-semibold">Remaining</th>
-                      <th className="px-4 py-3 font-semibold">Status</th>
-                      <th className="px-4 py-3 font-semibold">
+                      <th className="w-[10%] px-3 py-3 font-semibold">Sold</th>
+                      <th className="w-[11%] px-3 py-3 font-semibold">Code</th>
+                      <th className="w-[14%] px-3 py-3 font-semibold">Product</th>
+                      <th className="w-[18%] px-3 py-3 font-semibold">Purchaser</th>
+                      <th className="w-[9%] px-3 py-3 font-semibold">Value</th>
+                      <th className="w-[11%] px-3 py-3 font-semibold">Remaining</th>
+                      <th className="w-[13%] px-3 py-3 font-semibold">Status</th>
+                      <th className="w-[7%] px-3 py-3 font-semibold">
                         <span className="sr-only">Details</span>
                       </th>
                     </tr>
@@ -275,64 +275,66 @@ export function AdminShopDashboard({ data }: { data: AdminShopOverview }) {
           </div>
         </section>
 
-        <section>
+        <section className="min-w-0">
           <h2 className="font-display text-3xl text-plum">Redemptions</h2>
           <p className="mt-1 text-sm text-muted">Latest voucher spends across the studio</p>
 
-          <div className="mt-5 rounded-lg border border-plum/10 bg-surface p-5 shadow-sm">
-            {data.recentActivity.length === 0 ? (
-              <p className="py-6 text-center text-sm text-muted">
-                No redemptions yet. Activity appears when vouchers are used.
-              </p>
-            ) : (
-              <ul className="divide-y divide-plum/10">
-                {data.recentActivity.map((item) => (
-                  <li key={item.id} className="py-4 first:pt-0 last:pb-0">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-semibold text-plum">{item.amountLabel}</p>
-                        <p className="mt-0.5 text-xs text-muted">{item.reasonLabel}</p>
-                        <p className="mt-2 truncate font-mono text-xs text-plum/80">
-                          {item.code}
-                        </p>
-                        <p className="mt-1 truncate text-xs text-muted">
-                          {item.purchaserName || item.purchaserEmail || item.productName}
-                        </p>
+          <div className="mt-5 grid gap-6 md:grid-cols-2">
+            <div className="min-w-0 rounded-lg border border-plum/10 bg-surface p-5 shadow-sm">
+              {data.recentActivity.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted">
+                  No redemptions yet. Activity appears when vouchers are used.
+                </p>
+              ) : (
+                <ul className="divide-y divide-plum/10">
+                  {data.recentActivity.map((item) => (
+                    <li key={item.id} className="py-4 first:pt-0 last:pb-0">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-plum">{item.amountLabel}</p>
+                          <p className="mt-0.5 text-xs text-muted">{item.reasonLabel}</p>
+                          <p className="mt-2 truncate font-mono text-xs text-plum/80">
+                            {item.code}
+                          </p>
+                          <p className="mt-1 truncate text-xs text-muted">
+                            {item.purchaserName || item.purchaserEmail || item.productName}
+                          </p>
+                        </div>
+                        <time className="shrink-0 text-xs text-muted">
+                          {formatUkDateTimeShort(item.createdAt)}
+                        </time>
                       </div>
-                      <time className="shrink-0 text-xs text-muted">
-                        {formatUkDateTimeShort(item.createdAt)}
-                      </time>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
 
-          <div className="mt-6 rounded-lg border border-plum/10 bg-surface p-5 shadow-sm">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-brand">
-              Voucher status mix
-            </h3>
-            <dl className="mt-4 space-y-3 text-sm">
-              {(
-                [
-                  ["active", "Active"],
-                  ["partial", "Partially used"],
-                  ["redeemed", "Fully redeemed"],
-                  ["expired", "Expired"],
-                ] as const
-              ).map(([key, label]) => (
-                <div
-                  key={key}
-                  className="flex items-center justify-between gap-4 border-b border-plum/10 pb-3 last:border-b-0 last:pb-0"
-                >
-                  <dt className="text-muted">{label}</dt>
-                  <dd className="font-display text-xl text-plum">
-                    {data.summary.statusCounts[key]}
-                  </dd>
-                </div>
-              ))}
-            </dl>
+            <div className="min-w-0 rounded-lg border border-plum/10 bg-surface p-5 shadow-sm">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-brand">
+                Voucher status mix
+              </h3>
+              <dl className="mt-4 space-y-3 text-sm">
+                {(
+                  [
+                    ["active", "Active"],
+                    ["partial", "Partially used"],
+                    ["redeemed", "Fully redeemed"],
+                    ["expired", "Expired"],
+                  ] as const
+                ).map(([key, label]) => (
+                  <div
+                    key={key}
+                    className="flex items-center justify-between gap-4 border-b border-plum/10 pb-3 last:border-b-0 last:pb-0"
+                  >
+                    <dt className="text-muted">{label}</dt>
+                    <dd className="font-display text-xl text-plum">
+                      {data.summary.statusCounts[key]}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
           </div>
         </section>
       </div>
@@ -352,22 +354,25 @@ function SaleRows({
   return (
     <>
       <tr className="border-b border-plum/8 align-top last:border-b-0">
-        <td className="px-4 py-4 whitespace-nowrap text-muted">
-          {formatUkDateTimeShort(sale.createdAt)}
-        </td>
-        <td className="px-4 py-4">
-          <p className="font-medium text-plum">{sale.summary}</p>
+        <td className="px-3 py-3 text-muted">{formatUkDateTimeShort(sale.createdAt)}</td>
+        <td className="px-3 py-3">
+          <p className="truncate font-medium text-plum" title={sale.summary}>
+            {sale.summary}
+          </p>
           <p className="mt-1 text-xs text-muted">
             {sale.itemCount} item{sale.itemCount === 1 ? "" : "s"}
             {sale.isLegacy ? " · legacy record" : ""}
           </p>
         </td>
-        <td className="px-4 py-4">
-          <p className="text-foreground">{sale.purchaserName || "—"}</p>
+        <td className="px-3 py-3">
+          <p className="truncate text-foreground" title={sale.purchaserName || undefined}>
+            {sale.purchaserName || "—"}
+          </p>
           {sale.purchaserEmail ? (
             <a
               href={`mailto:${sale.purchaserEmail}`}
-              className="mt-0.5 block text-xs text-plum hover:text-pink hover:underline"
+              className="mt-0.5 block truncate text-xs text-plum hover:text-pink hover:underline"
+              title={sale.purchaserEmail}
             >
               {sale.purchaserEmail}
             </a>
@@ -375,15 +380,13 @@ function SaleRows({
             <p className="mt-0.5 text-xs text-muted">No email on file</p>
           )}
         </td>
-        <td className="px-4 py-4">
-          <span className="inline-flex rounded-full border border-plum/15 bg-pink-soft/70 px-2.5 py-1 text-xs font-semibold text-plum">
+        <td className="px-3 py-3">
+          <span className="inline-flex max-w-full truncate rounded-full border border-plum/15 bg-pink-soft/70 px-2.5 py-1 text-xs font-semibold text-plum">
             {sale.sourceLabel}
           </span>
         </td>
-        <td className="px-4 py-4 whitespace-nowrap font-medium text-plum">
-          {sale.totalLabel}
-        </td>
-        <td className="px-4 py-4">
+        <td className="px-3 py-3 font-medium text-plum">{sale.totalLabel}</td>
+        <td className="px-3 py-3">
           <button
             type="button"
             onClick={onToggle}
@@ -396,7 +399,7 @@ function SaleRows({
       </tr>
       {expanded && (
         <tr className="border-b border-plum/8 bg-pink-soft/25 last:border-b-0">
-          <td colSpan={6} className="px-4 py-5">
+          <td colSpan={6} className="px-3 py-5">
             <div className="grid gap-6 lg:grid-cols-2">
               <div>
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-brand">
@@ -457,21 +460,29 @@ function VoucherRows({
   return (
     <>
       <tr className="border-b border-plum/8 align-top last:border-b-0">
-        <td className="px-4 py-4 whitespace-nowrap text-muted">
-          {formatUkDateTimeShort(voucher.createdAt)}
-        </td>
-        <td className="px-4 py-4">
-          <code className="rounded-sm bg-pink-soft/80 px-2 py-1 font-mono text-xs font-semibold text-plum">
+        <td className="px-3 py-3 text-muted">{formatUkDateTimeShort(voucher.createdAt)}</td>
+        <td className="px-3 py-3">
+          <code
+            className="block truncate rounded-sm bg-pink-soft/80 px-2 py-1 font-mono text-xs font-semibold text-plum"
+            title={voucher.code}
+          >
             {voucher.code}
           </code>
         </td>
-        <td className="px-4 py-4 font-medium text-plum">{voucher.productName}</td>
-        <td className="px-4 py-4">
-          <p className="text-foreground">{voucher.purchaserName || "—"}</p>
+        <td className="px-3 py-3">
+          <p className="truncate font-medium text-plum" title={voucher.productName}>
+            {voucher.productName}
+          </p>
+        </td>
+        <td className="px-3 py-3">
+          <p className="truncate text-foreground" title={voucher.purchaserName || undefined}>
+            {voucher.purchaserName || "—"}
+          </p>
           {voucher.purchaserEmail ? (
             <a
               href={`mailto:${voucher.purchaserEmail}`}
-              className="mt-0.5 block text-xs text-plum hover:text-pink hover:underline"
+              className="mt-0.5 block truncate text-xs text-plum hover:text-pink hover:underline"
+              title={voucher.purchaserEmail}
             >
               {voucher.purchaserEmail}
             </a>
@@ -479,18 +490,16 @@ function VoucherRows({
             <p className="mt-0.5 text-xs text-muted">No email on file</p>
           )}
         </td>
-        <td className="px-4 py-4 whitespace-nowrap text-plum">
-          {voucher.initialBalanceLabel}
-        </td>
-        <td className="px-4 py-4 whitespace-nowrap">
+        <td className="px-3 py-3 text-plum">{voucher.initialBalanceLabel}</td>
+        <td className="px-3 py-3">
           <p className="font-medium text-plum">{voucher.balanceLabel}</p>
           {voucher.spentPence > 0 && (
             <p className="mt-0.5 text-xs text-muted">{voucher.spentLabel} used</p>
           )}
         </td>
-        <td className="px-4 py-4">
+        <td className="px-3 py-3">
           <span
-            className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${statusTone(voucher.status)}`}
+            className={`inline-flex max-w-full truncate rounded-full border px-2.5 py-1 text-xs font-semibold ${statusTone(voucher.status)}`}
           >
             {voucher.statusLabel}
           </span>
@@ -500,7 +509,7 @@ function VoucherRows({
             </p>
           )}
         </td>
-        <td className="px-4 py-4">
+        <td className="px-3 py-3">
           <button
             type="button"
             onClick={onToggle}
@@ -513,7 +522,7 @@ function VoucherRows({
       </tr>
       {expanded && (
         <tr className="border-b border-plum/8 bg-pink-soft/25 last:border-b-0">
-          <td colSpan={8} className="px-4 py-5">
+          <td colSpan={8} className="px-3 py-5">
             <div className="grid gap-6 lg:grid-cols-2">
               <div>
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-brand">

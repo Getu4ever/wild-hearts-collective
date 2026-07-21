@@ -46,11 +46,11 @@ export function AdminParQPanel({
           )}
 
           <div className="overflow-hidden rounded-lg border border-plum/10">
-            <table className="min-w-full text-left text-sm">
+            <table className="w-full table-fixed text-left text-sm">
               <thead className="border-b border-plum/10 bg-pink-soft/60 text-xs uppercase tracking-wider text-plum">
                 <tr>
-                  <th className="px-4 py-3 font-semibold">Question</th>
-                  <th className="px-4 py-3 font-semibold">Answer</th>
+                  <th className="w-[70%] px-3 py-3 font-semibold">Question</th>
+                  <th className="w-[30%] px-3 py-3 font-semibold">Answer</th>
                 </tr>
               </thead>
               <tbody>
@@ -60,8 +60,8 @@ export function AdminParQPanel({
 
                   return (
                     <tr key={question.key} className="border-b border-plum/8 align-top">
-                      <td className="px-4 py-4 text-plum">{question.label}</td>
-                      <td className="px-4 py-4">
+                      <td className="px-3 py-3 text-plum">{question.label}</td>
+                      <td className="px-3 py-3">
                         <span
                           className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
                             isYes ? "bg-brand/10 text-brand" : "bg-sage/10 text-plum"

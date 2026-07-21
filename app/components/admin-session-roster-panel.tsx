@@ -62,23 +62,25 @@ export function AdminSessionRosterPanel({
             No bookings yet for this session.
           </p>
         ) : (
-          <div className="mt-4 overflow-x-auto rounded-lg border border-plum/10 bg-surface shadow-sm">
-            <table className="min-w-full text-left text-sm">
+          <div className="mt-4 overflow-hidden rounded-lg border border-plum/10 bg-surface shadow-sm">
+            <table className="w-full table-fixed text-left text-sm">
               <thead className="border-b border-plum/10 bg-pink-soft/60 text-xs uppercase tracking-wider text-plum">
                 <tr>
-                  <th className="px-4 py-3">Student</th>
-                  <th className="px-4 py-3">Contact</th>
-                  <th className="px-4 py-3">PAR-Q</th>
-                  <th className="px-4 py-3">Check-in</th>
-                  <th className="px-4 py-3">Credit</th>
-                  <th className="px-4 py-3">Actions</th>
+                  <th className="w-[18%] px-3 py-3">Student</th>
+                  <th className="w-[20%] px-3 py-3">Contact</th>
+                  <th className="w-[10%] px-3 py-3">PAR-Q</th>
+                  <th className="w-[22%] px-3 py-3">Check-in</th>
+                  <th className="w-[12%] px-3 py-3">Credit</th>
+                  <th className="w-[10%] px-3 py-3">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {bookings.map((booking) => (
                   <tr key={booking.id} className="border-b border-plum/8 align-top">
-                    <td className="px-4 py-4">
-                      <p className="font-medium text-plum">{booking.name}</p>
+                    <td className="px-3 py-3">
+                      <p className="truncate font-medium text-plum" title={booking.name}>
+                        {booking.name}
+                      </p>
                       {booking.user && (
                         <Link
                           href={`/admin/members/${booking.user.id}`}
@@ -88,18 +90,26 @@ export function AdminSessionRosterPanel({
                         </Link>
                       )}
                       {booking.user?.safetyNotes.length ? (
-                        <p className="mt-2 text-xs text-brand">
+                        <p className="mt-2 line-clamp-2 text-xs text-brand">
                           {booking.user.safetyNotes.join(" · ")}
                         </p>
                       ) : null}
                     </td>
-                    <td className="px-4 py-4 text-muted">
-                      <a href={`mailto:${booking.email}`} className="hover:underline">
+                    <td className="px-3 py-3 text-muted">
+                      <a
+                        href={`mailto:${booking.email}`}
+                        className="block truncate hover:underline"
+                        title={booking.email}
+                      >
                         {booking.email}
                       </a>
-                      {booking.phone && <p className="mt-1">{booking.phone}</p>}
+                      {booking.phone && (
+                        <p className="mt-1 truncate" title={booking.phone}>
+                          {booking.phone}
+                        </p>
+                      )}
                     </td>
-                    <td className="px-4 py-4">
+                    <td className="px-3 py-3">
                       {booking.user?.parQRequired ? (
                         <StatusPill ok={booking.user.parQCompleted}>
                           {booking.user.parQCompleted ? "Complete" : "Missing"}
@@ -108,14 +118,14 @@ export function AdminSessionRosterPanel({
                         <span className="text-xs text-muted">Not required</span>
                       )}
                     </td>
-                    <td className="px-4 py-4">
+                    <td className="px-3 py-3">
                       <AdminBookingActions
                         bookingId={booking.id}
                         currentStatus={booking.status}
                         currentAttendance={booking.attendance}
                       />
                     </td>
-                    <td className="px-4 py-4 text-muted">
+                    <td className="px-3 py-3 text-muted">
                       {booking.paidWithCredit
                         ? "Credit used"
                         : booking.giftAmountApplied && booking.giftAmountApplied > 0
@@ -129,7 +139,7 @@ export function AdminSessionRosterPanel({
                         </p>
                       )}
                     </td>
-                    <td className="px-4 py-4">
+                    <td className="px-3 py-3">
                       <AdminRemoveBookingButton bookingId={booking.id} />
                     </td>
                   </tr>

@@ -67,7 +67,7 @@ export default async function AdminMembersPage({ searchParams }: PageProps) {
   ).length;
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-16 lg:px-8 lg:py-20">
+    <div className="mx-auto min-w-0 max-w-6xl overflow-x-hidden px-6 py-16 lg:px-8 lg:py-20">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="mb-5 h-px w-12 bg-pink" />
@@ -108,17 +108,17 @@ export default async function AdminMembersPage({ searchParams }: PageProps) {
         {members.length === 0 ? (
           <p className="px-6 py-10 text-sm text-muted">No members match your filters.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
+          <div className="min-w-0">
+            <table className="w-full table-fixed text-left text-sm">
               <thead className="border-b border-plum/10 bg-pink-soft/60 text-xs uppercase tracking-wider text-plum">
                 <tr>
-                  <th className="px-4 py-3 font-semibold">Registered</th>
-                  <th className="px-4 py-3 font-semibold">Name</th>
-                  <th className="px-4 py-3 font-semibold">Email</th>
-                  <th className="px-4 py-3 font-semibold">Status</th>
-                  <th className="px-4 py-3 font-semibold">Plan</th>
-                  <th className="px-4 py-3 font-semibold">Bookings</th>
-                  <th className="px-4 py-3 font-semibold">Actions</th>
+                  <th className="w-[12%] px-3 py-3 font-semibold">Registered</th>
+                  <th className="w-[16%] px-3 py-3 font-semibold">Name</th>
+                  <th className="w-[22%] px-3 py-3 font-semibold">Email</th>
+                  <th className="w-[12%] px-3 py-3 font-semibold">Status</th>
+                  <th className="w-[14%] px-3 py-3 font-semibold">Plan</th>
+                  <th className="w-[8%] px-3 py-3 font-semibold">Bookings</th>
+                  <th className="w-[16%] px-3 py-3 font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -134,38 +134,42 @@ export default async function AdminMembersPage({ searchParams }: PageProps) {
                       key={member.id}
                       className="border-b border-plum/8 align-top last:border-b-0"
                     >
-                      <td className="px-4 py-4 whitespace-nowrap text-muted">
+                      <td className="px-3 py-3 text-muted">
                         {formatUkDateTimeShort(member.createdAt)}
                       </td>
-                      <td className="px-4 py-4 font-medium text-plum">
+                      <td className="px-3 py-3">
                         <Link
                           href={`/admin/members/${member.id}`}
-                          className="hover:text-brand hover:underline"
+                          className="block truncate font-medium text-plum hover:text-brand hover:underline"
+                          title={member.name}
                         >
                           {member.name}
                         </Link>
                         <p className="mt-1 text-xs text-muted">{signupMethod}</p>
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-3 py-3">
                         <a
                           href={`mailto:${member.email}`}
-                          className="text-plum hover:text-pink hover:underline"
+                          className="block truncate text-plum hover:text-pink hover:underline"
+                          title={member.email}
                         >
                           {member.email}
                         </a>
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-3 py-3">
                         <span
-                          className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider ${membershipStatusTone(member.membershipStatus)}`}
+                          className={`inline-flex max-w-full truncate rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider ${membershipStatusTone(member.membershipStatus)}`}
                         >
                           {membershipStatusLabel(member.membershipStatus)}
                         </span>
                       </td>
-                      <td className="px-4 py-4 text-muted">
-                        {membershipPlanLabel(member.membershipPlan)}
+                      <td className="px-3 py-3">
+                        <p className="truncate text-muted" title={membershipPlanLabel(member.membershipPlan)}>
+                          {membershipPlanLabel(member.membershipPlan)}
+                        </p>
                       </td>
-                      <td className="px-4 py-4 text-muted">{member._count.bookings}</td>
-                      <td className="px-4 py-4">
+                      <td className="px-3 py-3 text-muted">{member._count.bookings}</td>
+                      <td className="px-3 py-3">
                         <Link
                           href={`/admin/members/${member.id}`}
                           className="text-sm font-semibold text-brand hover:underline"

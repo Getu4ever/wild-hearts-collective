@@ -25,7 +25,7 @@ export default async function AdminShopProductEditPage({ params }: PageProps) {
   if (!product) notFound();
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-16 lg:px-8 lg:py-20">
+    <div className="mx-auto min-w-0 max-w-6xl overflow-x-hidden px-6 py-16 lg:px-8 lg:py-20">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="mb-5 h-px w-12 bg-pink" />
