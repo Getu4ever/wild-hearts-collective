@@ -298,6 +298,9 @@ export function AdminShopProductForm({ mode, initial }: AdminShopProductFormProp
                     onChange={(event) => setLowStockThreshold(event.target.value)}
                     className="mt-1.5 w-full rounded-sm border border-plum/15 bg-white px-3 py-2.5 text-sm text-plum outline-none focus:border-pink focus:ring-2 focus:ring-pink/20"
                   />
+                  <p className="mt-1.5 text-xs text-muted">
+                    We email the studio when stock drops to this level or sells out.
+                  </p>
                 </label>
               </div>
             ) : null}

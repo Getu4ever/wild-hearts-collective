@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { Prisma as PrismaNamespace } from "@prisma/client";
 import { db } from "@/lib/db";
+import { notifyAdminOfLowStockIfNeeded } from "@/lib/shop-stock-notifications";
 import {
   productsData,
   SHOP_CATEGORIES,
@@ -329,10 +330,12 @@ export async function decrementProductStock(
   quantity: number,
   tx: Prisma.TransactionClient = db,
 ) {
-  if (quantity <= 0) return;
+  if (quantity <= 0) return null;
 
   const product = await tx.shopProduct.findUnique({ where: { id: productId } });
-  if (!product?.trackStock) return;
+  if (!product?.trackStock) return null;
+
+  const previousStock = product.stockQuantity;
 
   const updated = await tx.shopProduct.updateMany({
     where: {
@@ -346,6 +349,15 @@ export async function decrementProductStock(
   if (updated.count !== 1) {
     throw new Error(`Not enough stock remaining for ${product.name}.`);
   }
+
+  return {
+    productId: product.id,
+    productName: product.name,
+    previousStock,
+    newStock: previousStock - quantity,
+    lowStockThreshold: product.lowStockThreshold,
+    trackStock: true,
+  };
 }
 
 export async function createAdminShopProduct(input: AdminShopProductInput) {
@@ -406,6 +418,8 @@ export async function updateAdminShopProduct(
       ? Math.max(0, Math.round(input.lowStockThreshold))
       : existing.lowStockThreshold;
 
+  const previousStock = existing.stockQuantity;
+
   validateProductInput({
     name: nextName,
     description: input.description ?? existing.description,
@@ -454,6 +468,19 @@ export async function updateAdminShopProduct(
       lowStockThreshold: nextLowStockThreshold,
     },
   });
+
+  const stockChanged = previousStock !== record.stockQuantity;
+
+  if (nextTrackStock && stockChanged) {
+    void notifyAdminOfLowStockIfNeeded({
+      productId: record.id,
+      productName: record.name,
+      previousStock,
+      newStock: record.stockQuantity,
+      lowStockThreshold: record.lowStockThreshold,
+      trackStock: true,
+    });
+  }
 
   return attachUnitsSold([mapShopProduct(record)]).then(([product]) => product);
 }

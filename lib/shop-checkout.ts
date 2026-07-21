@@ -11,6 +11,7 @@ import {
   decrementProductStock,
   getShopProductById,
 } from "@/lib/shop-catalog-service";
+import { notifyAdminOfLowStockBatch } from "@/lib/shop-stock-notifications";
 import {
   getShopFulfillmentType,
   isGiftVoucherProduct,
@@ -145,6 +146,14 @@ export async function fulfillShopVoucherCheckout(sessionInput: Stripe.Checkout.S
       : SHOP_ORDER_SOURCE.voucher;
 
   const resolvedCart = await resolveCartProducts(cart);
+  const stockAlertInputs: Array<{
+    productId: string;
+    productName: string;
+    previousStock: number;
+    newStock: number;
+    lowStockThreshold: number;
+    trackStock: boolean;
+  }> = [];
 
   await db.$transaction(async (tx) => {
     for (const { item, product } of resolvedCart) {
@@ -246,9 +255,16 @@ export async function fulfillShopVoucherCheckout(sessionInput: Stripe.Checkout.S
     for (const { item, product } of resolvedCart) {
       if (!product?.trackStock || !product.id) continue;
       const quantity = Math.max(1, Math.floor(item.q || 1));
-      await decrementProductStock(product.id, quantity, tx);
+      const stockChange = await decrementProductStock(product.id, quantity, tx);
+      if (stockChange) {
+        stockAlertInputs.push(stockChange);
+      }
     }
   });
+
+  if (stockAlertInputs.length > 0) {
+    void notifyAdminOfLowStockBatch(stockAlertInputs);
+  }
 
   const totalLabel = formatMoneyFromPence(session.amount_total ?? 0);
   const summary = [...giftLines, ...physicalLines]

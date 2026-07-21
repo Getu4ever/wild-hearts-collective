@@ -1047,3 +1047,59 @@ export async function sendShopProductOrderEmail(
     }),
   ]);
 }
+
+type LowStockAlertDetails = {
+  productId: string;
+  productName: string;
+  stockQuantity: number;
+  lowStockThreshold: number;
+  previousStock: number;
+  status: "low" | "out";
+};
+
+/** Studio alert when tracked product stock crosses its per-product threshold. */
+export async function sendLowStockAlertEmail(alert: LowStockAlertDetails) {
+  const inventoryUrl = `${getAppBaseUrl()}/admin/shop/inventory`;
+  const productUrl = `${getAppBaseUrl()}/admin/shop/products/${alert.productId}`;
+  const isOut = alert.status === "out";
+  const heading = isOut ? "Out of stock" : "Low stock alert";
+  const subject = isOut
+    ? `Out of stock — ${alert.productName}`
+    : `Low stock — ${alert.productName}`;
+
+  await sendEmail({
+    to: getStudioEmail(),
+    subject,
+    html: buildBrandedEmail({
+      previewText: `${alert.productName} has ${alert.stockQuantity} unit${alert.stockQuantity === 1 ? "" : "s"} left (alert at ${alert.lowStockThreshold}).`,
+      heading,
+      bodyHtml: `
+        <p>
+          ${
+            isOut
+              ? "A tracked shop product has sold out and needs restocking."
+              : "A tracked shop product has dropped to its low-stock alert level."
+          }
+        </p>
+        <p>
+          <strong>Product:</strong> ${alert.productName}<br />
+          <strong>In stock now:</strong> ${alert.stockQuantity}<br />
+          <strong>Alert threshold:</strong> ${alert.lowStockThreshold}<br />
+          <strong>Previous stock:</strong> ${alert.previousStock}
+        </p>
+        <p>
+          Update stock in the admin inventory panel, or edit the product to change its
+          low-stock alert threshold.
+        </p>
+      `,
+      cta: {
+        label: "Open inventory",
+        href: inventoryUrl,
+      },
+    }),
+  });
+
+  if (process.env.NODE_ENV === "development") {
+    console.info("[email:low-stock]", subject, productUrl);
+  }
+}
