@@ -190,7 +190,13 @@ export default async function MembershipPage() {
                       : "border-plum/10"
                   }`}
                 >
-                  {showComingSoon ? <ComingSoonOverlay>{card}</ComingSoonOverlay> : card}
+                  {showComingSoon ? (
+                    <ComingSoonOverlay eyebrow="Monthly Subscription">
+                      {card}
+                    </ComingSoonOverlay>
+                  ) : (
+                    card
+                  )}
                 </article>
               );
             })}
