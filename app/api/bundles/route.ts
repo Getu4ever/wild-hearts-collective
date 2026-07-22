@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
-import { formatMoneyFromPence } from "@/lib/booking-config";
-import { db } from "@/lib/db";
+import { listActiveClassPacks } from "@/lib/studio-pricing-service";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+const NO_STORE_HEADERS = {
+  "Cache-Control": "no-store, max-age=0",
+};
 
 export async function GET() {
-  const packs = await db.classPack.findMany({
-    where: { active: true },
-    orderBy: { sortOrder: "asc" },
-  });
+  const packs = await listActiveClassPacks();
 
   return NextResponse.json(
     packs.map((pack) => ({
@@ -15,9 +18,10 @@ export async function GET() {
       name: pack.name,
       description: pack.description,
       credits: pack.credits,
-      priceLabel: formatMoneyFromPence(pack.pricePence),
+      priceLabel: pack.priceLabel,
       pricePence: pack.pricePence,
       validDays: pack.validDays,
     })),
+    { headers: NO_STORE_HEADERS },
   );
 }

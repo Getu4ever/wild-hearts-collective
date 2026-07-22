@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-api";
+import { revalidateMembershipPricingPages } from "@/lib/revalidate-public-pages";
 import { updateAdminClassPack } from "@/lib/studio-pricing-service";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -53,6 +54,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
 
     const pack = await updateAdminClassPack(id, payload);
+    revalidateMembershipPricingPages();
     return NextResponse.json({ pack });
   } catch (error) {
     const message =

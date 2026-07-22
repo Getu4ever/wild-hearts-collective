@@ -3,9 +3,9 @@ import Link from "next/link";
 import { MemberCreditsDashboard } from "@/app/components/member-credits-dashboard";
 import { getMemberSession } from "@/lib/member-auth";
 import { getMemberCreditsOverview } from "@/lib/member-credits-service";
-import { seedClassPacks } from "@/lib/seed-database";
 import { isStripeConfigured } from "@/lib/booking-config";
-import { db } from "@/lib/db";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Class credits",
@@ -23,11 +23,6 @@ export default async function AccountCreditsPage({
   const params = await searchParams;
   const resumePurchaseId =
     params.checkout === "1" && params.purchase ? params.purchase : undefined;
-
-  const packCount = await db.classPack.count();
-  if (packCount === 0) {
-    await seedClassPacks(db);
-  }
 
   const overview = await getMemberCreditsOverview(session.userId);
 

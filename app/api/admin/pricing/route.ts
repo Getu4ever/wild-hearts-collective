@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-api";
+import { revalidateMembershipPricingPages } from "@/lib/revalidate-public-pages";
 import {
   createAdminClassPack,
   getStudioPricingSettings,
@@ -32,27 +33,47 @@ export async function PATCH(request: Request) {
 
   try {
     const body = await request.json();
-    const dropInPounds =
-      typeof body.dropInPricePounds === "number"
-        ? body.dropInPricePounds
-        : Number.parseFloat(String(body.dropInPricePounds ?? ""));
-    const membershipPounds =
-      typeof body.membershipPricePounds === "number"
-        ? body.membershipPricePounds
-        : Number.parseFloat(String(body.membershipPricePounds ?? ""));
+    const hasPrices =
+      body.dropInPricePounds != null && body.membershipPricePounds != null;
+    const hasVisibility = typeof body.monthlyMembershipActive === "boolean";
 
-    if (!Number.isFinite(dropInPounds) || !Number.isFinite(membershipPounds)) {
+    if (!hasPrices && !hasVisibility) {
       return NextResponse.json(
-        { error: "Enter valid drop-in and membership prices." },
+        { error: "Provide pricing values or a monthly membership visibility toggle." },
         { status: 400 },
       );
     }
 
-    const settings = await updateStudioPricingSettings({
-      dropInPricePence: Math.round(dropInPounds * 100),
-      membershipPricePence: Math.round(membershipPounds * 100),
-    });
+    const update: Parameters<typeof updateStudioPricingSettings>[0] = {};
 
+    if (hasPrices) {
+      const dropInPounds =
+        typeof body.dropInPricePounds === "number"
+          ? body.dropInPricePounds
+          : Number.parseFloat(String(body.dropInPricePounds));
+      const membershipPounds =
+        typeof body.membershipPricePounds === "number"
+          ? body.membershipPricePounds
+          : Number.parseFloat(String(body.membershipPricePounds));
+
+      if (!Number.isFinite(dropInPounds) || !Number.isFinite(membershipPounds)) {
+        return NextResponse.json(
+          { error: "Enter valid drop-in and membership prices." },
+          { status: 400 },
+        );
+      }
+
+      update.dropInPricePence = Math.round(dropInPounds * 100);
+      update.membershipPricePence = Math.round(membershipPounds * 100);
+    }
+
+    if (hasVisibility) {
+      update.monthlyMembershipActive = body.monthlyMembershipActive;
+    }
+
+    const settings = await updateStudioPricingSettings(update);
+
+    revalidateMembershipPricingPages();
     return NextResponse.json({ settings });
   } catch (error) {
     const message =
@@ -100,6 +121,7 @@ export async function POST(request: Request) {
           : Number.parseInt(String(body.sortOrder ?? "0"), 10) || 0,
     });
 
+    revalidateMembershipPricingPages();
     return NextResponse.json({ pack }, { status: 201 });
   } catch (error) {
     const message =

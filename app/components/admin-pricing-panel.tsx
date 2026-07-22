@@ -58,6 +58,10 @@ export function AdminPricingPanel({
   const [membershipPounds, setMembershipPounds] = useState(
     (initialSettings.membershipPricePence / 100).toFixed(2),
   );
+  const [monthlyMembershipActive, setMonthlyMembershipActive] = useState(
+    initialSettings.monthlyMembershipActive,
+  );
+  const [visibilityLoading, setVisibilityLoading] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, PackDraft>>(() =>
     Object.fromEntries(initialPacks.map((pack) => [pack.id, toDraft(pack)])),
   );
@@ -101,6 +105,7 @@ export function AdminPricingPanel({
         body: JSON.stringify({
           dropInPricePounds: Number.parseFloat(dropInPounds),
           membershipPricePounds: Number.parseFloat(membershipPounds),
+          monthlyMembershipActive,
         }),
       });
       const payload = await response.json();
@@ -114,6 +119,41 @@ export function AdminPricingPanel({
       setError(err instanceof Error ? err.message : "Unable to save studio pricing.");
     } finally {
       setSettingsLoading(false);
+    }
+  }
+
+  async function toggleMonthlyMembershipActive(next: boolean) {
+    setVisibilityLoading(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const response = await fetch("/api/admin/pricing", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ monthlyMembershipActive: next }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Unable to update monthly membership visibility.");
+      }
+
+      setMonthlyMembershipActive(payload.settings.monthlyMembershipActive);
+      setSettings(payload.settings);
+      setMessage(
+        payload.settings.monthlyMembershipActive
+          ? "Monthly membership is now live on the membership page."
+          : "Monthly membership is now shown as Coming Soon on the membership page.",
+      );
+      router.refresh();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to update monthly membership visibility.",
+      );
+    } finally {
+      setVisibilityLoading(false);
     }
   }
 
@@ -227,7 +267,9 @@ export function AdminPricingPanel({
           </div>
           <p className="text-xs text-muted">
             Sources: drop-in {settings.dropInSource === "database" ? "admin" : "env"} ·
-            membership {settings.membershipSource === "database" ? "admin" : "env"}
+            membership {settings.membershipSource === "database" ? "admin" : "env"} ·
+            monthly visibility{" "}
+            {settings.monthlyMembershipActiveSource === "database" ? "admin" : "default"}
           </p>
         </div>
 
@@ -260,6 +302,40 @@ export function AdminPricingPanel({
             <p className="mt-1 text-xs text-muted">Preview: {membershipPreview} / month</p>
           </label>
 
+          <div className="sm:col-span-2 rounded-sm border border-plum/10 bg-cream/40 p-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-plum">Monthly membership visibility</p>
+                <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted">
+                  When off, the Monthly Membership card stays on the membership page with a
+                  Coming Soon blur. Stripe subscribe links remain in the page but are not
+                  clickable until you turn this back on.
+                </p>
+              </div>
+              <label className="inline-flex items-center gap-3">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+                  {monthlyMembershipActive ? "Live" : "Coming soon"}
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={monthlyMembershipActive}
+                  disabled={visibilityLoading || settingsLoading}
+                  onClick={() => void toggleMonthlyMembershipActive(!monthlyMembershipActive)}
+                  className={`relative h-7 w-12 rounded-full transition ${
+                    monthlyMembershipActive ? "bg-sage" : "bg-plum/20"
+                  } disabled:opacity-60`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow transition ${
+                      monthlyMembershipActive ? "translate-x-5" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </label>
+            </div>
+          </div>
+
           <div className="sm:col-span-2">
             <button
               type="submit"
@@ -277,7 +353,7 @@ export function AdminPricingPanel({
           <div>
             <h2 className="font-display text-2xl text-plum">Class passes</h2>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-              Edit price, credit volume, and validity for 5-class / 10-class passes (and any
+              Edit price, credit volume, and validity for class packs (and any
               custom packs). Inactive packs stay hidden from members.
             </p>
           </div>

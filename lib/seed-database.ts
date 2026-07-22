@@ -151,11 +151,11 @@ export async function seedDatabaseIfEmpty(client: PrismaClient) {
 
 const classPackSeed = [
   {
-    slug: "5-class-pack",
-    name: "5-Class Pack",
+    slug: "4-class-pack",
+    name: "4-Class Pack",
     description: "Ideal for regular movers who want a flexible bundle of studio credits.",
-    credits: 5,
-    pricePence: 4500,
+    credits: 4,
+    pricePence: 4400,
     validDays: 90,
     sortOrder: 1,
   },

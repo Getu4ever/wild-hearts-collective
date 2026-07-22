@@ -1,7 +1,8 @@
-import { formatMoneyFromPence, formatUkDateLong, formatUkDateTimeShort } from "@/lib/booking-config";
+import { formatUkDateLong, formatUkDateTimeShort } from "@/lib/booking-config";
 import { CREDIT_REASON } from "@/lib/booking-advanced-config";
 import { getUserCreditBalance } from "@/lib/credit-service";
 import { db } from "@/lib/db";
+import { listActiveClassPacks } from "@/lib/studio-pricing-service";
 
 const creditReasonLabels: Record<string, string> = {
   [CREDIT_REASON.packPurchase]: "Class pack purchased",
@@ -26,7 +27,7 @@ function purchaseStatusLabel(status: string) {
 }
 
 export async function getMemberCreditsOverview(userId: string) {
-  const [balance, purchases, transactions, packs] = await Promise.all([
+  const [balance, purchases, transactions, activePacks] = await Promise.all([
     getUserCreditBalance(userId),
     db.classPackPurchase.findMany({
       where: { userId },
@@ -47,10 +48,7 @@ export async function getMemberCreditsOverview(userId: string) {
         purchase: { include: { pack: true } },
       },
     }),
-    db.classPack.findMany({
-      where: { active: true },
-      orderBy: { sortOrder: "asc" },
-    }),
+    listActiveClassPacks(),
   ]);
 
   return {
@@ -80,13 +78,13 @@ export async function getMemberCreditsOverview(userId: string) {
         transaction.purchase?.pack.name ??
         null,
     })),
-    packs: packs.map((pack) => ({
+    packs: activePacks.map((pack) => ({
       id: pack.id,
       slug: pack.slug,
       name: pack.name,
       description: pack.description,
       credits: pack.credits,
-      priceLabel: formatMoneyFromPence(pack.pricePence),
+      priceLabel: pack.priceLabel,
       validDays: pack.validDays,
     })),
   };

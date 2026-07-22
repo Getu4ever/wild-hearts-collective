@@ -9,6 +9,7 @@ import { seedClassPacks } from "@/lib/seed-database";
 export const STUDIO_SETTING_KEYS = {
   dropInPricePence: "drop_in_price_pence",
   membershipPricePence: "membership_price_pence",
+  monthlyMembershipActive: "monthly_membership_active",
 } as const;
 
 export type AdminClassPack = {
@@ -42,12 +43,32 @@ export type StudioPricingSettings = {
   membershipPricePence: number;
   membershipPriceLabel: string;
   membershipSource: "database" | "env";
+  monthlyMembershipActive: boolean;
+  monthlyMembershipActiveSource: "database" | "default";
 };
 
 function parsePositiveInt(value: string | null | undefined) {
   if (!value) return null;
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function parseBooleanSetting(value: string | null | undefined, defaultValue: boolean) {
+  if (value == null || value === "") return defaultValue;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "true" || normalized === "1") return true;
+  if (normalized === "false" || normalized === "0") return false;
+  return defaultValue;
+}
+
+async function readSettingValue(key: string) {
+  try {
+    const row = await db.studioSetting.findUnique({ where: { key } });
+    return row?.value ?? null;
+  } catch (error) {
+    console.error(`[studio-pricing] failed to read ${key}:`, error);
+    return null;
+  }
 }
 
 function slugifyPackName(name: string) {
@@ -60,13 +81,7 @@ function slugifyPackName(name: string) {
 }
 
 async function readSettingPence(key: string) {
-  try {
-    const row = await db.studioSetting.findUnique({ where: { key } });
-    return parsePositiveInt(row?.value);
-  } catch (error) {
-    console.error(`[studio-pricing] failed to read ${key}:`, error);
-    return null;
-  }
+  return parsePositiveInt(await readSettingValue(key));
 }
 
 export async function resolveClassPaymentAmountPence() {
@@ -79,10 +94,19 @@ export async function resolveMonthlyMembershipPricePence() {
   return fromDb ?? getEnvMonthlyMembershipPricePence();
 }
 
+export async function resolveMonthlyMembershipActive() {
+  const fromDb = await readSettingValue(STUDIO_SETTING_KEYS.monthlyMembershipActive);
+  return {
+    active: parseBooleanSetting(fromDb, false),
+    source: fromDb != null ? ("database" as const) : ("default" as const),
+  };
+}
+
 export async function getStudioPricingSettings(): Promise<StudioPricingSettings> {
-  const [dropInFromDb, membershipFromDb] = await Promise.all([
+  const [dropInFromDb, membershipFromDb, monthlyMembershipFromDb] = await Promise.all([
     readSettingPence(STUDIO_SETTING_KEYS.dropInPricePence),
     readSettingPence(STUDIO_SETTING_KEYS.membershipPricePence),
+    readSettingValue(STUDIO_SETTING_KEYS.monthlyMembershipActive),
   ]);
 
   const dropInPricePence = dropInFromDb ?? getEnvClassPaymentAmountPence();
@@ -96,27 +120,31 @@ export async function getStudioPricingSettings(): Promise<StudioPricingSettings>
     membershipPricePence,
     membershipPriceLabel: formatMoneyFromPence(membershipPricePence),
     membershipSource: membershipFromDb != null ? "database" : "env",
+    monthlyMembershipActive: parseBooleanSetting(monthlyMembershipFromDb, false),
+    monthlyMembershipActiveSource:
+      monthlyMembershipFromDb != null ? "database" : "default",
   };
 }
 
 export async function updateStudioPricingSettings(input: {
-  dropInPricePence: number;
-  membershipPricePence: number;
+  dropInPricePence?: number;
+  membershipPricePence?: number;
+  monthlyMembershipActive?: boolean;
 }) {
-  if (!Number.isFinite(input.dropInPricePence) || input.dropInPricePence <= 0) {
+  const current = await getStudioPricingSettings();
+  const dropIn = Math.round(input.dropInPricePence ?? current.dropInPricePence);
+  const membership = Math.round(
+    input.membershipPricePence ?? current.membershipPricePence,
+  );
+
+  if (!Number.isFinite(dropIn) || dropIn <= 0) {
     throw new Error("Drop-in class price must be greater than zero.");
   }
-  if (
-    !Number.isFinite(input.membershipPricePence) ||
-    input.membershipPricePence <= 0
-  ) {
+  if (!Number.isFinite(membership) || membership <= 0) {
     throw new Error("Membership price must be greater than zero.");
   }
 
-  const dropIn = Math.round(input.dropInPricePence);
-  const membership = Math.round(input.membershipPricePence);
-
-  await Promise.all([
+  const writes = [
     db.studioSetting.upsert({
       where: { key: STUDIO_SETTING_KEYS.dropInPricePence },
       create: {
@@ -133,7 +161,22 @@ export async function updateStudioPricingSettings(input: {
       },
       update: { value: String(membership) },
     }),
-  ]);
+  ];
+
+  if (input.monthlyMembershipActive !== undefined) {
+    writes.push(
+      db.studioSetting.upsert({
+        where: { key: STUDIO_SETTING_KEYS.monthlyMembershipActive },
+        create: {
+          key: STUDIO_SETTING_KEYS.monthlyMembershipActive,
+          value: String(input.monthlyMembershipActive),
+        },
+        update: { value: String(input.monthlyMembershipActive) },
+      }),
+    );
+  }
+
+  await Promise.all(writes);
 
   return getStudioPricingSettings();
 }
@@ -167,6 +210,15 @@ export async function listAdminClassPacks() {
   await seedClassPacks(db);
   const packs = await db.classPack.findMany({
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+  });
+  return packs.map(mapPack);
+}
+
+export async function listActiveClassPacks() {
+  await seedClassPacks(db);
+  const packs = await db.classPack.findMany({
+    where: { active: true },
+    orderBy: { sortOrder: "asc" },
   });
   return packs.map(mapPack);
 }

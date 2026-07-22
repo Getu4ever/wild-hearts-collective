@@ -13,7 +13,17 @@ type Pack = {
   validDays: number;
 };
 
-export function BundlePurchaseGrid({ packs }: { packs: Pack[] }) {
+type BundlePurchaseGridProps = {
+  packs: Pack[];
+  featured?: boolean;
+  emphasize?: boolean;
+};
+
+export function BundlePurchaseGrid({
+  packs,
+  featured = false,
+  emphasize = false,
+}: BundlePurchaseGridProps) {
   const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -57,14 +67,42 @@ export function BundlePurchaseGrid({ packs }: { packs: Pack[] }) {
   return (
     <div>
       {error && <p className="mb-4 text-sm text-brand">{error}</p>}
-      <div className="grid gap-6 md:grid-cols-2">
+      <div
+        className={`grid gap-6 ${
+          featured
+            ? packs.length === 1
+              ? "mx-auto max-w-md"
+              : emphasize
+                ? "md:grid-cols-2 md:gap-10"
+                : "md:grid-cols-2 md:gap-8"
+            : "md:grid-cols-2"
+        }`}
+      >
         {packs.map((pack) => (
           <article
             key={pack.id}
-            className="flex flex-col rounded-sm border border-plum/10 bg-surface p-8"
+            className={`flex flex-col rounded-sm border bg-surface ${
+              featured
+                ? emphasize
+                  ? "border-pink/30 p-10 shadow-md ring-1 ring-pink/15"
+                  : "border-pink/25 p-10 shadow-sm ring-1 ring-pink/10"
+                : "border-plum/10 p-8"
+            }`}
           >
-            <h3 className="font-display text-3xl text-plum">{pack.name}</h3>
-            <p className="mt-2 font-display text-4xl text-brand">{pack.priceLabel}</p>
+            <h3
+              className={`font-display text-plum ${
+                featured && emphasize ? "text-[2.5rem]" : featured ? "text-4xl" : "text-3xl"
+              }`}
+            >
+              {pack.name}
+            </h3>
+            <p
+              className={`mt-2 font-display text-brand ${
+                featured && emphasize ? "text-6xl" : featured ? "text-5xl" : "text-4xl"
+              }`}
+            >
+              {pack.priceLabel}
+            </p>
             <p className="mt-2 text-sm text-muted">
               {pack.credits} class credits · valid for {pack.validDays} days
             </p>
