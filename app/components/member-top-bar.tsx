@@ -11,14 +11,16 @@ type MemberSummary = {
 function TopBarLink({
   href,
   label,
+  className = "",
 }: {
   href: string;
   label: string;
+  className?: string;
 }) {
   return (
     <Link
       href={href}
-      className="text-white/90 transition hover:text-white"
+      className={`text-white/90 transition hover:text-white ${className}`.trim()}
     >
       {label}
     </Link>
@@ -215,7 +217,11 @@ export function MemberTopBar({ overlayMode }: { overlayMode?: boolean }) {
           <span className="text-white/50">Loading…</span>
         ) : (
           <>
-            <TopBarLink href="/membership" label="Membership" />
+            <TopBarLink
+              href="/membership"
+              label="Membership"
+              className="normal-case tracking-normal"
+            />
             <TopBarSeparator />
             <AccountDropdown
               member={member}

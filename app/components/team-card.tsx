@@ -48,9 +48,9 @@ export function TeamCard({
       <div className="mt-auto px-5 pb-5">
         <Link
           href={href}
-          className="inline-flex text-sm font-semibold uppercase tracking-wider text-plum transition-colors hover:text-pink"
+          className="inline-flex text-sm font-semibold tracking-wide text-plum transition-colors hover:text-pink"
         >
-          Click to learn more →
+          Meet {name} →
         </Link>
       </div>
     </article>
