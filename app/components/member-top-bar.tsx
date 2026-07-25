@@ -217,11 +217,7 @@ export function MemberTopBar({ overlayMode }: { overlayMode?: boolean }) {
           <span className="text-white/50">Loading…</span>
         ) : (
           <>
-            <TopBarLink
-              href="/membership"
-              label="Membership"
-              className="normal-case tracking-normal"
-            />
+            <TopBarLink href="/membership" label="Membership" />
             <TopBarSeparator />
             <AccountDropdown
               member={member}

@@ -467,13 +467,15 @@ export function SiteHeader() {
               </button>
 
               {mobileAboutOpen && (
-                <AboutMenuList
-                  pathname={pathname}
-                  onNavigate={() => {
-                    setMenuOpen(false);
-                    setMobileAboutOpen(false);
-                  }}
-                />
+                <div className="uppercase tracking-wider">
+                  <AboutMenuList
+                    pathname={pathname}
+                    onNavigate={() => {
+                      setMenuOpen(false);
+                      setMobileAboutOpen(false);
+                    }}
+                  />
+                </div>
               )}
             </div>
 
@@ -493,13 +495,15 @@ export function SiteHeader() {
               </button>
 
               {mobileClassesOpen && (
-                <ClassesMenuList
-                  pathname={pathname}
-                  onNavigate={() => {
-                    setMenuOpen(false);
-                    setMobileClassesOpen(false);
-                  }}
-                />
+                <div className="uppercase tracking-wider">
+                  <ClassesMenuList
+                    pathname={pathname}
+                    onNavigate={() => {
+                      setMenuOpen(false);
+                      setMobileClassesOpen(false);
+                    }}
+                  />
+                </div>
               )}
             </div>
 
@@ -523,13 +527,13 @@ export function SiteHeader() {
             <div className="flex gap-2 pt-1">
               <a
                 href={phoneHref}
-                className="flex-1 rounded-md border border-header-accent py-2 text-center text-xs font-semibold text-header-accent"
+                className="flex-1 rounded-md border border-header-accent py-2 text-center text-xs font-semibold uppercase tracking-wider text-header-accent"
               >
                 Call
               </a>
               <a
                 href={`mailto:${contact.email}`}
-                className="flex-1 rounded-md border border-header-accent py-2 text-center text-xs font-semibold text-header-accent"
+                className="flex-1 rounded-md border border-header-accent py-2 text-center text-xs font-semibold uppercase tracking-wider text-header-accent"
               >
                 Email
               </a>
@@ -592,7 +596,7 @@ function MobileLink({
     <Link
       href={href}
       onClick={close}
-      className={`block rounded-md px-3 py-2 text-sm font-medium transition ${
+      className={`block rounded-md px-3 py-2 text-sm font-medium uppercase tracking-wider transition ${
         isActive
           ? "bg-sage font-semibold text-white"
           : "text-header-accent hover:bg-header-accent/5"
