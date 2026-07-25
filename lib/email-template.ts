@@ -146,6 +146,7 @@ export function sessionDetailBlock(classTitle: string, startsAt: Date) {
 
 export function calendarLinksBlock(input: {
   googleUrl: string;
+  /** ICS download — works with Outlook, Apple Calendar, and similar apps. */
   outlookUrl: string;
 }) {
   const c = EMAIL_BRAND;
@@ -156,7 +157,7 @@ export function calendarLinksBlock(input: {
     <p style="margin:0 0 4px;font-size:14px;line-height:1.7;">
       <a href="${input.googleUrl}" style="color:${c.sage};font-weight:700;text-decoration:underline;">Google Calendar</a>
       &nbsp;·&nbsp;
-      <a href="${input.outlookUrl}" style="color:${c.sage};font-weight:700;text-decoration:underline;">Outlook Calendar</a>
+      <a href="${input.outlookUrl}" style="color:${c.sage};font-weight:700;text-decoration:underline;">Outlook / Apple Calendar</a>
     </p>
   `;
 }

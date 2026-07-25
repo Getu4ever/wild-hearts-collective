@@ -4,12 +4,16 @@ import { renderEmailProductPng } from "@/lib/email-product-image-render";
 export const runtime = "nodejs";
 
 /**
- * Legacy query-string form kept for older emails already in inboxes.
- * Prefer /api/email/product-image/shop/….svg (path form) for new mail.
+ * Email-safe raster thumbnail for catalog images (especially SVG → PNG).
+ * Path form: /api/email/product-image/shop/liquid-chalk.svg
+ * Prefer this over ?src= — Zoho Mail’s image proxy often strips query strings.
  */
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const src = searchParams.get("src")?.trim() ?? "";
+export async function GET(
+  _request: Request,
+  context: { params: Promise<{ path: string[] }> },
+) {
+  const { path: segments } = await context.params;
+  const src = `/${(segments ?? []).join("/")}`;
   const png = await renderEmailProductPng(src);
 
   if (!png) {

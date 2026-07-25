@@ -12,8 +12,8 @@ import {
   sessionDetailBlock,
 } from "@/lib/email-template";
 import {
+  buildCalendarIcsUrl,
   buildGoogleCalendarUrl,
-  buildOutlookCalendarUrl,
   resolveSessionEndsAt,
 } from "@/lib/calendar-links";
 import { contact } from "@/lib/site-data";
@@ -189,7 +189,7 @@ export async function sendBookingConfirmedEmails(
     endsAt,
     description: calendarDescription,
   });
-  const outlookUrl = buildOutlookCalendarUrl({
+  const outlookUrl = buildCalendarIcsUrl({
     title: calendarTitle,
     startsAt: session.startsAt,
     endsAt,
