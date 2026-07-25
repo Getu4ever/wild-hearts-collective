@@ -100,7 +100,7 @@ function AccountDropdown({
         aria-haspopup="menu"
         aria-controls={menuId}
         onClick={() => setOpen((current) => !current)}
-        className="inline-flex items-center gap-1.5 text-white/90 transition hover:text-white"
+        className="inline-flex items-center gap-1.5 uppercase tracking-[0.18em] text-white/90 transition hover:text-white"
       >
         Account
         <span
