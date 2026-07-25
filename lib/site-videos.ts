@@ -21,11 +21,6 @@ export const siteVideos = {
     posterKey: "aerial-silks" as HeroImageKey,
     title: "Aerial silks at Wild Hearts Collective",
   },
-  "creative-arts-workshops": {
-    src: "/video/art-workshop.mp4",
-    posterKey: "creative-arts" as HeroImageKey,
-    title: "Creative arts workshops at Wild Hearts Collective",
-  },
   parties: {
     src: "/video/birthday-party.mp4",
     posterKey: "parties" as HeroImageKey,

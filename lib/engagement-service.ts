@@ -137,6 +137,12 @@ export async function runInactiveMemberEngagement(now = new Date()) {
 }
 
 export async function runDailyEngagementJobs() {
-  const inactive = await runInactiveMemberEngagement();
-  return { inactive };
+  const [{ runFirstLessonFollowUps }] = await Promise.all([
+    import("@/lib/class-feedback-service"),
+  ]);
+  const [inactive, firstLesson] = await Promise.all([
+    runInactiveMemberEngagement(),
+    runFirstLessonFollowUps(),
+  ]);
+  return { inactive, firstLesson };
 }

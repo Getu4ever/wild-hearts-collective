@@ -80,6 +80,27 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (typeof body.digitalDelivery === "boolean") {
       payload.digitalDelivery = body.digitalDelivery;
     }
+    if (
+      body.giftRedeemScope === "beginner-courses" ||
+      body.giftRedeemScope === "any" ||
+      body.giftRedeemScope === null
+    ) {
+      payload.giftRedeemScope = body.giftRedeemScope;
+    }
+    if ("weightGrams" in body) {
+      if (body.weightGrams === null || body.weightGrams === "") {
+        payload.weightGrams = null;
+      } else {
+        payload.weightGrams = Math.max(
+          0,
+          Math.round(
+            typeof body.weightGrams === "number"
+              ? body.weightGrams
+              : Number.parseInt(String(body.weightGrams), 10) || 0,
+          ),
+        );
+      }
+    }
     if (typeof body.image === "string") payload.image = body.image;
     if (typeof body.imageGradient === "string") payload.imageGradient = body.imageGradient;
     if ("sizes" in body || "colours" in body) payload.variants = parseVariants(body);

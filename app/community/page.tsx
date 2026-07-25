@@ -49,17 +49,19 @@ export default function CommunityPage() {
       <IntroSection
         title="Our community hub"
         imageKey="community"
-        imageAlt="Community activities at Wild Hearts Collective"
+        imageSrc="/hero/hero-community-trailer02.jpg"
+        imageAlt="Wild Hearts Collective community gathered together"
+        imageOverlay="A welcoming space to make new friends, learn, craft and train with internal and external activities"
       >
         <p>
-          Wild Hearts Collective champions sports for all — connecting you
-          with a warm, supportive team while you explore movement and
-          creative expression.
+          Wild Hearts Collective champions arts for all — connecting you with a
+          warm, supportive team while you explore movement and creative
+          expression.
         </p>
         <p>
-          Join us to learn, laugh, and find your people. Our space welcomes
-          arts and crafts workshops, community activities, and collaborations
-          with local businesses.
+          Join us to learn, laugh, and find your people. Our space welcomes arts
+          and crafts workshops, community activities, and collaborations with
+          local businesses.
         </p>
       </IntroSection>
 
@@ -87,7 +89,7 @@ export default function CommunityPage() {
         />
         <ProseBlock>
           <p>
-            Our creative arts workshops offer a calm, inclusive space to try
+            Our creative arts workshops will offer a calm, inclusive space to try
             something new — from seasonal crafts to mindful making sessions.
           </p>
         </ProseBlock>

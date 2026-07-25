@@ -208,6 +208,8 @@ export async function forceBookAsAdmin(input: ForceBookInput) {
     {
       classTitle: booking.session.class.title,
       startsAt: booking.session.startsAt,
+      endsAt: booking.session.endsAt,
+      durationMinutes: booking.session.class.duration,
     },
     booking.amountPaid,
   );

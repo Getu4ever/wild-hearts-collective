@@ -199,6 +199,66 @@ export async function sessionHasCapacity(sessionId: string, capacity: number) {
   return held < capacity;
 }
 
+/**
+ * Active place on a session: confirmed, or pending within the payment hold window.
+ * Matches by email and/or member userId so guests and signed-in members cannot double-book.
+ */
+export async function findActiveSessionBooking(input: {
+  sessionId: string;
+  email: string;
+  userId?: string | null;
+}) {
+  const email = input.email.trim().toLowerCase();
+  const cutoff = paymentHoldCutoff();
+  const identityFilter = input.userId
+    ? { OR: [{ email }, { userId: input.userId }] }
+    : { email };
+
+  return db.booking.findFirst({
+    where: {
+      sessionId: input.sessionId,
+      AND: [
+        identityFilter,
+        {
+          OR: [
+            { status: BOOKING_STATUS.confirmed },
+            {
+              status: BOOKING_STATUS.pending,
+              createdAt: { gte: cutoff },
+            },
+          ],
+        },
+      ],
+    },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
+export class DuplicateSessionBookingError extends Error {
+  readonly existingStatus: string;
+
+  constructor(existingStatus: string) {
+    super(
+      existingStatus === BOOKING_STATUS.pending
+        ? "You already have a booking in progress for this session. Complete payment or wait for the hold to expire before trying again."
+        : "You have already booked this session.",
+    );
+    this.name = "DuplicateSessionBookingError";
+    this.existingStatus = existingStatus;
+  }
+}
+
+export async function assertCanBookSession(input: {
+  sessionId: string;
+  email: string;
+  userId?: string | null;
+}) {
+  const existing = await findActiveSessionBooking(input);
+  if (existing) {
+    throw new DuplicateSessionBookingError(existing.status);
+  }
+}
+
 export async function confirmBooking(
   bookingId: string,
   options?: {
@@ -244,6 +304,8 @@ export async function confirmBooking(
     {
       classTitle: booking.session.class.title,
       startsAt: booking.session.startsAt,
+      endsAt: booking.session.endsAt,
+      durationMinutes: booking.session.class.duration,
     },
     options?.amountPaid ?? booking.amountPaid,
     paymentSummary,

@@ -2,6 +2,13 @@ import type { Prisma } from "@prisma/client";
 import { randomBytes } from "crypto";
 import { formatMoneyFromPence } from "@/lib/booking-config";
 import { db } from "@/lib/db";
+import {
+  assertGiftCardRedeemableFor,
+  giftRedeemScopeLabel,
+  GIFT_REDEEM_SCOPE,
+  normalizeGiftRedeemScope,
+  type GiftRedeemScope,
+} from "@/lib/gift-redeem-scope";
 
 export const GIFT_REDEMPTION_REASON = {
   booking: "booking",
@@ -27,6 +34,8 @@ export type IssueGiftCardInput = {
   balancePence: number;
   productId?: string | null;
   productName: string;
+  /** Defaults to "any". Use "beginner-courses" for 4-week course vouchers. */
+  redeemScope?: GiftRedeemScope | string | null;
   purchaserEmail?: string | null;
   purchaserName?: string | null;
   stripeSessionId?: string | null;
@@ -49,6 +58,7 @@ export async function issueGiftCard(input: IssueGiftCardInput, tx: Tx = db) {
       balancePence: input.balancePence,
       productId: input.productId ?? null,
       productName: input.productName,
+      redeemScope: normalizeGiftRedeemScope(input.redeemScope),
       purchaserEmail: input.purchaserEmail?.trim().toLowerCase() || null,
       purchaserName: input.purchaserName?.trim() || null,
       stripeSessionId: input.stripeSessionId ?? null,
@@ -78,6 +88,8 @@ export async function getGiftCardPreview(code: string) {
     throw new Error("This gift card has no remaining balance.");
   }
 
+  const redeemScope = normalizeGiftRedeemScope(giftCard.redeemScope);
+
   return {
     id: giftCard.id,
     code: giftCard.code,
@@ -85,6 +97,8 @@ export async function getGiftCardPreview(code: string) {
     balanceLabel: formatMoneyFromPence(giftCard.balancePence),
     initialBalancePence: giftCard.initialBalancePence,
     productName: giftCard.productName,
+    redeemScope,
+    redeemScopeLabel: giftRedeemScopeLabel(redeemScope),
     expiresAt: giftCard.expiresAt,
   };
 }
@@ -208,6 +222,8 @@ export async function applyGiftCodeToCharge(
     bookingId?: string | null;
     packPurchaseId?: string | null;
     userId?: string | null;
+    /** Required for booking redemptions when the card may be course-scoped. */
+    classSlug?: string | null;
   },
 ) {
   const giftCard = await findGiftCardByCode(code);
@@ -224,6 +240,15 @@ export async function applyGiftCodeToCharge(
     throw new Error("This gift card has no remaining balance.");
   }
 
+  if (options.reason === GIFT_REDEMPTION_REASON.classPack) {
+    assertGiftCardRedeemableFor(giftCard, { kind: "class_pack" });
+  } else if (options.reason === GIFT_REDEMPTION_REASON.booking) {
+    assertGiftCardRedeemableFor(giftCard, {
+      kind: "booking",
+      classSlug: options.classSlug ?? "",
+    });
+  }
+
   return db.$transaction(async (tx) => {
     const result = await redeemGiftCardBalance(giftCard.id, chargePence, options, tx);
 
@@ -236,6 +261,9 @@ export async function applyGiftCodeToCharge(
       fullyCovered: result.appliedPence >= chargePence,
       balanceAfterLabel: formatMoneyFromPence(result.balanceAfter),
       appliedLabel: formatMoneyFromPence(result.appliedPence),
+      redeemScope: normalizeGiftRedeemScope(giftCard.redeemScope),
     };
   });
 }
+
+export { GIFT_REDEEM_SCOPE };

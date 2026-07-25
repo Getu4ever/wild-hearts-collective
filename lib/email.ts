@@ -8,16 +8,40 @@ import {
 } from "@/lib/booking-config";
 import {
   buildBrandedEmail,
+  calendarLinksBlock,
   sessionDetailBlock,
 } from "@/lib/email-template";
+import {
+  buildGoogleCalendarUrl,
+  buildOutlookCalendarUrl,
+  resolveSessionEndsAt,
+} from "@/lib/calendar-links";
+import { contact } from "@/lib/site-data";
+import { resolveEmailProductImageUrl } from "@/lib/email-product-image";
 import {
   resolveClassPaymentAmountPence,
   resolveMonthlyMembershipPricePence,
 } from "@/lib/studio-pricing-service";
 
+function shopOrderImageCell(image: string | null | undefined) {
+  const imageUrl = resolveEmailProductImageUrl(image);
+  if (!imageUrl) return "";
+  return `<td style="width:72px;padding:0 14px 0 0;vertical-align:top;">
+            <img
+              src="${imageUrl}"
+              alt=""
+              width="72"
+              height="72"
+              style="display:block;width:72px;height:72px;object-fit:cover;border-radius:6px;border:1px solid #E4DDD4;background:#F7F4EF;"
+            />
+          </td>`;
+}
+
 type SessionDetails = {
   classTitle: string;
   startsAt: Date;
+  endsAt?: Date | null;
+  durationMinutes?: number;
 };
 
 type CustomerDetails = {
@@ -152,6 +176,26 @@ export async function sendBookingConfirmedEmails(
         }).format(amountPaidPence / 100)
       : formatMoneyFromPence(await resolveClassPaymentAmountPence()));
 
+  const endsAt = resolveSessionEndsAt(
+    session.startsAt,
+    session.endsAt,
+    session.durationMinutes ?? 60,
+  );
+  const calendarTitle = `${session.classTitle} — Wild Hearts Collective`;
+  const calendarDescription = `Your class at Wild Hearts Collective.\n${contact.address}\n${getStudioEmail()}`;
+  const googleUrl = buildGoogleCalendarUrl({
+    title: calendarTitle,
+    startsAt: session.startsAt,
+    endsAt,
+    description: calendarDescription,
+  });
+  const outlookUrl = buildOutlookCalendarUrl({
+    title: calendarTitle,
+    startsAt: session.startsAt,
+    endsAt,
+    description: calendarDescription,
+  });
+
   await Promise.all([
     sendEmail({
       to: customer.email,
@@ -166,6 +210,7 @@ export async function sendBookingConfirmedEmails(
             seeing you in the studio.
           </p>
           ${sessionDetailBlock(session.classTitle, session.startsAt)}
+          ${calendarLinksBlock({ googleUrl, outlookUrl })}
           <p>
             <strong>Payment:</strong> ${paidAmount}<br />
             <strong>Status:</strong> Confirmed
@@ -590,6 +635,40 @@ export async function sendEngagementEmail(
   });
 }
 
+export async function sendFirstLessonFeedbackEmail(
+  customer: CustomerDetails,
+  payload: { classTitle: string; startsAt: Date; feedbackUrl: string },
+) {
+  await sendEmail({
+    to: customer.email,
+    subject: "How was your first Wild Hearts class?",
+    html: buildBrandedEmail({
+      previewText: `We would love your feedback on ${payload.classTitle}.`,
+      heading: "How was your first class?",
+      bodyHtml: `
+        <p>Hi ${customer.name},</p>
+        <p>
+          Thank you for joining us for your first class
+          (<strong>${payload.classTitle}</strong> on ${formatSessionDateTime(payload.startsAt)}).
+          We hope you felt welcome.
+        </p>
+        <p>
+          When you have a moment, please tell us how it went — it only takes a minute
+          and helps us keep improving.
+        </p>
+        <p>
+          There is also a checkbox if you are happy for us to share your review on
+          our website.
+        </p>
+      `,
+      cta: {
+        label: "Leave feedback",
+        href: payload.feedbackUrl,
+      },
+    }),
+  });
+}
+
 type ClassPackPurchaseDetails = {
   packName: string;
   credits: number;
@@ -815,6 +894,7 @@ type ShopGiftOrderLine = {
   balanceLabel?: string;
   /** Public path under the site, e.g. /shop/art-kit-class-bundle.svg */
   image?: string;
+  redeemScope?: string;
 };
 
 type ShopGiftVoucherDetails = {
@@ -833,27 +913,15 @@ export async function sendShopGiftVoucherEmail(
   const baseUrl = getAppBaseUrl();
   const itemRows = voucher.lines
     .map((line) => {
-      const imagePath = line.image?.startsWith("/")
-        ? line.image
-        : line.image
-          ? `/${line.image}`
-          : null;
-      const imageUrl = imagePath ? `${baseUrl}${imagePath}` : null;
-      const imageCell = imageUrl
-        ? `<td style="width:72px;padding:0 14px 0 0;vertical-align:top;">
-            <img
-              src="${imageUrl}"
-              alt=""
-              width="72"
-              height="72"
-              style="display:block;width:72px;height:72px;object-fit:cover;border-radius:6px;border:1px solid #e8dfd4;background:#F6F2EC;"
-            />
-          </td>`
-        : "";
+      const imageCell = shopOrderImageCell(line.image);
 
       const balanceLine = line.balanceLabel
         ? `<p style="margin:4px 0 0;">Balance on code: <strong>${line.balanceLabel}</strong></p>`
         : "";
+      const redeemNote =
+        line.redeemScope === "beginner-courses"
+          ? `<p style="margin:4px 0 0;">Redeem only on a <strong>4-week course</strong> booking (not weekly drop-in classes).</p>`
+          : "";
 
       return `
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width:100%;margin:0 0 16px;">
@@ -871,6 +939,7 @@ export async function sendShopGiftVoucherEmail(
                 </span>
               </p>
               ${balanceLine}
+              ${redeemNote}
             </td>
           </tr>
         </table>`;
@@ -882,6 +951,31 @@ export async function sendShopGiftVoucherEmail(
     .join(", ");
 
   const creditsUrl = voucher.creditsUrl ?? `${baseUrl}/account/credits`;
+  const hasCourseOnly = voucher.lines.some(
+    (line) => line.redeemScope === "beginner-courses",
+  );
+  const hasFlexible = voucher.lines.some(
+    (line) => line.redeemScope !== "beginner-courses",
+  );
+
+  const redeemHelp = hasCourseOnly && !hasFlexible
+    ? `<p>
+            Book a <strong>4-week course</strong> on the booking page (filter by “4-week courses”)
+            and enter your code at checkout. Course vouchers cannot be used on weekly drop-in
+            classes or class packs. Courses are paid in full for the fixed block; missed weeks
+            cannot be transferred.
+          </p>`
+    : hasCourseOnly
+      ? `<p>
+            Flexible gift cards can be used when booking a class or buying a class pack.
+            Course vouchers can only be redeemed on a 4-week course booking.
+            If you spend less than the full balance, the remaining balance stays on the same code.
+          </p>`
+      : `<p>
+            Use these codes when booking a class or buying a class pack.
+            If you spend less than the full balance (for example a £25 card on a £10 class),
+            the remaining balance stays on the same code for next time.
+          </p>`;
 
   await Promise.all([
     sendEmail({
@@ -902,18 +996,16 @@ export async function sendShopGiftVoucherEmail(
           </p>
           ${itemRows}
           <p><strong>Order total:</strong> ${voucher.totalLabel}</p>
-          <p>
-            Use these codes when booking a class or buying a class pack.
-            If you spend less than the full balance (for example a £25 card on a £10 class),
-            the remaining balance stays on the same code for next time.
-          </p>
+          ${redeemHelp}
           <p>
             Present these codes to the recipient if you are gifting them to someone else.
           </p>
         `,
         cta: {
-          label: "Book a class",
-          href: voucher.bookUrl,
+          label: hasCourseOnly && !hasFlexible ? "Book a 4-week course" : "Book a class",
+          href: hasCourseOnly && !hasFlexible
+            ? `${voucher.bookUrl}?class=beginner-courses`
+            : voucher.bookUrl,
         },
       }),
     }),
@@ -957,6 +1049,8 @@ type ShopProductOrderDetails = {
   totalLabel: string;
   shopUrl: string;
   hasGiftVouchers?: boolean;
+  fulfillmentMethod?: "collection" | "delivery";
+  shippingLabel?: string | null;
 };
 
 /** Confirmation email for physical / non-voucher shop catalog purchases. */
@@ -964,29 +1058,12 @@ export async function sendShopProductOrderEmail(
   customer: CustomerDetails,
   order: ShopProductOrderDetails,
 ) {
-  const baseUrl = getAppBaseUrl();
   const summary = order.lines
     .map((line) => `${line.quantity}× ${line.productName}`)
     .join(", ");
   const itemRows = order.lines
     .map((line) => {
-      const imagePath = line.image?.startsWith("/")
-        ? line.image
-        : line.image
-          ? `/${line.image}`
-          : null;
-      const imageUrl = imagePath ? `${baseUrl}${imagePath}` : null;
-      const imageCell = imageUrl
-        ? `<td style="width:72px;padding:0 14px 0 0;vertical-align:top;">
-            <img
-              src="${imageUrl}"
-              alt=""
-              width="72"
-              height="72"
-              style="display:block;width:72px;height:72px;object-fit:cover;border-radius:6px;border:1px solid #e8dfd4;background:#F6F2EC;"
-            />
-          </td>`
-        : "";
+      const imageCell = shopOrderImageCell(line.image);
 
       return `
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="width:100%;margin:0 0 16px;">
@@ -1006,6 +1083,18 @@ export async function sendShopProductOrderEmail(
     ? `<p>Your gift voucher codes were sent in a separate email.</p>`
     : "";
 
+  const isDelivery = order.fulfillmentMethod === "delivery";
+  const fulfillmentCopy = isDelivery
+    ? `We&apos;ll prepare your items for UK delivery and be in touch if we need anything else.`
+    : `We&apos;ll prepare your items for collection from the studio. We&apos;ll be in touch when they&apos;re ready to pick up.`;
+  const fulfillmentLabel = isDelivery
+    ? "UK delivery"
+    : "Collect from studio";
+  const shippingRow =
+    isDelivery && order.shippingLabel
+      ? `<p><strong>Delivery:</strong> ${order.shippingLabel}</p>`
+      : "";
+
   await Promise.all([
     sendEmail({
       to: customer.email,
@@ -1016,10 +1105,11 @@ export async function sendShopProductOrderEmail(
         bodyHtml: `
           <p>Hi ${customer.name},</p>
           <p>
-            Thank you for your shop order. We&apos;ll prepare your items for UK shipping
-            and be in touch if we need anything else.
+            Thank you for your shop order. ${fulfillmentCopy}
           </p>
+          <p><strong>Fulfilment:</strong> ${fulfillmentLabel}</p>
           ${itemRows}
+          ${shippingRow}
           <p><strong>Total paid:</strong> ${order.totalLabel}</p>
           ${giftNote}
         `,
@@ -1040,10 +1130,16 @@ export async function sendShopProductOrderEmail(
           <p>
             <strong>Buyer:</strong> ${customer.name}<br />
             <strong>Email:</strong> ${customer.email}<br />
+            <strong>Fulfilment:</strong> ${fulfillmentLabel}<br />
             <strong>Total:</strong> ${order.totalLabel}
           </p>
           ${itemRows}
-          <p>Shipping details are on the Stripe Checkout session. Sales also appear in Admin → Shop.</p>
+          ${shippingRow}
+          <p>${
+            isDelivery
+              ? "Shipping details are on the Stripe Checkout session."
+              : "Buyer chose Collect from studio — no shipping address required."
+          } Sales also appear in Admin → Shop.</p>
         `,
         cta: {
           label: "View shop",

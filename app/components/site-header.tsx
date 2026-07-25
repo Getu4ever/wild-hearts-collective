@@ -5,22 +5,33 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BOOKING_URL } from "@/lib/constants";
-import { classMenuLinks, contact, mainNavLinks } from "@/lib/site-data";
+import {
+  aboutMenuLinks,
+  classMenuLinks,
+  contact,
+  mainNavLinks,
+  type ClassMenuIcon,
+} from "@/lib/site-data";
 import { MemberTopBar } from "./member-top-bar";
-import { HEADER_LOGO_SRC } from "./logo";
+import { HEADER_LOGO_HEIGHT, HEADER_LOGO_SRC, HEADER_LOGO_WIDTH } from "./logo";
 
 const phoneHref = contact.phone.startsWith("Phone")
   ? "/contact"
   : `tel:${contact.phone.replace(/\s/g, "")}`;
 
-const classesDropdownPanelClass = "classes-dropdown-panel rounded-2xl ring-1 ring-plum/10";
+const dropdownPanelClass = "classes-dropdown-panel rounded-2xl ring-1 ring-plum/10";
 
 const SCROLL_THRESHOLD = 32;
 
-type ClassIconKey = (typeof classMenuLinks)[number]["icon"];
+const classMenuSections = [
+  "Studio classes",
+  "Wild Hearts Juniors",
+  "Workshops",
+  "Browse",
+] as const;
 
-function ClassMenuIcon({ icon }: { icon: ClassIconKey }) {
-  const className = "h-5 w-5 shrink-0 text-header-accent/75";
+function ClassMenuIcon({ icon }: { icon: ClassMenuIcon }) {
+  const className = "h-4 w-4 shrink-0 text-header-accent/75";
 
   switch (icon) {
     case "pole":
@@ -60,6 +71,37 @@ function ClassMenuIcon({ icon }: { icon: ClassIconKey }) {
           <path strokeLinecap="round" d="M5 19c1.5-2 3.5-3 7-3s5.5 1 7 3" />
         </svg>
       );
+    case "family":
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className={className} aria-hidden="true">
+          <circle cx="9" cy="7" r="2.5" />
+          <circle cx="16" cy="8" r="2" />
+          <path strokeLinecap="round" d="M3.5 19c.6-3 2.8-5 5.5-5s4.9 2 5.5 5" />
+          <path strokeLinecap="round" d="M13 14.5c1.2-1.4 2.8-2 4.5-2 2.2 0 4 1.4 4.5 3.5" />
+        </svg>
+      );
+    case "teens":
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className={className} aria-hidden="true">
+          <circle cx="12" cy="7" r="3" />
+          <path strokeLinecap="round" d="M5 20c1.2-3.5 3.8-5.5 7-5.5s5.8 2 7 5.5" />
+        </svg>
+      );
+    case "children":
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className={className} aria-hidden="true">
+          <circle cx="12" cy="8" r="2.75" />
+          <path strokeLinecap="round" d="M7 20c.8-3 2.8-4.5 5-4.5s4.2 1.5 5 4.5" />
+          <path strokeLinecap="round" d="M8 4.5c.4-.8 1.2-1.3 2-1.3M16 4.5c-.4-.8-1.2-1.3-2-1.3" />
+        </svg>
+      );
+    case "workshop":
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className={className} aria-hidden="true">
+          <path strokeLinecap="round" d="M4 19h16M7 19V9l5-4 5 4v10" />
+          <path strokeLinecap="round" d="M10 19v-5h4v5" />
+        </svg>
+      );
   }
 }
 
@@ -71,23 +113,72 @@ function ClassesMenuList({
   onNavigate?: () => void;
 }) {
   return (
+    <div className="relative z-10 py-1">
+      {classMenuSections.map((section) => {
+        const items = classMenuLinks.filter((item) => item.section === section);
+        if (items.length === 0) return null;
+
+        return (
+          <div key={section}>
+            <p className="px-3.5 pb-0.5 pt-1.5 text-[9px] font-bold uppercase tracking-[0.14em] text-header-accent/55">
+              {section}
+            </p>
+            <ul>
+              {items.map((item) => {
+                const isActive = pathname === item.href;
+
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={onNavigate}
+                      className={`flex items-center gap-2.5 px-3.5 py-1.5 text-[13px] font-medium transition ${
+                        isActive
+                          ? "bg-white/55 text-header-accent shadow-sm backdrop-blur-sm"
+                          : "text-header-accent/90 hover:bg-white/35 hover:text-header-accent"
+                      }`}
+                    >
+                      <ClassMenuIcon icon={item.icon} />
+                      <span>{item.label}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function AboutMenuList({
+  pathname,
+  onNavigate,
+}: {
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  return (
     <ul className="relative z-10 py-1.5">
-      {classMenuLinks.map((item) => {
-        const isActive = pathname === item.href;
+      {aboutMenuLinks.map((item) => {
+        const isActive =
+          item.href === "/about"
+            ? pathname === "/about"
+            : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
         return (
           <li key={item.href}>
             <Link
               href={item.href}
               onClick={onNavigate}
-              className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition ${
+              className={`flex items-center px-4 py-3 text-sm font-medium transition ${
                 isActive
                   ? "bg-white/55 text-header-accent shadow-sm backdrop-blur-sm"
                   : "text-header-accent/90 hover:bg-white/35 hover:text-header-accent"
               }`}
             >
-              <ClassMenuIcon icon={item.icon} />
-              <span>{item.label}</span>
+              {item.label}
             </Link>
           </li>
         );
@@ -96,9 +187,45 @@ function ClassesMenuList({
   );
 }
 
+function DropdownTrigger({
+  label,
+  open,
+  active,
+  overlayMode,
+}: {
+  label: string;
+  open: boolean;
+  active: boolean;
+  overlayMode: boolean;
+}) {
+  return (
+    <span
+      className={`flex items-center gap-1.5 uppercase transition ${
+        active || open
+          ? overlayMode
+            ? "text-pink underline decoration-pink decoration-2 underline-offset-4"
+            : "text-header-accent underline decoration-header-accent decoration-2 underline-offset-4"
+          : overlayMode
+            ? "text-white/90 hover:text-pink"
+            : "text-header-accent hover:text-header-accent-hover"
+      }`}
+    >
+      {label}
+      <span
+        className={`text-[10px] transition-transform ${open ? "rotate-180" : ""}`}
+        aria-hidden="true"
+      >
+        ▾
+      </span>
+    </span>
+  );
+}
+
 export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const [classesOpen, setClassesOpen] = useState(false);
+  const [mobileAboutOpen, setMobileAboutOpen] = useState(false);
   const [mobileClassesOpen, setMobileClassesOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
@@ -106,8 +233,10 @@ export function SiteHeader() {
   const isHome = pathname === "/";
   const overlayMode = isHome && !scrolled && !menuOpen;
 
-  const isClassesActive =
-    pathname.startsWith("/classes") || pathname === "/community";
+  const isAboutActive = pathname.startsWith("/about");
+  const isClassesActive = pathname.startsWith("/classes");
+
+  const secondaryLinks = mainNavLinks.filter((link) => link.href !== "/");
 
   useEffect(() => {
     function onScroll() {
@@ -122,7 +251,9 @@ export function SiteHeader() {
   useEffect(() => {
     setScrolled(false);
     setMenuOpen(false);
+    setAboutOpen(false);
     setClassesOpen(false);
+    setMobileAboutOpen(false);
     setMobileClassesOpen(false);
   }, [pathname]);
 
@@ -144,8 +275,8 @@ export function SiteHeader() {
               <Image
                 src={HEADER_LOGO_SRC}
                 alt="Wild Hearts Collective"
-                width={646}
-                height={493}
+                width={HEADER_LOGO_WIDTH}
+                height={HEADER_LOGO_HEIGHT}
                 priority
                 className={`h-[72px] w-auto object-contain sm:h-[84px] lg:h-[92px] ${
                   overlayMode ? "" : "logo-header-accent"
@@ -179,19 +310,66 @@ export function SiteHeader() {
 
           <nav
             aria-label="Main navigation"
-            className={`hidden items-center gap-5 text-xs font-semibold uppercase tracking-wider lg:flex xl:gap-6 xl:text-sm ${
+            className={`hidden items-center gap-4 text-xs font-semibold uppercase tracking-wider xl:gap-5 xl:text-sm 2xl:gap-6 lg:flex ${
               overlayMode ? "text-white" : "text-header-accent"
             }`}
           >
-            {mainNavLinks.slice(0, 2).map((link) => (
-              <NavLink key={link.href} href={link.href} label={link.label} overlayMode={overlayMode} />
-            ))}
+            <NavLink href="/" label="Home" overlayMode={overlayMode} />
 
             <div
               className="relative"
-              onMouseEnter={() => setClassesOpen(true)}
+              onMouseEnter={() => {
+                setAboutOpen(true);
+                setClassesOpen(false);
+              }}
+              onMouseLeave={() => setAboutOpen(false)}
+              onFocus={() => {
+                setAboutOpen(true);
+                setClassesOpen(false);
+              }}
+              onBlur={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                  setAboutOpen(false);
+                }
+              }}
+            >
+              <button
+                type="button"
+                aria-expanded={aboutOpen}
+                aria-haspopup="true"
+              >
+                <DropdownTrigger
+                  label="About"
+                  open={aboutOpen}
+                  active={isAboutActive}
+                  overlayMode={overlayMode}
+                />
+              </button>
+
+              <div
+                className={`absolute left-1/2 top-full z-50 w-56 -translate-x-1/2 pt-3 transition-all duration-200 ${
+                  aboutOpen
+                    ? "visible translate-y-0 opacity-100"
+                    : "pointer-events-none invisible -translate-y-1 opacity-0"
+                }`}
+              >
+                <div className={dropdownPanelClass}>
+                  <AboutMenuList pathname={pathname} />
+                </div>
+              </div>
+            </div>
+
+            <div
+              className="relative"
+              onMouseEnter={() => {
+                setClassesOpen(true);
+                setAboutOpen(false);
+              }}
               onMouseLeave={() => setClassesOpen(false)}
-              onFocus={() => setClassesOpen(true)}
+              onFocus={() => {
+                setClassesOpen(true);
+                setAboutOpen(false);
+              }}
               onBlur={(event) => {
                 if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
                   setClassesOpen(false);
@@ -202,43 +380,36 @@ export function SiteHeader() {
                 type="button"
                 aria-expanded={classesOpen}
                 aria-haspopup="true"
-                className={`flex items-center gap-1.5 uppercase transition ${
-                  isClassesActive || classesOpen
-                    ? overlayMode
-                      ? "text-pink underline decoration-pink decoration-2 underline-offset-4"
-                      : "text-header-accent underline decoration-header-accent decoration-2 underline-offset-4"
-                    : overlayMode
-                      ? "text-white/90 hover:text-pink"
-                      : "text-header-accent hover:text-header-accent-hover"
-                }`}
               >
-                CLASSES
-                <span
-                  className={`text-[10px] transition-transform ${classesOpen ? "rotate-180" : ""}`}
-                  aria-hidden="true"
-                >
-                  ▾
-                </span>
+                <DropdownTrigger
+                  label="Classes"
+                  open={classesOpen}
+                  active={isClassesActive}
+                  overlayMode={overlayMode}
+                />
               </button>
 
               <div
-                className={`absolute left-1/2 top-full z-50 w-72 -translate-x-1/2 pt-3 transition-all duration-200 ${
+                className={`absolute left-1/2 top-full z-50 w-80 -translate-x-1/2 pt-3 transition-all duration-200 ${
                   classesOpen
                     ? "visible translate-y-0 opacity-100"
                     : "pointer-events-none invisible -translate-y-1 opacity-0"
                 }`}
               >
-                <div className={classesDropdownPanelClass}>
+                <div className={dropdownPanelClass}>
                   <ClassesMenuList pathname={pathname} />
                 </div>
               </div>
             </div>
 
-            {mainNavLinks.slice(2, -1).map((link) => (
-              <NavLink key={link.href} href={link.href} label={link.label} overlayMode={overlayMode} />
+            {secondaryLinks.map((link) => (
+              <NavLink
+                key={link.href}
+                href={link.href}
+                label={link.label}
+                overlayMode={overlayMode}
+              />
             ))}
-
-            <NavLink href="/contact" label="Contact" overlayMode={overlayMode} />
 
             <Link
               href={BOOKING_URL}
@@ -268,17 +439,45 @@ export function SiteHeader() {
         </div>
 
         {menuOpen && (
-          <div className="space-y-2 border-t border-header-accent/15 bg-header-bg px-4 py-4 lg:hidden">
+          <div className="max-h-[calc(100vh-7rem)] space-y-2 overflow-y-auto border-t border-header-accent/15 bg-header-bg px-4 py-4 lg:hidden">
             <MobileLink href="/" label="Home" close={() => setMenuOpen(false)} />
-            <MobileLink href="/about" label="About" close={() => setMenuOpen(false)} />
 
-            <div className={classesDropdownPanelClass}>
+            <div className={dropdownPanelClass}>
               <button
                 type="button"
-                onClick={() => setMobileClassesOpen((open) => !open)}
+                onClick={() => {
+                  setMobileAboutOpen((open) => !open);
+                  setMobileClassesOpen(false);
+                }}
                 className="relative z-10 flex w-full items-center justify-between px-4 py-3 text-sm font-semibold uppercase tracking-wider text-header-accent"
               >
-                <span>CLASSES</span>
+                <span>About</span>
+                <span className="text-xs" aria-hidden="true">
+                  {mobileAboutOpen ? "▲" : "▼"}
+                </span>
+              </button>
+
+              {mobileAboutOpen && (
+                <AboutMenuList
+                  pathname={pathname}
+                  onNavigate={() => {
+                    setMenuOpen(false);
+                    setMobileAboutOpen(false);
+                  }}
+                />
+              )}
+            </div>
+
+            <div className={dropdownPanelClass}>
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileClassesOpen((open) => !open);
+                  setMobileAboutOpen(false);
+                }}
+                className="relative z-10 flex w-full items-center justify-between px-4 py-3 text-sm font-semibold uppercase tracking-wider text-header-accent"
+              >
+                <span>Classes</span>
                 <span className="text-xs" aria-hidden="true">
                   {mobileClassesOpen ? "▲" : "▼"}
                 </span>
@@ -295,7 +494,7 @@ export function SiteHeader() {
               )}
             </div>
 
-            {mainNavLinks.slice(2).map((link) => (
+            {secondaryLinks.map((link) => (
               <MobileLink
                 key={link.href}
                 href={link.href}

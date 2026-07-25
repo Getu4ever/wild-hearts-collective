@@ -6,6 +6,7 @@ import {
   sendShopProductOrderEmail,
 } from "@/lib/email";
 import { generateGiftCardCode, issueGiftCard } from "@/lib/gift-card-service";
+import { resolveGiftRedeemScopeForProduct } from "@/lib/gift-redeem-scope";
 import { db } from "@/lib/db";
 import {
   decrementProductStock,
@@ -44,6 +45,7 @@ type FulfilledLine = {
   giftCardId?: string;
   unitPricePence?: number;
   fulfillmentType: "gift_card" | "physical";
+  redeemScope?: string;
 };
 
 function parseCartMetadata(session: Stripe.Checkout.Session): CartMetaItem[] {
@@ -174,6 +176,9 @@ export async function fulfillShopVoucherCheckout(sessionInput: Stripe.Checkout.S
               balancePence: pricePence,
               productId: product?.id ?? item.id,
               productName,
+              redeemScope: product
+                ? resolveGiftRedeemScopeForProduct(product)
+                : undefined,
               purchaserEmail: email,
               purchaserName: name,
               stripeSessionId: session.id,
@@ -192,6 +197,7 @@ export async function fulfillShopVoucherCheckout(sessionInput: Stripe.Checkout.S
             giftCardId: giftCard.id,
             unitPricePence: pricePence,
             fulfillmentType: "gift_card",
+            redeemScope: giftCard.redeemScope,
           };
           giftLines.push(line);
           orderItems.push({
@@ -247,6 +253,11 @@ export async function fulfillShopVoucherCheckout(sessionInput: Stripe.Checkout.S
             (sum, line) => sum + line.unitPricePence * line.quantity,
             0,
           ),
+        fulfillmentMethod: session.metadata?.fulfillmentMethod || null,
+        shippingPence: Number.parseInt(session.metadata?.shippingPence ?? "0", 10) || 0,
+        totalWeightGrams: session.metadata?.totalWeightGrams
+          ? Number.parseInt(session.metadata.totalWeightGrams, 10) || null
+          : null,
         items: orderItems,
       },
       tx,
@@ -267,6 +278,12 @@ export async function fulfillShopVoucherCheckout(sessionInput: Stripe.Checkout.S
   }
 
   const totalLabel = formatMoneyFromPence(session.amount_total ?? 0);
+  const fulfillmentMethod =
+    session.metadata?.fulfillmentMethod === "delivery" ? "delivery" : "collection";
+  const shippingPence =
+    Number.parseInt(session.metadata?.shippingPence ?? "0", 10) || 0;
+  const shippingLabel =
+    shippingPence > 0 ? formatMoneyFromPence(shippingPence) : null;
   const summary = [...giftLines, ...physicalLines]
     .map((line) =>
       line.fulfillmentType === "gift_card"
@@ -308,6 +325,7 @@ export async function fulfillShopVoucherCheckout(sessionInput: Stripe.Checkout.S
             quantity: line.quantity,
             balanceLabel: line.balanceLabel,
             image: line.image,
+            redeemScope: line.redeemScope,
           })),
           totalLabel,
           shopUrl: `${getAppBaseUrl()}/shop`,
@@ -330,6 +348,8 @@ export async function fulfillShopVoucherCheckout(sessionInput: Stripe.Checkout.S
           totalLabel,
           shopUrl: `${getAppBaseUrl()}/shop`,
           hasGiftVouchers: giftLines.length > 0,
+          fulfillmentMethod,
+          shippingLabel,
         },
       );
     }
@@ -354,6 +374,8 @@ export async function fulfillShopVoucherCheckout(sessionInput: Stripe.Checkout.S
     email,
     hasGiftVouchers: giftLines.length > 0,
     hasPhysical: physicalLines.length > 0,
+    fulfillmentMethod: physicalLines.length > 0 ? fulfillmentMethod : null,
+    shippingPence: physicalLines.length > 0 ? shippingPence : 0,
   };
 }
 
@@ -440,6 +462,7 @@ async function loadAlreadyFulfilledResult(
       giftCardId: card.id,
       unitPricePence: card.initialBalancePence,
       fulfillmentType: "gift_card" as const,
+      redeemScope: card.redeemScope,
     }));
   }
 
@@ -522,6 +545,16 @@ async function loadAlreadyFulfilledResult(
     email,
     hasGiftVouchers: giftLines.length > 0,
     hasPhysical: physicalLines.length > 0,
+    fulfillmentMethod:
+      physicalLines.length > 0
+        ? session.metadata?.fulfillmentMethod === "delivery"
+          ? "delivery"
+          : "collection"
+        : null,
+    shippingPence:
+      physicalLines.length > 0
+        ? Number.parseInt(session.metadata?.shippingPence ?? "0", 10) || 0
+        : 0,
   };
 }
 

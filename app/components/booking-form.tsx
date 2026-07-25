@@ -4,7 +4,10 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BookingEmbeddedCheckout } from "@/app/components/booking-embedded-checkout";
+import { CLASS_TYPE_OPTIONS } from "@/lib/admin-studio-config";
 import { formatSessionDateParts } from "@/lib/booking-config";
+import { BOOKING_TERMS_SCROLL_TEXT } from "@/lib/booking-terms";
+import { isCourseClassSlug } from "@/lib/gift-redeem-scope";
 import { siteConfig } from "@/lib/site-data";
 
 type SessionOption = {
@@ -15,10 +18,14 @@ type SessionOption = {
   spotsLeft: number;
   isFull: boolean;
   waitlistCount: number;
+  alreadyBooked?: boolean;
+  pricePence?: number;
+  priceLabel?: string;
 };
 
 type BookingConfig = {
   classPriceLabel?: string;
+  coursePriceLabel?: string;
   depositLabel?: string;
   stripeEnabled: boolean;
   stripePublishableKey: string;
@@ -72,14 +79,28 @@ type ContactDetails = {
 
 const classFilters = [
   { value: "all", label: "All classes" },
-  { value: "pole", label: "Pole" },
-  { value: "aerial-hoop", label: "Hoop" },
-  { value: "aerial-silks", label: "Silks" },
+  ...CLASS_TYPE_OPTIONS.map((option) => ({
+    value: option.slug,
+    label: option.label,
+  })),
 ] as const;
+
+function availabilityLabel(session: Pick<SessionOption, "isFull" | "alreadyBooked">) {
+  if (session.alreadyBooked) return "Already booked";
+  return session.isFull ? "Fully booked" : "Slots available";
+}
+
+function availabilityBadgeClass(
+  session: Pick<SessionOption, "isFull" | "alreadyBooked">,
+) {
+  if (session.alreadyBooked) return "bg-brand/15 text-brand";
+  return session.isFull ? "bg-plum/10 text-plum" : "bg-sage/15 text-sage";
+}
 
 const bookingSteps = [
   { title: "Choose a session", detail: "Pick your class and time" },
   { title: "Enter your details", detail: "Name, email, telephone and optional notes" },
+  { title: "Accept terms", detail: "Read and tick Terms & Conditions" },
   { title: "Pay in full online", detail: "Pay securely on this page" },
 ];
 
@@ -115,13 +136,21 @@ export function BookingForm() {
   const [notes, setNotes] = useState("");
   const [useCredit, setUseCredit] = useState(false);
   const [voucherCode, setVoucherCode] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const cancelled = searchParams.get("cancelled") === "1";
   const selectedSession =
     sessions.find((session) => session.id === selectedSessionId) ?? null;
-  const priceNote = config?.classPriceLabel ?? config?.depositLabel ?? "£10.00";
+  const isCourseBooking = isCourseClassSlug(selectedSession?.classSlug);
+  const priceNote =
+    selectedSession?.priceLabel ??
+    (isCourseBooking
+      ? config?.coursePriceLabel
+      : config?.classPriceLabel ?? config?.depositLabel) ??
+    "£10.00";
   const hasSelectableSession = sessions.some(
-    (session) => !session.isFull || joinWaitlist,
+    (session) =>
+      !session.alreadyBooked && (!session.isFull || joinWaitlist),
   );
 
   useEffect(() => {
@@ -174,11 +203,16 @@ export function BookingForm() {
         const data = (await response.json()) as SessionOption[];
         setSessions(data);
         setSelectedSessionId((current) => {
-          if (current && data.some((session) => session.id === current)) {
+          if (
+            current &&
+            data.some((session) => session.id === current && !session.alreadyBooked)
+          ) {
             return current;
           }
           const firstAvailable =
-            data.find((session) => !session.isFull)?.id ?? data[0]?.id ?? "";
+            data.find((session) => !session.alreadyBooked && !session.isFull)?.id ??
+            data.find((session) => !session.alreadyBooked)?.id ??
+            "";
           return firstAvailable;
         });
       } catch {
@@ -194,6 +228,12 @@ export function BookingForm() {
   useEffect(() => {
     setJoinWaitlist(Boolean(selectedSession?.isFull));
   }, [selectedSession?.id, selectedSession?.isFull]);
+
+  useEffect(() => {
+    if (isCourseBooking && useCredit) {
+      setUseCredit(false);
+    }
+  }, [isCourseBooking, useCredit]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -217,6 +257,18 @@ export function BookingForm() {
       return;
     }
 
+    if (!acceptedTerms) {
+      setError("Please read and accept the Terms & Conditions to continue.");
+      setSubmitting(false);
+      return;
+    }
+
+    if (selectedSession?.alreadyBooked) {
+      setError("You have already booked this session.");
+      setSubmitting(false);
+      return;
+    }
+
     try {
       const response = await fetch("/api/bookings", {
         method: "POST",
@@ -228,8 +280,9 @@ export function BookingForm() {
           phone: trimmedPhone,
           notes: trimmedNotes || undefined,
           joinWaitlist: selectedSession?.isFull || joinWaitlist,
-          useCredit: useCredit && Boolean(member),
+          useCredit: useCredit && Boolean(member) && !isCourseBooking,
           voucherCode: voucherCode.trim() || undefined,
+          acceptedTerms: true,
         }),
       });
 
@@ -264,6 +317,7 @@ export function BookingForm() {
       setNotes("");
       setVoucherCode("");
       setUseCredit(false);
+      setAcceptedTerms(false);
       if (member) {
         const savedPhone = trimmedPhone;
         setMember((current) =>
@@ -463,6 +517,7 @@ export function BookingForm() {
         bookingSteps[0],
         { title: "Confirm your details", detail: "Using your member profile" },
         bookingSteps[2],
+        bookingSteps[3],
       ]
     : bookingSteps;
 
@@ -480,8 +535,10 @@ export function BookingForm() {
             Reserve your class
           </h2>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
-            {siteConfig.bookingNote} Pay {priceNote} in full online to secure
-            your place — quick, secure, and confirmed by email.
+            {siteConfig.bookingNote} {siteConfig.durationNote} Weekly drop-ins are{" "}
+            {config?.classPriceLabel ?? config?.depositLabel ?? "£10.00"}; 4-week
+            courses are {config?.coursePriceLabel ?? "£80.00"} for the full block.
+            Pay online to secure your place — quick, secure, and confirmed by email.
           </p>
         </div>
 
@@ -547,11 +604,17 @@ export function BookingForm() {
                     <button
                       key={session.id}
                       type="button"
-                      onClick={() => setSelectedSessionId(session.id)}
+                      onClick={() => {
+                        if (session.alreadyBooked) return;
+                        setSelectedSessionId(session.id);
+                      }}
+                      disabled={session.alreadyBooked}
                       className={`flex w-full items-start justify-between gap-4 rounded-xl border px-4 py-4 text-left transition ${
-                        isSelected
-                          ? "border-plum bg-pink-soft/60 ring-2 ring-pink/40"
-                          : "border-plum/10 bg-white hover:border-pink/40 hover:bg-pink-soft/30"
+                        session.alreadyBooked
+                          ? "cursor-not-allowed border-plum/10 bg-cream/60 opacity-80"
+                          : isSelected
+                            ? "border-plum bg-pink-soft/60 ring-2 ring-pink/40"
+                            : "border-plum/10 bg-white hover:border-pink/40 hover:bg-pink-soft/30"
                       }`}
                     >
                       <div>
@@ -564,15 +627,9 @@ export function BookingForm() {
                         </p>
                       </div>
                       <span
-                        className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
-                          session.isFull
-                            ? "bg-sage/10 text-plum"
-                            : "bg-pink/30 text-plum"
-                        }`}
+                        className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${availabilityBadgeClass(session)}`}
                       >
-                        {session.isFull
-                          ? "Full · waitlist"
-                          : `${session.spotsLeft} spots left`}
+                        {availabilityLabel(session)}
                       </span>
                     </button>
                   );
@@ -581,7 +638,7 @@ export function BookingForm() {
 
             <input type="hidden" name="sessionId" value={selectedSessionId} required />
 
-            {selectedSession?.isFull && (
+            {selectedSession?.isFull && !selectedSession.alreadyBooked && (
               <label className="mt-4 flex items-start gap-3 rounded-xl border border-plum/10 bg-pink-soft/50 px-4 py-4 text-sm text-plum">
                 <input
                   type="checkbox"
@@ -590,10 +647,19 @@ export function BookingForm() {
                   className="mt-1"
                 />
                 <span>
-                  This session is full. Join the waitlist and we will email you if a
-                  place becomes available.
+                  <strong className="font-semibold">Waiting list</strong> — this
+                  session is fully booked. Join the waiting list and we will email
+                  you if a place becomes available.
                 </span>
               </label>
+            )}
+
+            {isCourseBooking && !selectedSession?.isFull && (
+              <p className="mt-4 rounded-lg border border-sage/30 bg-sage/10 px-4 py-3 text-sm text-plum">
+                This is a fixed 4-week course. Payment covers the full block from the
+                start date; missed weeks cannot be transferred. Use a 4-week course
+                voucher here, or pay {priceNote} online.
+              </p>
             )}
           </section>
 
@@ -723,7 +789,10 @@ export function BookingForm() {
                     </Link>
                   </div>
 
-                  {(member.creditsRemaining ?? 0) > 0 && !selectedSession?.isFull && !joinWaitlist ? (
+                  {(member.creditsRemaining ?? 0) > 0 &&
+                  !selectedSession?.isFull &&
+                  !joinWaitlist &&
+                  !isCourseBooking ? (
                     <label className="mt-5 flex items-start gap-3 rounded-lg border border-plum/10 bg-pink-soft/30 px-4 py-4 text-sm text-plum">
                       <input
                         type="checkbox"
@@ -738,11 +807,13 @@ export function BookingForm() {
                     </label>
                   ) : (
                     <p className="mt-4 rounded-lg bg-pink-soft/40 px-4 py-3 text-sm text-muted">
-                      {(member.creditsRemaining ?? 0) === 0
-                        ? "No credits yet — purchase a class pack to book without paying the class fee each time."
-                        : selectedSession?.isFull || joinWaitlist
-                          ? "Credits cannot be used for waitlist entries."
-                          : "Select an available session to use a credit."}
+                      {isCourseBooking
+                        ? "Class credits cannot be used for 4-week courses — pay the course fee or redeem a 4-week course voucher."
+                        : (member.creditsRemaining ?? 0) === 0
+                          ? "No credits yet — purchase a class pack to book without paying the class fee each time."
+                          : selectedSession?.isFull || joinWaitlist
+                            ? "Credits cannot be used for waitlist entries."
+                            : "Select an available session to use a credit."}
                     </p>
                   )}
                 </div>
@@ -752,8 +823,9 @@ export function BookingForm() {
                     Gift card or reward code
                   </label>
                   <p className="mt-2 text-sm text-muted">
-                    Use a shop gift card (GIFT-…), or a birthday / milestone reward. Gift cards keep
-                    any leftover balance for next time.
+                    {isCourseBooking
+                      ? "Enter a 4-week course voucher (GIFT-…) to cover this course. Standard studio gift cards also work toward the course fee."
+                      : "Use a shop gift card (GIFT-…), or a birthday / milestone reward. Course vouchers only work on 4-week course bookings. Gift cards keep any leftover balance for next time."}
                   </p>
                   <input
                     id="voucherCode"
@@ -891,6 +963,7 @@ export function BookingForm() {
               <p className="mt-1 text-sm text-muted">
                 {selectedDate.weekday}, {selectedDate.shortDate} · {selectedDate.time}
               </p>
+              <p className="mt-1 text-sm text-muted">{siteConfig.durationNote}</p>
               {!selectedSession.isFull && (
                 <p className="mt-2 text-sm text-muted">
                   {useCredit && isSignedIn ? (
@@ -914,6 +987,50 @@ export function BookingForm() {
             </div>
           )}
 
+          <section aria-labelledby="booking-terms">
+            <div className="flex items-center gap-3">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sage text-sm font-bold text-white">
+                3
+              </span>
+              <div>
+                <h3 id="booking-terms" className="text-lg font-semibold text-plum">
+                  Terms &amp; Conditions
+                </h3>
+                <p className="text-sm text-muted">
+                  Please read and accept before every booking.
+                </p>
+              </div>
+            </div>
+
+            <div
+              tabIndex={0}
+              className="mt-4 max-h-40 overflow-y-auto rounded-xl border border-plum/15 bg-white px-4 py-3 text-sm leading-relaxed text-muted shadow-inner whitespace-pre-line"
+              aria-label="Terms and conditions"
+            >
+              {BOOKING_TERMS_SCROLL_TEXT}
+            </div>
+            <p className="mt-2 text-xs text-muted">
+              Full details also on our{" "}
+              <Link href="/terms" className="font-semibold text-brand hover:underline">
+                Terms &amp; Conditions
+              </Link>{" "}
+              page.
+            </p>
+
+            <label className="mt-4 flex items-start gap-3 rounded-xl border border-plum/10 bg-surface px-4 py-4 text-sm text-plum">
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(event) => setAcceptedTerms(event.target.checked)}
+                className="mt-1"
+                required
+              />
+              <span>
+                I have read and agree to the Terms &amp; Conditions for this booking.
+              </span>
+            </label>
+          </section>
+
           {error && (
             <p
               className="rounded-lg border border-brand/20 bg-pink-light px-4 py-3 text-sm text-plum"
@@ -930,7 +1047,9 @@ export function BookingForm() {
               loading ||
               !memberLoaded ||
               !hasSelectableSession ||
-              !selectedSessionId
+              !selectedSessionId ||
+              !acceptedTerms ||
+              Boolean(selectedSession?.alreadyBooked)
             }
             className="w-full rounded-lg bg-sage px-6 py-4 text-sm font-semibold uppercase tracking-[0.12em] text-white shadow-md shadow-sage/15 transition hover:bg-sage-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
@@ -947,7 +1066,7 @@ export function BookingForm() {
                       : "Confirm booking"}
           </button>
           <p className="text-center text-xs leading-relaxed text-muted">
-            Secure online payment. {siteConfig.arrivalNote}
+            Secure online payment. {siteConfig.durationNote} {siteConfig.arrivalNote}
           </p>
         </div>
       </form>

@@ -3,11 +3,12 @@ import BookingFormSection from "@/app/components/booking-form-section";
 import { ContentSection } from "@/app/components/content-section";
 import { PageHero } from "@/app/components/page-hero";
 import { SectionHeading } from "@/app/components/section-heading";
+import { siteConfig } from "@/lib/site-data";
 
 export const metadata: Metadata = {
   title: "Book a Class",
   description:
-    "Book pole, aerial hoop, and aerial silks classes at Wild Hearts Collective.",
+    "Book pole, hoop, silks, juniors, workshops, creative arts, and beginner courses at Wild Hearts Collective.",
 };
 
 export default function BookPage() {
@@ -24,6 +25,9 @@ export default function BookPage() {
           title="Book your class"
           subtitle="Filter by class type, pick a time, and confirm your booking in a few steps. Members can pay with credits or a voucher code."
         />
+        <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted">
+          {siteConfig.durationNote} {siteConfig.bookingNote}
+        </p>
         <div className="mt-10">
           <BookingFormSection />
         </div>

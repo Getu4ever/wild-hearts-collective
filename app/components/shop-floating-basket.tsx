@@ -1,9 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useShopCart } from "@/app/components/shop-cart-context";
 import { formatMoneyFromPence } from "@/lib/booking-config";
+import { contact } from "@/lib/site-data";
+import {
+  effectiveProductWeightGrams,
+  SHOP_FULFILLMENT_METHOD,
+  shippingFeeForWeightGrams,
+  type ShopShippingBand,
+} from "@/lib/shop-shipping";
 
 function BasketIcon({ className }: { className?: string }) {
   return (
@@ -29,6 +36,9 @@ export function ShopFloatingBasket() {
     itemCount,
     totalPence,
     productLines,
+    hasPhysicalItems,
+    fulfillmentMethod,
+    setFulfillmentMethod,
     isOpen,
     closeBasket,
     toggleBasket,
@@ -41,6 +51,8 @@ export function ShopFloatingBasket() {
 
   const [checkingOut, setCheckingOut] = useState(false);
   const [error, setError] = useState("");
+  const [bands, setBands] = useState<ShopShippingBand[] | null>(null);
+  const [shippingError, setShippingError] = useState("");
 
   useEffect(() => {
     if (!isOpen) return;
@@ -60,8 +72,69 @@ export function ShopFloatingBasket() {
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen || !hasPhysicalItems || bands) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch("/api/shop/shipping");
+        const data = await response.json();
+        if (!response.ok || !Array.isArray(data.bands)) return;
+        if (!cancelled) setBands(data.bands);
+      } catch {
+        // Fee still recalculated server-side at checkout.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, hasPhysicalItems, bands]);
+
+  const basketWeightGrams = useMemo(
+    () =>
+      productLines.reduce((sum, line) => {
+        if (line.product.digitalDelivery) return sum;
+        return (
+          sum +
+          effectiveProductWeightGrams(line.product) * line.quantity
+        );
+      }, 0),
+    [productLines],
+  );
+
+  const deliveryFeePence = useMemo(() => {
+    if (!hasPhysicalItems || fulfillmentMethod !== SHOP_FULFILLMENT_METHOD.delivery) {
+      return 0;
+    }
+    if (!bands) return null;
+    return shippingFeeForWeightGrams(basketWeightGrams, bands);
+  }, [hasPhysicalItems, fulfillmentMethod, bands, basketWeightGrams]);
+
+  useEffect(() => {
+    if (
+      fulfillmentMethod === SHOP_FULFILLMENT_METHOD.delivery &&
+      deliveryFeePence === null &&
+      bands
+    ) {
+      setShippingError(
+        "This basket is too heavy for the current delivery rates. Choose Collect from studio, or contact us.",
+      );
+    } else {
+      setShippingError("");
+    }
+  }, [fulfillmentMethod, deliveryFeePence, bands]);
+
+  const payablePence =
+    totalPence +
+    (typeof deliveryFeePence === "number" ? deliveryFeePence : 0);
+
   async function checkout() {
     if (productLines.length === 0) return;
+    if (shippingError) {
+      setError(shippingError);
+      return;
+    }
+
     setCheckingOut(true);
     setError("");
 
@@ -70,6 +143,9 @@ export function ShopFloatingBasket() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          fulfillmentMethod: hasPhysicalItems
+            ? fulfillmentMethod
+            : undefined,
           items: productLines.map((line) => ({
             productId: line.productId,
             quantity: line.quantity,
@@ -91,6 +167,16 @@ export function ShopFloatingBasket() {
       setCheckingOut(false);
     }
   }
+
+  const footerNote = !hasPhysicalItems
+    ? "Digital delivery by email · no shipping"
+    : fulfillmentMethod === SHOP_FULFILLMENT_METHOD.collection
+      ? `Collect from studio · ${contact.addressLines.slice(0, 2).join(" ")}`
+      : deliveryFeePence == null && !bands
+        ? "Calculating delivery…"
+        : deliveryFeePence == null
+          ? "Delivery unavailable for this weight"
+          : `UK delivery · one parcel fee`;
 
   return (
     <>
@@ -244,25 +330,108 @@ export function ShopFloatingBasket() {
 
           {productLines.length > 0 && (
             <footer className="border-t border-plum/10 bg-cream/50 px-6 py-5">
-              <div className="flex items-end justify-between">
+              {hasPhysicalItems && (
+                <fieldset className="mb-4 space-y-2">
+                  <legend className="text-[10px] font-semibold uppercase tracking-wider text-muted">
+                    Fulfilment
+                  </legend>
+                  <label className="flex cursor-pointer items-start gap-3 rounded-sm border border-plum/15 bg-surface px-3 py-3 has-[:checked]:border-sage has-[:checked]:bg-sage/5">
+                    <input
+                      type="radio"
+                      name="fulfillment"
+                      className="mt-1"
+                      checked={
+                        fulfillmentMethod === SHOP_FULFILLMENT_METHOD.collection
+                      }
+                      onChange={() =>
+                        setFulfillmentMethod(SHOP_FULFILLMENT_METHOD.collection)
+                      }
+                    />
+                    <span>
+                      <span className="block text-sm font-semibold text-plum">
+                        Collect from studio
+                      </span>
+                      <span className="mt-0.5 block text-xs leading-relaxed text-muted">
+                        Free · Ready for pickup at {contact.addressLines[0]}{" "}
+                        {contact.addressLines[1]}
+                      </span>
+                    </span>
+                  </label>
+                  <label className="flex cursor-pointer items-start gap-3 rounded-sm border border-plum/15 bg-surface px-3 py-3 has-[:checked]:border-sage has-[:checked]:bg-sage/5">
+                    <input
+                      type="radio"
+                      name="fulfillment"
+                      className="mt-1"
+                      checked={
+                        fulfillmentMethod === SHOP_FULFILLMENT_METHOD.delivery
+                      }
+                      onChange={() =>
+                        setFulfillmentMethod(SHOP_FULFILLMENT_METHOD.delivery)
+                      }
+                    />
+                    <span>
+                      <span className="block text-sm font-semibold text-plum">
+                        UK delivery
+                      </span>
+                      <span className="mt-0.5 block text-xs leading-relaxed text-muted">
+                        One parcel fee from total basket weight
+                        {basketWeightGrams > 0
+                          ? ` (${basketWeightGrams}g)`
+                          : ""}
+                      </span>
+                    </span>
+                  </label>
+                </fieldset>
+              )}
+
+              <div className="space-y-1.5 text-sm">
+                <div className="flex items-center justify-between text-muted">
+                  <span>Subtotal</span>
+                  <span>{formatMoneyFromPence(totalPence)}</span>
+                </div>
+                {hasPhysicalItems &&
+                  fulfillmentMethod === SHOP_FULFILLMENT_METHOD.delivery && (
+                    <div className="flex items-center justify-between text-muted">
+                      <span>Delivery</span>
+                      <span>
+                        {deliveryFeePence == null
+                          ? bands
+                            ? "—"
+                            : "…"
+                          : formatMoneyFromPence(deliveryFeePence)}
+                      </span>
+                    </div>
+                  )}
+                {hasPhysicalItems &&
+                  fulfillmentMethod === SHOP_FULFILLMENT_METHOD.collection && (
+                    <div className="flex items-center justify-between text-muted">
+                      <span>Collection</span>
+                      <span>Free</span>
+                    </div>
+                  )}
+              </div>
+
+              <div className="mt-3 flex items-end justify-between">
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-muted">
                     Total
                   </p>
                   <p className="font-display text-3xl text-plum">
-                    {formatMoneyFromPence(totalPence)}
+                    {formatMoneyFromPence(payablePence)}
                   </p>
                 </div>
-                <p className="max-w-[10rem] text-right text-xs leading-relaxed text-muted">
-                  Digital delivery by email · no shipping
+                <p className="max-w-[11rem] text-right text-xs leading-relaxed text-muted">
+                  {footerNote}
                 </p>
               </div>
 
-              {error && <p className="mt-3 text-sm text-brand">{error}</p>}
+              {(error || shippingError) && (
+                <p className="mt-3 text-sm text-brand">{error || shippingError}</p>
+              )}
 
               <button
                 type="button"
-                disabled={checkingOut}
+                disabled={checkingOut || Boolean(shippingError)}
                 onClick={checkout}
                 className="mt-5 w-full rounded-sm bg-sage px-4 py-3.5 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-sage-hover disabled:opacity-60"
               >
@@ -291,6 +460,7 @@ export function ShopClearBasketOnSuccess() {
   useEffect(() => {
     try {
       window.localStorage.removeItem("whc-shop-basket");
+      window.localStorage.removeItem("whc-shop-fulfillment");
     } catch {
       // ignore storage errors
     }

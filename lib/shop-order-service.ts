@@ -44,6 +44,9 @@ export async function recordShopOrder(
     purchaserName?: string | null;
     totalPence: number;
     currency?: string;
+    fulfillmentMethod?: string | null;
+    shippingPence?: number;
+    totalWeightGrams?: number | null;
     items: ShopOrderLineInput[];
   },
   tx: Tx = db,
@@ -64,6 +67,12 @@ export async function recordShopOrder(
       purchaserName: input.purchaserName?.trim() || null,
       totalPence: input.totalPence,
       currency: input.currency ?? "gbp",
+      fulfillmentMethod: input.fulfillmentMethod ?? null,
+      shippingPence: Math.max(0, Math.round(input.shippingPence ?? 0)),
+      totalWeightGrams:
+        input.totalWeightGrams != null
+          ? Math.max(0, Math.round(input.totalWeightGrams))
+          : null,
       items: {
         create: input.items.map((item) => ({
           productId: item.productId ?? null,

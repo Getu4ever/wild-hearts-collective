@@ -15,7 +15,7 @@ const classSeed = [
     slug: "aerial-hoop",
     title: "Aerial Hoop",
     description:
-      "Learn beautiful poses, spins, and transitions on the hoop with fully qualified instructors.",
+      "Learn beautiful poses, spins, and transitions on the hoop with our fully qualified and experienced instructors.",
     maxCapacity: 10,
   },
   {
@@ -26,11 +26,53 @@ const classSeed = [
     maxCapacity: 10,
   },
   {
+    slug: "family",
+    title: "Family Classes",
+    description:
+      "Fun, inclusive sessions for families to move, play, and connect together with our DBS-checked team.",
+    maxCapacity: 12,
+  },
+  {
+    slug: "teens",
+    title: "Teen Classes",
+    description:
+      "Supportive teen classes building strength, self-belief, and creativity with friends.",
+    maxCapacity: 12,
+  },
+  {
+    slug: "children",
+    title: "Children's Classes",
+    description:
+      "Age-appropriate movement and creative play with our qualified, experienced, and DBS-checked instructors.",
+    maxCapacity: 12,
+  },
+  {
+    slug: "aerial-workshops",
+    title: "Aerial Workshops",
+    description:
+      "In-house and guest aerial workshops carefully selected to complement our timetable.",
+    maxCapacity: 12,
+  },
+  {
+    slug: "pole-workshops",
+    title: "Pole Workshops",
+    description:
+      "In-house and guest pole workshops carefully selected to complement our timetable.",
+    maxCapacity: 12,
+  },
+  {
     slug: "creative-arts-workshops",
     title: "Creative Arts Workshops",
     description:
       "Expressive workshops blending movement, creativity, and community in a welcoming studio space.",
     maxCapacity: 15,
+  },
+  {
+    slug: "beginner-courses",
+    title: "4-Week Beginner Courses",
+    description:
+      "Fixed-term beginner courses booked and paid in full for the full four-week block.",
+    maxCapacity: 12,
   },
 ];
 

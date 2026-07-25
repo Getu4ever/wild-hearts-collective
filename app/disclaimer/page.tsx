@@ -6,7 +6,7 @@ import {
 } from "@/app/components/content-section";
 import { PageHero } from "@/app/components/page-hero";
 import { SectionHeading } from "@/app/components/section-heading";
-import { contact } from "@/lib/site-data";
+import { companyDisclaimer, contact } from "@/lib/site-data";
 
 export const metadata: Metadata = {
   title: "Disclaimer",
@@ -55,7 +55,8 @@ export default function DisclaimerPage() {
             medical clearance or modify activities where appropriate.
           </p>
           <p>
-            Wild Hearts Collective instructors are qualified and trained in safe
+            Wild Hearts Collective instructors are qualified and experienced, and
+            trained in safe
             teaching practices, but we cannot guarantee that injury will never
             occur. By attending classes or events, you accept responsibility for
             your own wellbeing and agree to follow studio safety guidelines.
@@ -112,6 +113,7 @@ export default function DisclaimerPage() {
             <Link href="/contact">Contact page</Link>. See also our{" "}
             <Link href="/terms">Terms & Conditions</Link>.
           </p>
+          <p>{companyDisclaimer}</p>
           <p className="text-sm text-muted">
             Last updated: July 2026
           </p>

@@ -23,7 +23,7 @@ export default function Home() {
     <>
       <VideoHero
         title="Welcome to Wild Hearts Collective"
-        subtitle="Spin, climb, and stretch in a safe, inclusive studio for all bodies, ages, and abilities."
+        subtitle="Spin, climb, stretch, play, create and connect in a safe, inclusive studio for all bodies, ages and abilities."
         videoSrc="/hero/hero-home.mp4"
         posterSrc="/hero/hero-home.jpg"
       />
@@ -33,9 +33,10 @@ export default function Home() {
         <ProseBlock>
           <p>
             Wild Hearts Collective is an inclusive aerial and pole studio and
-            community hub, founded by qualified instructors Rosie, Jacqui, and
-            Sarah. We offer accessible pole, aerial hoop, silks, and creative
-            arts workshops in a welcoming, supportive environment.
+            community hub, founded by qualified and experienced instructors
+            Rosie, Jacqui, and Sarah. We offer accessible pole, aerial hoop,
+            silks, and creative arts workshops in a welcoming, supportive
+            environment.
           </p>
           <p>
             With a community-driven focus on accessibility and wellbeing, we

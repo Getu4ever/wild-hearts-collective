@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { isStripeConfigured } from "@/lib/booking-config";
 import { getPurchasableShopProduct, validateCheckoutStock } from "@/lib/shop-catalog-service";
+import {
+  isShopFulfillmentMethod,
+  SHOP_FULFILLMENT_METHOD,
+  sumBasketWeightGrams,
+} from "@/lib/shop-shipping";
+import { quoteShopDeliveryFee } from "@/lib/shop-shipping-service";
 import { createShopCheckoutSession } from "@/lib/stripe";
 
 type CheckoutBodyItem = {
@@ -20,7 +26,11 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: { items?: CheckoutBodyItem[]; productId?: unknown } = {};
+  let body: {
+    items?: CheckoutBodyItem[];
+    productId?: unknown;
+    fulfillmentMethod?: unknown;
+  } = {};
 
   try {
     body = await request.json();
@@ -75,7 +85,31 @@ export async function POST(request: Request) {
       description: product.description,
       quantity,
       digitalDelivery: product.digitalDelivery,
+      weightGrams: product.weightGrams ?? null,
     });
+  }
+
+  const hasPhysical = checkoutItems.some((item) => !item.digitalDelivery);
+  let fulfillmentMethod: "collection" | "delivery" | undefined;
+  let shippingPence = 0;
+  let totalWeightGrams = 0;
+
+  if (hasPhysical) {
+    fulfillmentMethod = isShopFulfillmentMethod(body.fulfillmentMethod)
+      ? body.fulfillmentMethod
+      : SHOP_FULFILLMENT_METHOD.collection;
+
+    if (fulfillmentMethod === SHOP_FULFILLMENT_METHOD.delivery) {
+      totalWeightGrams = sumBasketWeightGrams(checkoutItems);
+      try {
+        const quote = await quoteShopDeliveryFee(totalWeightGrams);
+        shippingPence = quote.feePence;
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Unable to calculate delivery.";
+        return NextResponse.json({ error: message }, { status: 400 });
+      }
+    }
   }
 
   try {
@@ -86,7 +120,11 @@ export async function POST(request: Request) {
       })),
     );
 
-    const checkout = await createShopCheckoutSession(checkoutItems);
+    const checkout = await createShopCheckoutSession(checkoutItems, {
+      fulfillmentMethod,
+      shippingPence,
+      totalWeightGrams,
+    });
 
     if (!checkout.url) {
       return NextResponse.json({ error: "Unable to start checkout." }, { status: 503 });
@@ -95,6 +133,9 @@ export async function POST(request: Request) {
     return NextResponse.json({
       url: checkout.url,
       sessionId: checkout.id,
+      fulfillmentMethod: fulfillmentMethod ?? null,
+      shippingPence,
+      totalWeightGrams,
     });
   } catch (error) {
     const message =

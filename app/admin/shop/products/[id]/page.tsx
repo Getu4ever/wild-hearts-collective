@@ -51,6 +51,8 @@ export default async function AdminShopProductEditPage({ params }: PageProps) {
             pricePence: product.pricePence,
             isAvailable: product.isAvailable,
             digitalDelivery: product.digitalDelivery,
+            courseVoucherOnly: product.giftRedeemScope === "beginner-courses",
+            weightGrams: product.weightGrams ?? null,
             image: product.image,
             imageGradient: product.imageGradient,
             sizes: product.variants?.sizes?.join(", ") ?? "",

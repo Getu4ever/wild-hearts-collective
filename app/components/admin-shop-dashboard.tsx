@@ -408,6 +408,16 @@ function SaleRows({
                 <dl className="mt-3 space-y-2 text-sm">
                   <DetailRow label="Status" value={sale.status} />
                   <DetailRow label="Type" value={sale.sourceLabel} />
+                  {sale.fulfillmentMethodLabel ? (
+                    <DetailRow
+                      label="Fulfilment"
+                      value={
+                        sale.shippingLabel
+                          ? `${sale.fulfillmentMethodLabel} · ${sale.shippingLabel} delivery`
+                          : sale.fulfillmentMethodLabel
+                      }
+                    />
+                  ) : null}
                   <DetailRow
                     label="Stripe session"
                     value={sale.stripeSessionId ?? "Manual / CLI issue"}
@@ -473,6 +483,9 @@ function VoucherRows({
           <p className="truncate font-medium text-plum" title={voucher.productName}>
             {voucher.productName}
           </p>
+          {voucher.redeemScope && voucher.redeemScope !== "any" && (
+            <p className="mt-0.5 text-xs text-muted">{voucher.redeemScopeLabel}</p>
+          )}
         </td>
         <td className="px-3 py-3">
           <p className="truncate text-foreground" title={voucher.purchaserName || undefined}>

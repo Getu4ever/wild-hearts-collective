@@ -211,6 +211,7 @@ async function main() {
       "balancePence" INTEGER NOT NULL,
       "productId" TEXT,
       "productName" TEXT NOT NULL,
+      "redeemScope" TEXT NOT NULL DEFAULT 'any',
       "purchaserEmail" TEXT,
       "purchaserName" TEXT,
       "stripeSessionId" TEXT,
@@ -262,6 +263,39 @@ async function main() {
   await run(
     'CREATE INDEX IF NOT EXISTS "Booking_giftCardId_idx" ON "Booking"("giftCardId")',
   );
+
+  // Keep the earliest active booking per session + email; cancel newer duplicates.
+  await runOptional(`
+    UPDATE "Booking" AS b
+    SET
+      "status" = 'cancelled',
+      "cancellationType" = 'duplicate_cleanup',
+      "updatedAt" = CURRENT_TIMESTAMP
+    WHERE b."id" IN (
+      SELECT ranked."id"
+      FROM (
+        SELECT
+          "id",
+          ROW_NUMBER() OVER (
+            PARTITION BY "sessionId", lower("email")
+            ORDER BY
+              CASE WHEN "status" = 'confirmed' THEN 0 ELSE 1 END,
+              "createdAt" ASC,
+              "id" ASC
+          ) AS rn
+        FROM "Booking"
+        WHERE "status" IN ('confirmed', 'pending')
+      ) AS ranked
+      WHERE ranked.rn > 1
+    )
+  `);
+
+  // Prevent the same email from holding more than one active place on a session.
+  await runOptional(`
+    CREATE UNIQUE INDEX IF NOT EXISTS "Booking_sessionId_email_active_key"
+    ON "Booking" ("sessionId", lower("email"))
+    WHERE "status" IN ('confirmed', 'pending')
+  `);
 
   await run(
     'ALTER TABLE "ClassPackPurchase" ADD COLUMN IF NOT EXISTS "giftCardId" TEXT',
@@ -385,6 +419,93 @@ async function main() {
   await run(
     'ALTER TABLE "ShopProduct" ADD COLUMN IF NOT EXISTS "lowStockThreshold" INTEGER NOT NULL DEFAULT 5',
   );
+  await run(
+    'ALTER TABLE "ShopProduct" ADD COLUMN IF NOT EXISTS "weightGrams" INTEGER',
+  );
+  await run(
+    'ALTER TABLE "ShopProduct" ADD COLUMN IF NOT EXISTS "giftRedeemScope" TEXT',
+  );
+  await runOptional(`
+    UPDATE "ShopProduct"
+    SET "giftRedeemScope" = 'beginner-courses'
+    WHERE "slug" = 'intro-to-pole-4-week'
+      AND ("giftRedeemScope" IS NULL OR "giftRedeemScope" = 'any')
+  `);
+
+  await run(
+    'ALTER TABLE "GiftCard" ADD COLUMN IF NOT EXISTS "redeemScope" TEXT NOT NULL DEFAULT \'any\'',
+  );
+  await runOptional(
+    'CREATE INDEX IF NOT EXISTS "GiftCard_redeemScope_idx" ON "GiftCard"("redeemScope")',
+  );
+  await runOptional(`
+    UPDATE "GiftCard" AS g
+    SET "redeemScope" = 'beginner-courses'
+    WHERE g."redeemScope" = 'any'
+      AND (
+        g."productName" ILIKE '%4-Week Course%'
+        OR g."productId" IN (
+          SELECT p."id" FROM "ShopProduct" p WHERE p."slug" = 'intro-to-pole-4-week'
+        )
+      )
+  `);
+
+  await run(
+    'ALTER TABLE "ShopOrder" ADD COLUMN IF NOT EXISTS "fulfillmentMethod" TEXT',
+  );
+  await run(
+    'ALTER TABLE "ShopOrder" ADD COLUMN IF NOT EXISTS "shippingPence" INTEGER NOT NULL DEFAULT 0',
+  );
+  await run(
+    'ALTER TABLE "ShopOrder" ADD COLUMN IF NOT EXISTS "totalWeightGrams" INTEGER',
+  );
+
+  await run(`
+    CREATE TABLE IF NOT EXISTS "ClassFeedback" (
+      "id" TEXT NOT NULL,
+      "token" TEXT NOT NULL,
+      "bookingId" TEXT,
+      "userId" TEXT,
+      "email" TEXT NOT NULL,
+      "name" TEXT NOT NULL,
+      "classTitle" TEXT,
+      "sessionStartsAt" TIMESTAMP(3),
+      "rating" INTEGER,
+      "comments" TEXT,
+      "shareOnWebsite" BOOLEAN NOT NULL DEFAULT false,
+      "submittedAt" TIMESTAMP(3),
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "ClassFeedback_pkey" PRIMARY KEY ("id")
+    )
+  `);
+  await run(
+    'CREATE UNIQUE INDEX IF NOT EXISTS "ClassFeedback_token_key" ON "ClassFeedback"("token")',
+  );
+  await run(
+    'CREATE UNIQUE INDEX IF NOT EXISTS "ClassFeedback_bookingId_key" ON "ClassFeedback"("bookingId")',
+  );
+  await run(
+    'CREATE INDEX IF NOT EXISTS "ClassFeedback_email_idx" ON "ClassFeedback"("email")',
+  );
+  await run(
+    'CREATE INDEX IF NOT EXISTS "ClassFeedback_submittedAt_idx" ON "ClassFeedback"("submittedAt")',
+  );
+  await run(
+    'CREATE INDEX IF NOT EXISTS "ClassFeedback_shareOnWebsite_submittedAt_idx" ON "ClassFeedback"("shareOnWebsite", "submittedAt")',
+  );
+  await runOptional(`
+    ALTER TABLE "ClassFeedback"
+    ADD CONSTRAINT "ClassFeedback_bookingId_fkey"
+    FOREIGN KEY ("bookingId") REFERENCES "Booking"("id")
+    ON DELETE SET NULL ON UPDATE CASCADE
+  `);
+  await runOptional(`
+    ALTER TABLE "ClassFeedback"
+    ADD CONSTRAINT "ClassFeedback_userId_fkey"
+    FOREIGN KEY ("userId") REFERENCES "User"("id")
+    ON DELETE SET NULL ON UPDATE CASCADE
+  `);
 
   await run(`
     CREATE TABLE IF NOT EXISTS "StudioSetting" (

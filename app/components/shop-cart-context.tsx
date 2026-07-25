@@ -11,8 +11,13 @@ import {
   type ReactNode,
 } from "react";
 import type { ShopProduct } from "@/lib/shop-data";
+import {
+  SHOP_FULFILLMENT_METHOD,
+  type ShopFulfillmentMethod,
+} from "@/lib/shop-shipping";
 
 const STORAGE_KEY = "whc-shop-basket";
+const FULFILLMENT_STORAGE_KEY = "whc-shop-fulfillment";
 
 export type BasketLine = {
   productId: string;
@@ -35,6 +40,9 @@ type ShopCartContextValue = {
   productLines: BasketProductLine[];
   itemCount: number;
   totalPence: number;
+  hasPhysicalItems: boolean;
+  fulfillmentMethod: ShopFulfillmentMethod;
+  setFulfillmentMethod: (method: ShopFulfillmentMethod) => void;
   isOpen: boolean;
   openBasket: () => void;
   closeBasket: () => void;
@@ -90,6 +98,8 @@ export function ShopCartProvider({
   const [lines, setLines] = useState<BasketLine[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [fulfillmentMethod, setFulfillmentMethodState] =
+    useState<ShopFulfillmentMethod>(SHOP_FULFILLMENT_METHOD.collection);
   const [flyRequests, setFlyRequests] = useState<FlyRequest[]>([]);
   const [bumpBasket, setBumpBasket] = useState(false);
   const basketButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -97,6 +107,17 @@ export function ShopCartProvider({
 
   useEffect(() => {
     setLines(readStoredLines(productById));
+    try {
+      const stored = window.localStorage.getItem(FULFILLMENT_STORAGE_KEY);
+      if (
+        stored === SHOP_FULFILLMENT_METHOD.collection ||
+        stored === SHOP_FULFILLMENT_METHOD.delivery
+      ) {
+        setFulfillmentMethodState(stored);
+      }
+    } catch {
+      // ignore storage errors
+    }
     setHydrated(true);
   }, [productById]);
 
@@ -104,6 +125,19 @@ export function ShopCartProvider({
     if (!hydrated) return;
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(lines));
   }, [lines, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      window.localStorage.setItem(FULFILLMENT_STORAGE_KEY, fulfillmentMethod);
+    } catch {
+      // ignore storage errors
+    }
+  }, [fulfillmentMethod, hydrated]);
+
+  const setFulfillmentMethod = useCallback((method: ShopFulfillmentMethod) => {
+    setFulfillmentMethodState(method);
+  }, []);
 
   const triggerBump = useCallback(() => {
     setBumpBasket(true);
@@ -203,12 +237,20 @@ export function ShopCartProvider({
     [productLines],
   );
 
+  const hasPhysicalItems = useMemo(
+    () => productLines.some((line) => !line.product.digitalDelivery),
+    [productLines],
+  );
+
   const value = useMemo<ShopCartContextValue>(
     () => ({
       lines,
       productLines,
       itemCount,
       totalPence,
+      hasPhysicalItems,
+      fulfillmentMethod,
+      setFulfillmentMethod,
       isOpen,
       openBasket: () => setIsOpen(true),
       closeBasket: () => setIsOpen(false),
@@ -227,6 +269,9 @@ export function ShopCartProvider({
       productLines,
       itemCount,
       totalPence,
+      hasPhysicalItems,
+      fulfillmentMethod,
+      setFulfillmentMethod,
       isOpen,
       addToBasket,
       removeFromBasket,

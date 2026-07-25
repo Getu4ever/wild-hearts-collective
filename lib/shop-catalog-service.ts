@@ -1,6 +1,12 @@
 import type { Prisma } from "@prisma/client";
 import { Prisma as PrismaNamespace } from "@prisma/client";
 import { db } from "@/lib/db";
+import {
+  COURSE_VOUCHER_PRODUCT_SLUGS,
+  GIFT_REDEEM_SCOPE,
+  resolveGiftRedeemScopeForProduct,
+  type GiftRedeemScope,
+} from "@/lib/gift-redeem-scope";
 import { notifyAdminOfLowStockIfNeeded } from "@/lib/shop-stock-notifications";
 import {
   productsData,
@@ -74,6 +80,8 @@ export type AdminShopProductInput = {
   pricePence: number;
   isAvailable: boolean;
   digitalDelivery: boolean;
+  giftRedeemScope?: GiftRedeemScope | null;
+  weightGrams?: number | null;
   image: string;
   imageGradient?: string;
   variants?: ShopProductVariants | null;
@@ -105,6 +113,8 @@ export function mapShopProduct(record: {
   pricePence: number;
   isAvailable: boolean;
   digitalDelivery: boolean;
+  giftRedeemScope?: string | null;
+  weightGrams?: number | null;
   image: string;
   imageGradient: string;
   variants: Prisma.JsonValue | null;
@@ -133,6 +143,11 @@ export function mapShopProduct(record: {
     pricePence: record.pricePence,
     isAvailable: record.isAvailable,
     digitalDelivery: record.digitalDelivery,
+    giftRedeemScope: resolveGiftRedeemScopeForProduct({
+      slug: record.slug,
+      giftRedeemScope: record.giftRedeemScope,
+    }),
+    weightGrams: record.weightGrams ?? null,
     image: record.image,
     imageGradient: record.imageGradient,
     variants: parseVariants(record.variants),
@@ -192,6 +207,12 @@ function validateProductInput(input: AdminShopProductInput) {
     throw new Error("Price must be zero or greater.");
   }
   if (!input.image.trim()) throw new Error("Product image path is required.");
+  if (
+    input.weightGrams != null &&
+    (!Number.isFinite(input.weightGrams) || input.weightGrams < 0)
+  ) {
+    throw new Error("Weight must be zero or greater.");
+  }
   if (input.trackStock) {
     if (
       input.stockQuantity != null &&
@@ -219,7 +240,10 @@ function shopProductClient() {
 
 export async function seedShopProductsIfEmpty() {
   const count = await shopProductClient().count();
-  if (count > 0) return { seeded: false, count };
+  if (count > 0) {
+    await ensureCourseVoucherProductScopes();
+    return { seeded: false, count };
+  }
 
   for (const [index, product] of productsData.entries()) {
     await shopProductClient().create({
@@ -232,6 +256,8 @@ export async function seedShopProductsIfEmpty() {
         pricePence: product.pricePence,
         isAvailable: product.isAvailable,
         digitalDelivery: product.digitalDelivery,
+        giftRedeemScope: resolveGiftRedeemScopeForProduct(product),
+        weightGrams: product.weightGrams ?? null,
         image: product.image,
         imageGradient: product.imageGradient,
         variants: product.variants ?? undefined,
@@ -245,6 +271,21 @@ export async function seedShopProductsIfEmpty() {
   }
 
   return { seeded: true, count: productsData.length };
+}
+
+/** Backfill course-only scope on known voucher products in existing databases. */
+export async function ensureCourseVoucherProductScopes() {
+  try {
+    await shopProductClient().updateMany({
+      where: {
+        slug: { in: [...COURSE_VOUCHER_PRODUCT_SLUGS] },
+        OR: [{ giftRedeemScope: null }, { giftRedeemScope: GIFT_REDEEM_SCOPE.any }],
+      },
+      data: { giftRedeemScope: GIFT_REDEEM_SCOPE.beginnerCourses },
+    });
+  } catch (error) {
+    console.error("[shop] failed to ensure course voucher scopes:", error);
+  }
 }
 
 export async function listStorefrontShopProducts() {
@@ -374,6 +415,18 @@ export async function createAdminShopProduct(input: AdminShopProductInput) {
     0,
     Math.round(input.lowStockThreshold ?? 5),
   );
+  const weightGrams = input.digitalDelivery
+    ? null
+    : input.weightGrams != null
+      ? Math.max(0, Math.round(input.weightGrams))
+      : null;
+
+  const giftRedeemScope = input.digitalDelivery
+    ? resolveGiftRedeemScopeForProduct({
+        slug,
+        giftRedeemScope: input.giftRedeemScope,
+      })
+    : null;
 
   const record = await shopProductClient().create({
     data: {
@@ -384,6 +437,8 @@ export async function createAdminShopProduct(input: AdminShopProductInput) {
       pricePence: Math.round(input.pricePence),
       isAvailable: input.isAvailable,
       digitalDelivery: input.digitalDelivery,
+      giftRedeemScope,
+      weightGrams,
       image: input.image.trim(),
       imageGradient: input.imageGradient?.trim() || "from-pink-soft via-cream to-sage-light",
       variants: input.variants ?? undefined,
@@ -417,6 +472,18 @@ export async function updateAdminShopProduct(
     input.lowStockThreshold != null
       ? Math.max(0, Math.round(input.lowStockThreshold))
       : existing.lowStockThreshold;
+  const nextWeightGrams = nextDigital
+    ? null
+    : input.weightGrams !== undefined
+      ? input.weightGrams == null
+        ? null
+        : Math.max(0, Math.round(input.weightGrams))
+      : existing.weightGrams ?? null;
+
+  let slug = existing.slug;
+  if (input.slug?.trim()) {
+    slug = await ensureUniqueSlug(slugifyProductName(input.slug), id);
+  }
 
   const previousStock = existing.stockQuantity;
 
@@ -427,6 +494,7 @@ export async function updateAdminShopProduct(
     pricePence: input.pricePence ?? existing.pricePence,
     isAvailable: input.isAvailable ?? existing.isAvailable,
     digitalDelivery: nextDigital,
+    weightGrams: nextWeightGrams,
     image: input.image ?? existing.image,
     imageGradient: input.imageGradient ?? existing.imageGradient,
     variants:
@@ -438,10 +506,15 @@ export async function updateAdminShopProduct(
     lowStockThreshold: nextLowStockThreshold,
   });
 
-  let slug = existing.slug;
-  if (input.slug?.trim()) {
-    slug = await ensureUniqueSlug(slugifyProductName(input.slug), id);
-  }
+  const nextGiftRedeemScope = nextDigital
+    ? resolveGiftRedeemScopeForProduct({
+        slug,
+        giftRedeemScope:
+          input.giftRedeemScope !== undefined
+            ? input.giftRedeemScope
+            : existing.giftRedeemScope,
+      })
+    : null;
 
   const record = await shopProductClient().update({
     where: { id },
@@ -454,6 +527,8 @@ export async function updateAdminShopProduct(
         input.pricePence != null ? Math.round(input.pricePence) : existing.pricePence,
       isAvailable: input.isAvailable ?? existing.isAvailable,
       digitalDelivery: nextDigital,
+      giftRedeemScope: nextGiftRedeemScope,
+      weightGrams: nextWeightGrams,
       image: (input.image ?? existing.image).trim(),
       imageGradient:
         input.imageGradient?.trim() ?? existing.imageGradient,

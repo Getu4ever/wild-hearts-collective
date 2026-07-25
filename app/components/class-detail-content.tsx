@@ -23,6 +23,7 @@ export type ClassDetailData = {
   whatToWear: string;
   whoFor: string;
   imageKey: HeroImageKey;
+  photoOverlay?: string;
   videoSrc?: string;
   videoTitle?: string;
 };
@@ -46,12 +47,19 @@ export function ClassDetailContent({ classItem }: { classItem: ClassDetailData }
           </div>
 
           {classItem.videoSrc ? (
-            <FeatureVideo
-              src={classItem.videoSrc}
-              poster={poster}
-              title={classItem.videoTitle ?? classItem.title}
-              aspectClassName="aspect-[4/3]"
-            />
+            <div className="relative">
+              <FeatureVideo
+                src={classItem.videoSrc}
+                poster={poster}
+                title={classItem.videoTitle ?? classItem.title}
+                aspectClassName="aspect-[4/3]"
+              />
+              {classItem.photoOverlay ? (
+                <p className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-plum/90 via-plum/50 to-transparent px-5 pb-5 pt-16 text-sm font-medium leading-snug text-white sm:text-base">
+                  {classItem.photoOverlay}
+                </p>
+              ) : null}
+            </div>
           ) : (
             <div className="relative aspect-[4/3] overflow-hidden rounded-lg shadow-lg ring-1 ring-plum/10">
               <Image
@@ -65,6 +73,11 @@ export function ClassDetailContent({ classItem }: { classItem: ClassDetailData }
                 aria-hidden="true"
                 className="absolute inset-0 bg-gradient-to-t from-plum/50 via-transparent to-transparent"
               />
+              {classItem.photoOverlay ? (
+                <p className="absolute inset-x-0 bottom-0 z-10 px-5 pb-5 text-sm font-medium leading-snug text-white sm:text-base">
+                  {classItem.photoOverlay}
+                </p>
+              ) : null}
             </div>
           )}
         </div>

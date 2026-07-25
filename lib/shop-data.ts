@@ -62,6 +62,16 @@ export type ShopProduct = {
   isAvailable: boolean;
   /** Digital products skip shipping and use email delivery. */
   digitalDelivery: boolean;
+  /**
+   * Gift voucher redeem restriction. Omit / "any" = classes & packs.
+   * "beginner-courses" = 4-week course bookings only.
+   */
+  giftRedeemScope?: "any" | "beginner-courses" | null;
+  /**
+   * Packed weight in grams for UK parcel pricing (physical items).
+   * Digital products ignore this. Missing weight falls back to a default in checkout.
+   */
+  weightGrams?: number | null;
   /** ISO date — used for Newest sort. */
   createdAt: string;
   /** Product image under /public (e.g. /shop/slug.svg). */
@@ -135,11 +145,12 @@ export const productsData: ShopProductSeed[] = [
     image: "/shop/intro-to-pole-4-week.svg",
     name: "Intro to Pole — 4-Week Course Voucher",
     description:
-      "Gift a specific experience: a four-week beginner pole course at Wild Hearts Collective.",
+      "Gift a four-week beginner pole course at Wild Hearts Collective. The code can only be redeemed when booking a 4-week course (not weekly drop-in classes). Courses are paid in full for the fixed block; missed weeks cannot be transferred.",
     category: "gift-vouchers",
     pricePence: 8000,
     isAvailable: true,
     digitalDelivery: true,
+    giftRedeemScope: "beginner-courses",
     createdAt: "2026-06-10T12:00:00.000Z",
     imageGradient: "from-sage-light via-pink-soft to-background",
   },

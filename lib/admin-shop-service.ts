@@ -1,5 +1,6 @@
 import { formatMoneyFromPence } from "@/lib/booking-config";
 import { db } from "@/lib/db";
+import { giftRedeemScopeLabel } from "@/lib/gift-redeem-scope";
 import { SHOP_CATEGORIES, type ShopCategoryId } from "@/lib/shop-data";
 
 export type GiftCardStatus = "active" | "partial" | "redeemed" | "expired";
@@ -73,6 +74,17 @@ function sourceLabel(sourceType: string) {
       return "Shop product";
     default:
       return "Shop sale";
+  }
+}
+
+function fulfillmentMethodLabel(method: string | null | undefined) {
+  switch (method) {
+    case "collection":
+      return "Collect from studio";
+    case "delivery":
+      return "UK delivery";
+    default:
+      return null;
   }
 }
 
@@ -211,6 +223,13 @@ export async function getAdminShopOverview() {
       summary: order.items
         .map((item) => `${item.quantity}× ${item.productName}`)
         .join(", "),
+      fulfillmentMethod: order.fulfillmentMethod ?? null,
+      fulfillmentMethodLabel: fulfillmentMethodLabel(order.fulfillmentMethod),
+      shippingPence: order.shippingPence ?? 0,
+      shippingLabel:
+        (order.shippingPence ?? 0) > 0
+          ? formatMoneyFromPence(order.shippingPence)
+          : null,
       items: order.items.map((item) => ({
         id: item.id,
         productName: item.productName,
@@ -237,6 +256,10 @@ export async function getAdminShopOverview() {
       summary: sale.items
         .map((item) => `${item.quantity}× ${item.productName}`)
         .join(", "),
+      fulfillmentMethod: null as string | null,
+      fulfillmentMethodLabel: null as string | null,
+      shippingPence: 0,
+      shippingLabel: null as string | null,
       items: sale.items.map((item, index) => ({
         id: `${sale.id}-${index}`,
         productName: item.productName,
@@ -284,6 +307,8 @@ export async function getAdminShopOverview() {
       code: card.code,
       productName: card.productName,
       productId: card.productId,
+      redeemScope: card.redeemScope,
+      redeemScopeLabel: giftRedeemScopeLabel(card.redeemScope),
       purchaserName: card.purchaserName,
       purchaserEmail: card.purchaserEmail,
       initialBalancePence: card.initialBalancePence,

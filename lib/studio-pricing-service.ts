@@ -1,16 +1,19 @@
+import { formatMoneyFromPence, getEnvClassPaymentAmountPence } from "@/lib/booking-config";
 import { db } from "@/lib/db";
-import {
-  formatMoneyFromPence,
-  getEnvClassPaymentAmountPence,
-} from "@/lib/booking-config";
+import { isCourseClassSlug } from "@/lib/gift-redeem-scope";
 import { getEnvMonthlyMembershipPricePence } from "@/lib/membership-config";
 import { seedClassPacks } from "@/lib/seed-database";
 
 export const STUDIO_SETTING_KEYS = {
   dropInPricePence: "drop_in_price_pence",
+  /** Full fee for a fixed 4-week beginner course block. */
+  fourWeekCoursePricePence: "four_week_course_price_pence",
   membershipPricePence: "membership_price_pence",
   monthlyMembershipActive: "monthly_membership_active",
 } as const;
+
+/** Default 4-week course fee (£80) — matches the Intro to Pole course voucher. */
+export const DEFAULT_FOUR_WEEK_COURSE_PRICE_PENCE = 8000;
 
 export type AdminClassPack = {
   id: string;
@@ -40,6 +43,9 @@ export type StudioPricingSettings = {
   dropInPricePence: number;
   dropInPriceLabel: string;
   dropInSource: "database" | "env";
+  fourWeekCoursePricePence: number;
+  fourWeekCoursePriceLabel: string;
+  fourWeekCourseSource: "database" | "default";
   membershipPricePence: number;
   membershipPriceLabel: string;
   membershipSource: "database" | "env";
@@ -89,6 +95,19 @@ export async function resolveClassPaymentAmountPence() {
   return fromDb ?? getEnvClassPaymentAmountPence();
 }
 
+export async function resolveFourWeekCoursePricePence() {
+  const fromDb = await readSettingPence(STUDIO_SETTING_KEYS.fourWeekCoursePricePence);
+  return fromDb ?? DEFAULT_FOUR_WEEK_COURSE_PRICE_PENCE;
+}
+
+/** Drop-in vs full 4-week course block fee for a booked class type. */
+export async function resolveBookingPaymentAmountPence(classSlug: string) {
+  if (isCourseClassSlug(classSlug)) {
+    return resolveFourWeekCoursePricePence();
+  }
+  return resolveClassPaymentAmountPence();
+}
+
 export async function resolveMonthlyMembershipPricePence() {
   const fromDb = await readSettingPence(STUDIO_SETTING_KEYS.membershipPricePence);
   return fromDb ?? getEnvMonthlyMembershipPricePence();
@@ -103,13 +122,17 @@ export async function resolveMonthlyMembershipActive() {
 }
 
 export async function getStudioPricingSettings(): Promise<StudioPricingSettings> {
-  const [dropInFromDb, membershipFromDb, monthlyMembershipFromDb] = await Promise.all([
-    readSettingPence(STUDIO_SETTING_KEYS.dropInPricePence),
-    readSettingPence(STUDIO_SETTING_KEYS.membershipPricePence),
-    readSettingValue(STUDIO_SETTING_KEYS.monthlyMembershipActive),
-  ]);
+  const [dropInFromDb, courseFromDb, membershipFromDb, monthlyMembershipFromDb] =
+    await Promise.all([
+      readSettingPence(STUDIO_SETTING_KEYS.dropInPricePence),
+      readSettingPence(STUDIO_SETTING_KEYS.fourWeekCoursePricePence),
+      readSettingPence(STUDIO_SETTING_KEYS.membershipPricePence),
+      readSettingValue(STUDIO_SETTING_KEYS.monthlyMembershipActive),
+    ]);
 
   const dropInPricePence = dropInFromDb ?? getEnvClassPaymentAmountPence();
+  const fourWeekCoursePricePence =
+    courseFromDb ?? DEFAULT_FOUR_WEEK_COURSE_PRICE_PENCE;
   const membershipPricePence =
     membershipFromDb ?? getEnvMonthlyMembershipPricePence();
 
@@ -117,6 +140,9 @@ export async function getStudioPricingSettings(): Promise<StudioPricingSettings>
     dropInPricePence,
     dropInPriceLabel: formatMoneyFromPence(dropInPricePence),
     dropInSource: dropInFromDb != null ? "database" : "env",
+    fourWeekCoursePricePence,
+    fourWeekCoursePriceLabel: formatMoneyFromPence(fourWeekCoursePricePence),
+    fourWeekCourseSource: courseFromDb != null ? "database" : "default",
     membershipPricePence,
     membershipPriceLabel: formatMoneyFromPence(membershipPricePence),
     membershipSource: membershipFromDb != null ? "database" : "env",
@@ -128,17 +154,24 @@ export async function getStudioPricingSettings(): Promise<StudioPricingSettings>
 
 export async function updateStudioPricingSettings(input: {
   dropInPricePence?: number;
+  fourWeekCoursePricePence?: number;
   membershipPricePence?: number;
   monthlyMembershipActive?: boolean;
 }) {
   const current = await getStudioPricingSettings();
   const dropIn = Math.round(input.dropInPricePence ?? current.dropInPricePence);
+  const course = Math.round(
+    input.fourWeekCoursePricePence ?? current.fourWeekCoursePricePence,
+  );
   const membership = Math.round(
     input.membershipPricePence ?? current.membershipPricePence,
   );
 
   if (!Number.isFinite(dropIn) || dropIn <= 0) {
     throw new Error("Drop-in class price must be greater than zero.");
+  }
+  if (!Number.isFinite(course) || course <= 0) {
+    throw new Error("4-week course price must be greater than zero.");
   }
   if (!Number.isFinite(membership) || membership <= 0) {
     throw new Error("Membership price must be greater than zero.");
@@ -152,6 +185,14 @@ export async function updateStudioPricingSettings(input: {
         value: String(dropIn),
       },
       update: { value: String(dropIn) },
+    }),
+    db.studioSetting.upsert({
+      where: { key: STUDIO_SETTING_KEYS.fourWeekCoursePricePence },
+      create: {
+        key: STUDIO_SETTING_KEYS.fourWeekCoursePricePence,
+        value: String(course),
+      },
+      update: { value: String(course) },
     }),
     db.studioSetting.upsert({
       where: { key: STUDIO_SETTING_KEYS.membershipPricePence },

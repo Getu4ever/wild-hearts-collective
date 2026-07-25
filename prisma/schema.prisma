@@ -105,6 +105,7 @@ model User {
   vouchers                     Voucher[]
   parQResponse                 ParQResponse?
   engagementLogs               EngagementLog[]
+  classFeedbacks               ClassFeedback[]
 
   @@index([email])
   @@index([membershipStatus])
@@ -267,6 +268,12 @@ model ShopOrder {
   purchaserName    String?
   totalPence       Int
   currency         String          @default("gbp")
+  /** collection | delivery — only set when order includes physical items */
+  fulfillmentMethod String?
+  /** Parcel fee charged at checkout (0 for collection / digital-only). */
+  shippingPence    Int             @default(0)
+  /** Sum of physical item weights × qty used for the parcel fee. */
+  totalWeightGrams Int?
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
   items            ShopOrderItem[]
@@ -308,6 +315,13 @@ model ShopProduct {
   pricePence      Int
   isAvailable     Boolean          @default(false)
   digitalDelivery Boolean          @default(false)
+  /**
+   * For digital gift vouchers: "any" (default) or a class slug such as
+   * "beginner-courses" so issued codes only redeem on matching bookings.
+   */
+  giftRedeemScope String?
+  /** Packed weight in grams for UK parcel fee (physical items only). */
+  weightGrams     Int?
   image           String
   imageGradient   String           @default("from-pink-soft via-cream to-sage-light")
   variants        Json?
@@ -335,6 +349,11 @@ model GiftCard {
   balancePence        Int
   productId           String?
   productName         String
+  /**
+   * "any" = classes / packs; class slug (e.g. "beginner-courses") =
+   * redeemable only when booking that class type.
+   */
+  redeemScope         String              @default("any")
   purchaserEmail      String?
   purchaserName       String?
   stripeSessionId     String?
@@ -348,6 +367,7 @@ model GiftCard {
   @@index([stripeSessionId])
   @@index([balancePence])
   @@index([expiresAt])
+  @@index([redeemScope])
 }
 
 model GiftCardRedemption {
@@ -392,6 +412,30 @@ model EngagementLog {
   @@index([status, createdAt])
 }
 
+/** Post-class feedback invites (first-lesson check-in and future reviews). */
+model ClassFeedback {
+  id              String    @id @default(cuid())
+  token           String    @unique @default(cuid())
+  bookingId       String?   @unique
+  booking         Booking?  @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  userId          String?
+  user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  email           String
+  name            String
+  classTitle      String?
+  sessionStartsAt DateTime?
+  rating          Int?
+  comments        String?
+  shareOnWebsite  Boolean   @default(false)
+  submittedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([email])
+  @@index([submittedAt])
+  @@index([shareOnWebsite, submittedAt])
+}
+
 model Booking {
   id               String              @id @default(cuid())
   sessionId        String
@@ -420,6 +464,7 @@ model Booking {
   updatedAt        DateTime            @default(now()) @updatedAt
   creditTransactions CreditTransaction[]
   giftRedemptions  GiftCardRedemption[]
+  classFeedback    ClassFeedback?
 
   @@index([sessionId])
   @@index([email])

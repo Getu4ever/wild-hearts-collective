@@ -37,6 +37,11 @@ export default function PrivacyPage() {
             Contact:{" "}
             <a href={`mailto:${contact.email}`}>{contact.email}</a>
           </p>
+          <p>
+            We are registered with the Information Commissioner&apos;s Office
+            (ICO). Our registration reference is{" "}
+            <strong>ICO number: C1988786</strong>.
+          </p>
         </ProseBlock>
       </ContentSection>
 
@@ -138,7 +143,7 @@ export default function PrivacyPage() {
             >
               ico.org.uk
             </a>
-            .
+            . Our ICO registration number is <strong>C1988786</strong>.
           </p>
         </ProseBlock>
       </ContentSection>

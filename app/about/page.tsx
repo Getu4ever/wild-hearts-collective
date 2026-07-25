@@ -1,24 +1,25 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { AboutTabs } from "@/app/components/about-tabs";
 import {
   ContentSection,
   ProseBlock,
 } from "@/app/components/content-section";
 import { PageHero } from "@/app/components/page-hero";
+import { QualificationBadges } from "@/app/components/qualification-badges";
 import { SectionHeading } from "@/app/components/section-heading";
-import { TeamCard } from "@/app/components/team-card";
-import { founders, values } from "@/lib/site-data";
+import { values } from "@/lib/site-data";
 import { heroImages } from "@/lib/hero-images";
 
 export const metadata: Metadata = {
   title: "About Us",
   description:
-    "Meet the founders of Wild Hearts Collective — Rosie, Jacqui, and Sarah — and learn about our mission, values, and qualified team.",
+    "Learn about Wild Hearts Collective — our mission, values, and qualified and experienced teaching team in Mansfield.",
 };
 
 const qualifications = [
   {
-    label: "Qualified instructors",
+    label: "Qualified & experienced instructors",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className="h-7 w-7" aria-hidden="true">
         <path strokeLinecap="round" d="M12 3L4 7v6c0 4.5 3.4 8.7 8 10 4.6-1.3 8-5.5 8-10V7l-8-4z" />
@@ -61,9 +62,11 @@ export default function AboutPage() {
     <>
       <PageHero
         title="About Wild Hearts Collective"
-        subtitle="Qualified instructors with a vision for inclusive movement and community."
+        subtitle="Qualified and experienced instructors with a vision for inclusive movement and community."
         image="about"
       />
+
+      <AboutTabs active="about" />
 
       <ContentSection>
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
@@ -91,7 +94,8 @@ export default function AboutPage() {
                 Our instructors train regularly to keep skills, safety, and spotting
                 techniques up to date. Every session is built around proper
                 warm-ups, clear progressions, and the belief that movement should
-                feel empowering — never intimidating.
+                feel empowering — never intimidating — in a welcoming supportive
+                environment where everyone celebrates each other&apos;s achievements.
               </p>
             </ProseBlock>
           </div>
@@ -99,7 +103,7 @@ export default function AboutPage() {
           <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg shadow-lg ring-1 ring-plum/10 sm:aspect-[3/2]">
             <Image
               src={heroImages.about}
-              alt="Wild Hearts Collective studio"
+              alt="Five women standing together in the Wild Hearts Collective aerial studio"
               fill
               sizes="(max-width: 1024px) 100vw, 50vw"
               className="object-cover"
@@ -135,6 +139,8 @@ export default function AboutPage() {
         </div>
       </section>
 
+      <QualificationBadges />
+
       <ContentSection className="bg-pink-soft">
         <SectionHeading
           title="Our Values"
@@ -153,31 +159,6 @@ export default function AboutPage() {
             </li>
           ))}
         </ul>
-      </ContentSection>
-
-      <ContentSection className="bg-background">
-        <div className="mx-auto max-w-3xl text-center">
-          <div className="mx-auto mb-5 h-px w-12 bg-pink" />
-          <h2 className="font-display text-4xl text-plum sm:text-5xl">Our Team</h2>
-          <p className="mt-4 text-base leading-relaxed text-muted">
-            Qualified aerial instructors with DBS checks, first aid training, and
-            certified instruction — patient, knowledgeable, and dedicated to your
-            progress.
-          </p>
-        </div>
-
-        <ul className="mt-14 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {founders.map((member) => (
-            <li key={member.name}>
-              <TeamCard {...member} />
-            </li>
-          ))}
-        </ul>
-
-        <p className="mx-auto mt-12 max-w-2xl text-center text-sm leading-relaxed text-muted">
-          Come along and see for yourself what a welcoming, professional team we
-          have — we&apos;d love to meet you in the studio.
-        </p>
       </ContentSection>
     </>
   );

@@ -67,6 +67,25 @@ export async function POST(request: Request) {
       pricePence: Math.round(pricePounds * 100),
       isAvailable: Boolean(body.isAvailable),
       digitalDelivery: Boolean(body.digitalDelivery),
+      giftRedeemScope:
+        body.giftRedeemScope === "beginner-courses"
+          ? "beginner-courses"
+          : body.giftRedeemScope === "any" || body.giftRedeemScope === null
+            ? (body.giftRedeemScope as "any" | null)
+            : undefined,
+      weightGrams:
+        body.weightGrams === null
+          ? null
+          : body.weightGrams != null
+            ? Math.max(
+                0,
+                Math.round(
+                  typeof body.weightGrams === "number"
+                    ? body.weightGrams
+                    : Number.parseInt(String(body.weightGrams), 10) || 0,
+                ),
+              )
+            : undefined,
       image: typeof body.image === "string" ? body.image : "",
       imageGradient:
         typeof body.imageGradient === "string" ? body.imageGradient : undefined,

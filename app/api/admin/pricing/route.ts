@@ -34,7 +34,9 @@ export async function PATCH(request: Request) {
   try {
     const body = await request.json();
     const hasPrices =
-      body.dropInPricePounds != null && body.membershipPricePounds != null;
+      body.dropInPricePounds != null &&
+      body.membershipPricePounds != null &&
+      body.fourWeekCoursePricePounds != null;
     const hasVisibility = typeof body.monthlyMembershipActive === "boolean";
 
     if (!hasPrices && !hasVisibility) {
@@ -51,19 +53,28 @@ export async function PATCH(request: Request) {
         typeof body.dropInPricePounds === "number"
           ? body.dropInPricePounds
           : Number.parseFloat(String(body.dropInPricePounds));
+      const coursePounds =
+        typeof body.fourWeekCoursePricePounds === "number"
+          ? body.fourWeekCoursePricePounds
+          : Number.parseFloat(String(body.fourWeekCoursePricePounds));
       const membershipPounds =
         typeof body.membershipPricePounds === "number"
           ? body.membershipPricePounds
           : Number.parseFloat(String(body.membershipPricePounds));
 
-      if (!Number.isFinite(dropInPounds) || !Number.isFinite(membershipPounds)) {
+      if (
+        !Number.isFinite(dropInPounds) ||
+        !Number.isFinite(coursePounds) ||
+        !Number.isFinite(membershipPounds)
+      ) {
         return NextResponse.json(
-          { error: "Enter valid drop-in and membership prices." },
+          { error: "Enter valid drop-in, course, and membership prices." },
           { status: 400 },
         );
       }
 
       update.dropInPricePence = Math.round(dropInPounds * 100);
+      update.fourWeekCoursePricePence = Math.round(coursePounds * 100);
       update.membershipPricePence = Math.round(membershipPounds * 100);
     }
 

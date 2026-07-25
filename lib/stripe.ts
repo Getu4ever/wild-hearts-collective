@@ -172,11 +172,21 @@ type ShopCheckoutItem = {
   digitalDelivery: boolean;
 };
 
+type ShopCheckoutOptions = {
+  fulfillmentMethod?: "collection" | "delivery";
+  shippingPence?: number;
+  totalWeightGrams?: number;
+};
+
 /**
  * Hosted Stripe Checkout for any purchasable shop basket.
- * Gift vouchers stay digital-only; physical items collect a shipping address.
+ * Gift vouchers stay digital-only. Physical items: collect from studio (default)
+ * or UK delivery with one parcel fee from total basket weight.
  */
-export async function createShopCheckoutSession(items: ShopCheckoutItem[]) {
+export async function createShopCheckoutSession(
+  items: ShopCheckoutItem[],
+  options: ShopCheckoutOptions = {},
+) {
   if (!process.env.STRIPE_SECRET_KEY) {
     throw new Error("Stripe is not configured.");
   }
@@ -192,12 +202,63 @@ export async function createShopCheckoutSession(items: ShopCheckoutItem[]) {
     .join(", ");
   const hasPhysical = items.some((item) => !item.digitalDelivery);
   const hasGiftVoucher = items.some((item) => item.digitalDelivery);
+  const fulfillmentMethod = hasPhysical
+    ? options.fulfillmentMethod ?? "collection"
+    : null;
+  const wantsDelivery = fulfillmentMethod === "delivery";
+  const shippingPence = wantsDelivery
+    ? Math.max(0, Math.round(options.shippingPence ?? 0))
+    : 0;
+  const totalWeightGrams = wantsDelivery
+    ? Math.max(0, Math.round(options.totalWeightGrams ?? 0))
+    : 0;
+
+  const productLineItems = items.map((item) => ({
+    quantity: item.quantity,
+    price_data: {
+      currency: "gbp" as const,
+      unit_amount: item.pricePence,
+      product_data: {
+        name: item.productName,
+        description: item.digitalDelivery
+          ? `${item.description} — Digital delivery by email (no shipping).`
+          : wantsDelivery
+            ? `${item.description} — UK delivery.`
+            : `${item.description} — Collect from studio.`,
+        // Stripe needs absolute, publicly reachable HTTPS URLs.
+        images: [
+          `${baseUrl}${item.image.startsWith("/") ? item.image : `/${item.image}`}`,
+        ],
+      },
+    },
+  }));
+
+  const lineItems =
+    shippingPence > 0
+      ? [
+          ...productLineItems,
+          {
+            quantity: 1,
+            price_data: {
+              currency: "gbp" as const,
+              unit_amount: shippingPence,
+              product_data: {
+                name: "UK delivery",
+                description:
+                  totalWeightGrams > 0
+                    ? `One parcel fee for basket weight (${totalWeightGrams}g).`
+                    : "One parcel fee for your basket.",
+              },
+            },
+          },
+        ]
+      : productLineItems;
 
   return stripe.checkout.sessions.create({
     mode: "payment",
     billing_address_collection: "auto",
     customer_creation: "if_required",
-    ...(hasPhysical
+    ...(wantsDelivery
       ? {
           shipping_address_collection: {
             allowed_countries: ["GB"],
@@ -210,6 +271,9 @@ export async function createShopCheckoutSession(items: ShopCheckoutItem[]) {
       emailDelivered: "false",
       hasPhysical: hasPhysical ? "true" : "false",
       hasGiftVoucher: hasGiftVoucher ? "true" : "false",
+      fulfillmentMethod: fulfillmentMethod ?? "",
+      shippingPence: String(shippingPence),
+      totalWeightGrams: String(totalWeightGrams),
       // Stripe metadata values max 500 chars — keep a compact cart payload.
       cart: JSON.stringify(
         items.map((item) => ({
@@ -221,21 +285,7 @@ export async function createShopCheckoutSession(items: ShopCheckoutItem[]) {
       ),
       productName: summary.slice(0, 450),
     },
-    line_items: items.map((item) => ({
-      quantity: item.quantity,
-      price_data: {
-        currency: "gbp",
-        unit_amount: item.pricePence,
-        product_data: {
-          name: item.productName,
-          description: item.digitalDelivery
-            ? `${item.description} — Digital delivery by email (no shipping).`
-            : `${item.description} — Ships to a UK address.`,
-          // Stripe needs absolute, publicly reachable HTTPS URLs.
-          images: [`${baseUrl}${item.image.startsWith("/") ? item.image : `/${item.image}`}`],
-        },
-      },
-    })),
+    line_items: lineItems,
     success_url: `${baseUrl}/shop/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${baseUrl}/shop?cancelled=1`,
   });

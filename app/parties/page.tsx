@@ -9,7 +9,7 @@ import { getSiteVideo } from "@/lib/site-videos";
 export const metadata: Metadata = {
   title: "Parties & Events",
   description:
-    "Children's party packages and creative movement sessions at Wild Hearts Collective.",
+    "Personalised party packages with aerial disciplines and arts or crafts at Wild Hearts Collective.",
 };
 
 const packages = [
@@ -49,13 +49,26 @@ export default function PartiesPage() {
         videoTitle={partyVideo.title}
       >
         <p>
-          Add something unique to your next celebration. Our party packages
-          combine safe, qualified instruction with creative movement — perfect
-          for birthdays and special occasions.
+          Add something unique to your next celebration. Our party packages can
+          include any of the aerial disciplines and arts or crafts that we
+          offer.
         </p>
         <p>
-          All sessions are fully supervised by our qualified team. Packages
-          can be customised to suit your group size and age range.
+          Parties can be completely personalised and adapted for all ages and
+          group sizes.
+        </p>
+        <p>
+          All sessions are fully supervised by our qualified and experienced,
+          DBS-checked team.
+        </p>
+        <p>
+          <Link
+            href="/contact"
+            className="font-semibold text-plum underline-offset-2 hover:text-pink hover:underline"
+          >
+            Contact us
+          </Link>{" "}
+          to discuss your requirements.
         </p>
       </IntroSection>
 

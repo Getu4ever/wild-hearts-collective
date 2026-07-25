@@ -30,6 +30,7 @@ export type VoucherType = (typeof VOUCHER_TYPE)[keyof typeof VOUCHER_TYPE];
 export const ENGAGEMENT_TYPE = {
   noShow: "no_show",
   inactive30Days: "inactive_30_days",
+  firstLessonFollowUp: "first_lesson_follow_up",
 } as const;
 
 export type EngagementType = (typeof ENGAGEMENT_TYPE)[keyof typeof ENGAGEMENT_TYPE];

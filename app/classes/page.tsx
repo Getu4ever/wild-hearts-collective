@@ -17,7 +17,7 @@ function getClassHeroKey(slug: string): HeroImageKey {
 export const metadata: Metadata = {
   title: "Our Classes",
   description:
-    "Pole dancing, aerial hoop, aerial silks, and creative arts workshops for all levels at Wild Hearts Collective.",
+    "Pole, aerial hoop, silks, juniors, workshops, and creative arts at Wild Hearts Collective — for all levels.",
 };
 
 export default function ClassesPage() {
@@ -76,7 +76,7 @@ export default function ClassesPage() {
                 sessions waiting for you in Mansfield.
               </p>
               <p>
-                Our qualified instructors teach with patience, clear
+                Our qualified and experienced instructors teach with patience, clear
                 progressions, and a body-positive approach — so you can build
                 strength, confidence, and community without pressure.
               </p>

@@ -30,6 +30,9 @@ export type AdminShopProductFormValues = {
   pricePence: number;
   isAvailable: boolean;
   digitalDelivery: boolean;
+  /** When true, issued gift codes only redeem on 4-week course bookings. */
+  courseVoucherOnly?: boolean;
+  weightGrams: number | null;
   image: string;
   imageGradient: string;
   sizes: string;
@@ -60,6 +63,14 @@ export function AdminShopProductForm({ mode, initial }: AdminShopProductFormProp
   const [isAvailable, setIsAvailable] = useState(initial?.isAvailable ?? false);
   const [digitalDelivery, setDigitalDelivery] = useState(
     initial?.digitalDelivery ?? true,
+  );
+  const [courseVoucherOnly, setCourseVoucherOnly] = useState(
+    initial?.courseVoucherOnly ?? false,
+  );
+  const [weightGrams, setWeightGrams] = useState(
+    initial?.weightGrams != null && initial.weightGrams > 0
+      ? String(initial.weightGrams)
+      : "",
   );
   const [image, setImage] = useState(initial?.image ?? "/shop/e-gift-card-25.svg");
   const [imageGradient, setImageGradient] = useState(
@@ -112,6 +123,16 @@ export function AdminShopProductForm({ mode, initial }: AdminShopProductFormProp
           pricePounds: Number.parseFloat(pricePounds),
           isAvailable,
           digitalDelivery,
+          giftRedeemScope: digitalDelivery
+            ? courseVoucherOnly
+              ? "beginner-courses"
+              : "any"
+            : null,
+          weightGrams: digitalDelivery
+            ? null
+            : weightGrams.trim()
+              ? Number.parseInt(weightGrams, 10) || 0
+              : null,
           image,
           imageGradient,
           sizes,
@@ -253,11 +274,46 @@ export function AdminShopProductForm({ mode, initial }: AdminShopProductFormProp
               />
               <ToggleCard
                 label="Digital delivery"
-                description="Turn off for physical items that require UK shipping."
+                description="Turn off for physical items that can be collected or delivered."
                 checked={digitalDelivery}
-                onChange={setDigitalDelivery}
+                onChange={(checked) => {
+                  setDigitalDelivery(checked);
+                  if (checked) setWeightGrams("");
+                  else setCourseVoucherOnly(false);
+                }}
               />
             </div>
+
+            {digitalDelivery && (
+              <ToggleCard
+                label="4-week course voucher only"
+                description="Issued gift codes can only be redeemed when booking a 4-week course — not weekly drop-ins or class packs."
+                checked={courseVoucherOnly}
+                onChange={setCourseVoucherOnly}
+              />
+            )}
+
+            {!digitalDelivery && (
+              <label className="block max-w-xs">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+                  Packed weight (grams)
+                </span>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={weightGrams}
+                  onChange={(event) => setWeightGrams(event.target.value)}
+                  placeholder="e.g. 250"
+                  className="mt-1.5 w-full rounded-sm border border-plum/15 bg-white px-3 py-2.5 text-sm text-plum outline-none focus:border-pink focus:ring-2 focus:ring-pink/20"
+                />
+                <p className="mt-1 text-xs text-muted">
+                  Used for UK delivery: basket weights are added together, then one
+                  parcel fee is charged from your shipping bands. If blank, a 250g
+                  default is used.
+                </p>
+              </label>
+            )}
           </div>
         </section>
 

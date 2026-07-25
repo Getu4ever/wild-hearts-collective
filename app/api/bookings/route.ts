@@ -7,6 +7,8 @@ import {
 import {
   countHeldBookings,
   confirmBooking,
+  assertCanBookSession,
+  DuplicateSessionBookingError,
 } from "@/lib/booking-service";
 import { deductCreditForBooking, getUserCreditBalance } from "@/lib/credit-service";
 import { db } from "@/lib/db";
@@ -23,7 +25,8 @@ import {
 import { getMemberSession } from "@/lib/member-auth";
 import { assertParQCompleteForSession, ParQRequiredError } from "@/lib/parq-service";
 import { createBookingCheckoutSession } from "@/lib/stripe";
-import { resolveClassPaymentAmountPence } from "@/lib/studio-pricing-service";
+import { resolveBookingPaymentAmountPence } from "@/lib/studio-pricing-service";
+import { isCourseClassSlug } from "@/lib/gift-redeem-scope";
 import { redeemVoucherForBooking } from "@/lib/voucher-service";
 
 type BookingBody = {
@@ -35,6 +38,7 @@ type BookingBody = {
   joinWaitlist?: boolean;
   useCredit?: boolean;
   voucherCode?: string;
+  acceptedTerms?: boolean;
 };
 
 export async function POST(request: Request) {
@@ -46,11 +50,28 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const { sessionId, name, email, phone, notes, joinWaitlist, useCredit, voucherCode } = body;
+  const {
+    sessionId,
+    name,
+    email,
+    phone,
+    notes,
+    joinWaitlist,
+    useCredit,
+    voucherCode,
+    acceptedTerms,
+  } = body;
 
   if (!sessionId || !name?.trim() || !email?.trim()) {
     return NextResponse.json(
       { error: "Session, name, and email are required." },
+      { status: 400 },
+    );
+  }
+
+  if (acceptedTerms !== true) {
+    return NextResponse.json(
+      { error: "Please accept the Terms & Conditions to continue." },
       { status: 400 },
     );
   }
@@ -121,6 +142,19 @@ export async function POST(request: Request) {
     throw error;
   }
 
+  try {
+    await assertCanBookSession({
+      sessionId,
+      email: normalizedEmail,
+      userId,
+    });
+  } catch (error) {
+    if (error instanceof DuplicateSessionBookingError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
+    throw error;
+  }
+
   if (spotsLeft <= 0) {
     if (!joinWaitlist) {
       return NextResponse.json(
@@ -179,22 +213,50 @@ export async function POST(request: Request) {
     });
   }
 
-  const booking = await db.booking.create({
-    data: {
-      sessionId,
-      userId,
-      name: normalizedName,
-      email: normalizedEmail,
-      phone: normalizedPhone,
-      notes: notes?.trim() || null,
-      status: BOOKING_STATUS.pending,
-    },
-    include: {
-      session: { include: { class: true } },
-    },
-  });
+  let booking;
+  try {
+    booking = await db.booking.create({
+      data: {
+        sessionId,
+        userId,
+        name: normalizedName,
+        email: normalizedEmail,
+        phone: normalizedPhone,
+        notes: notes?.trim() || null,
+        status: BOOKING_STATUS.pending,
+      },
+      include: {
+        session: { include: { class: true } },
+      },
+    });
+  } catch (error) {
+    // Unique active-booking index (session + email) — race-safe duplicate guard.
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      (error as { code?: string }).code === "P2002"
+    ) {
+      return NextResponse.json(
+        { error: "You have already booked this session." },
+        { status: 409 },
+      );
+    }
+    throw error;
+  }
 
   if (useCredit) {
+    if (isCourseClassSlug(session.class.slug)) {
+      await db.booking.delete({ where: { id: booking.id } }).catch(() => null);
+      return NextResponse.json(
+        {
+          error:
+            "Class credits cannot be used for 4-week courses. Please pay the course fee or redeem a 4-week course voucher.",
+        },
+        { status: 400 },
+      );
+    }
+
     if (!userId) {
       return NextResponse.json(
         { error: "Please sign in to pay with class credits." },
@@ -226,7 +288,7 @@ export async function POST(request: Request) {
   }
 
   const trimmedCode = voucherCode?.trim();
-  const classPricePence = await resolveClassPaymentAmountPence();
+  const classPricePence = await resolveBookingPaymentAmountPence(session.class.slug);
   let amountDuePence = classPricePence;
   let giftApplied: {
     giftCardId: string;
@@ -247,6 +309,7 @@ export async function POST(request: Request) {
           reason: GIFT_REDEMPTION_REASON.booking,
           bookingId: booking.id,
           userId,
+          classSlug: session.class.slug,
         });
 
         giftApplied = {

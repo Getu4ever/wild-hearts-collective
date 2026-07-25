@@ -34,7 +34,7 @@ export default function CookiePolicyPage() {
           <p>
             This policy explains how Wild Hearts Collective (&ldquo;we&rdquo;,
             &ldquo;us&rdquo;, &ldquo;our&rdquo;) uses cookies on{" "}
-            <strong>wildheartscollective.co.uk</strong> and related pages.
+            <strong>wildheartscollective.org</strong> and related pages.
           </p>
         </ProseBlock>
       </ContentSection>

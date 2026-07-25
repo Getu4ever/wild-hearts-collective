@@ -118,6 +118,29 @@ body {
     hue-rotate(68deg) brightness(96%) contrast(86%);
 }
 
+@keyframes badge-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.badge-marquee {
+  animation: badge-marquee 40s linear infinite;
+}
+
+.badge-marquee:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badge-marquee {
+    animation: none;
+  }
+}
+
 .classes-dropdown-panel {
   position: relative;
   overflow: hidden;

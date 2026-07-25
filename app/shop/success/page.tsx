@@ -35,6 +35,7 @@ export default async function ShopSuccessPage({ searchParams }: SuccessPageProps
   let deliveryOk = false;
   let hasGiftVouchers = false;
   let hasPhysical = false;
+  let fulfillmentMethod: "collection" | "delivery" | null = null;
   let errorMessage = "";
 
   if (sessionId && isStripeConfigured()) {
@@ -47,6 +48,11 @@ export default async function ShopSuccessPage({ searchParams }: SuccessPageProps
         email = result.email;
         hasGiftVouchers = result.hasGiftVouchers;
         hasPhysical = result.hasPhysical;
+        fulfillmentMethod =
+          result.fulfillmentMethod === "delivery" ||
+          result.fulfillmentMethod === "collection"
+            ? result.fulfillmentMethod
+            : null;
         deliveryOk = true;
       } else {
         errorMessage =
@@ -61,6 +67,13 @@ export default async function ShopSuccessPage({ searchParams }: SuccessPageProps
   } else if (!sessionId) {
     errorMessage = "Missing checkout session. Please return to the shop.";
   }
+
+  const physicalStatusLabel =
+    fulfillmentMethod === "collection"
+      ? "Collect from studio"
+      : fulfillmentMethod === "delivery"
+        ? "UK delivery"
+        : "Physical order";
 
   const heroTitle = deliveryOk
     ? hasGiftVouchers && !hasPhysical
@@ -86,9 +99,9 @@ export default async function ShopSuccessPage({ searchParams }: SuccessPageProps
               <h2 className="font-display text-4xl text-plum">Thank you</h2>
               <p className="mt-4 text-sm font-semibold uppercase tracking-wider text-sage">
                 {hasGiftVouchers && hasPhysical
-                  ? "Digital delivery · UK shipping"
+                  ? `Digital delivery · ${physicalStatusLabel}`
                   : hasPhysical
-                    ? "UK shipping"
+                    ? physicalStatusLabel
                     : "No shipping · Email delivery"}
               </p>
               <p className="mt-4 text-muted">
@@ -155,7 +168,11 @@ export default async function ShopSuccessPage({ searchParams }: SuccessPageProps
                           <p className="font-medium text-plum">
                             {line.quantity}× {line.productName}
                           </p>
-                          <p className="mt-1 text-xs text-muted">Ready for UK dispatch</p>
+                          <p className="mt-1 text-xs text-muted">
+                            {fulfillmentMethod === "collection"
+                              ? "Ready for studio collection"
+                              : "Ready for UK dispatch"}
+                          </p>
                         </div>
                         <p className="shrink-0 text-sm font-semibold text-plum">
                           {line.priceLabel}
@@ -164,8 +181,9 @@ export default async function ShopSuccessPage({ searchParams }: SuccessPageProps
                     ))}
                   </ul>
                   <p className="mt-4 text-sm text-muted">
-                    We&apos;ll prepare these for shipping to the address you provided at
-                    checkout.
+                    {fulfillmentMethod === "collection"
+                      ? "We'll prepare these for collection from the studio and be in touch when they're ready."
+                      : "We'll prepare these for shipping to the address you provided at checkout."}
                   </p>
                 </div>
               )}

@@ -15,6 +15,8 @@ export const metadata: Metadata = {
     "Get in touch with Wild Hearts Collective about classes, parties, studio hire, and more.",
 };
 
+const phoneHref = `tel:${contact.phone.replace(/\s/g, "")}`;
+
 export default function ContactPage() {
   return (
     <>
@@ -37,7 +39,8 @@ export default function ContactPage() {
                 <strong>Email:</strong>{" "}
                 <a href={`mailto:${contact.email}`}>{contact.email}</a>
                 <br />
-                <strong>Phone:</strong> {contact.phone}
+                <strong>Phone:</strong>{" "}
+                <a href={phoneHref}>{contact.phone}</a>
               </p>
               <p>
                 <strong>Address:</strong>
@@ -48,14 +51,24 @@ export default function ContactPage() {
                     <br />
                   </span>
                 ))}
-                <Link
-                  href={contact.mapsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 inline-block font-semibold text-brand hover:underline"
-                >
-                  Open in Google Maps
-                </Link>
+                <span className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                  <Link
+                    href={contact.mapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-brand hover:underline"
+                  >
+                    Open in Google Maps
+                  </Link>
+                  <Link
+                    href={contact.openStreetMapUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-brand hover:underline"
+                  >
+                    Open in OpenStreetMap
+                  </Link>
+                </span>
               </p>
             </ProseBlock>
           </div>
@@ -67,11 +80,11 @@ export default function ContactPage() {
       <ContentSection className="bg-white">
         <SectionHeading
           title="Find us"
-          subtitle="Visit our studio at Old Mill Lane Industrial Estate, Mansfield."
+          subtitle="Visit our studio at Old Mill Lane Industrial Estate, Mansfield — pinned below."
         />
         <div className="mt-8 overflow-hidden rounded-2xl border border-plum/10 bg-surface shadow-sm">
           <iframe
-            title="Wild Hearts Collective on Google Maps"
+            title="Wild Hearts Collective studio location"
             src={contact.mapsEmbedUrl}
             className="aspect-[16/10] w-full border-0 sm:aspect-[21/9]"
             loading="lazy"
@@ -80,14 +93,24 @@ export default function ContactPage() {
           />
         </div>
         <p className="mt-4 text-center text-sm text-muted">
-          {contact.address} ·{" "}
+          {contact.address}
+        </p>
+        <p className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-center text-sm">
           <Link
             href={contact.mapsUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="font-semibold text-brand hover:underline"
           >
-            Get directions
+            Get directions (Google)
+          </Link>
+          <Link
+            href={contact.openStreetMapUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-brand hover:underline"
+          >
+            View pin (OpenStreetMap)
           </Link>
         </p>
       </ContentSection>

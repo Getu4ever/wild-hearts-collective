@@ -55,6 +55,9 @@ export function AdminPricingPanel({
   const [dropInPounds, setDropInPounds] = useState(
     (initialSettings.dropInPricePence / 100).toFixed(2),
   );
+  const [coursePounds, setCoursePounds] = useState(
+    (initialSettings.fourWeekCoursePricePence / 100).toFixed(2),
+  );
   const [membershipPounds, setMembershipPounds] = useState(
     (initialSettings.membershipPricePence / 100).toFixed(2),
   );
@@ -78,6 +81,12 @@ export function AdminPricingPanel({
     if (!Number.isFinite(parsed)) return "—";
     return formatMoneyFromPence(Math.round(parsed * 100));
   }, [dropInPounds]);
+
+  const coursePreview = useMemo(() => {
+    const parsed = Number.parseFloat(coursePounds);
+    if (!Number.isFinite(parsed)) return "—";
+    return formatMoneyFromPence(Math.round(parsed * 100));
+  }, [coursePounds]);
 
   const membershipPreview = useMemo(() => {
     const parsed = Number.parseFloat(membershipPounds);
@@ -104,6 +113,7 @@ export function AdminPricingPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           dropInPricePounds: Number.parseFloat(dropInPounds),
+          fourWeekCoursePricePounds: Number.parseFloat(coursePounds),
           membershipPricePounds: Number.parseFloat(membershipPounds),
           monthlyMembershipActive,
         }),
@@ -261,19 +271,21 @@ export function AdminPricingPanel({
           <div>
             <h2 className="font-display text-2xl text-plum">Studio pricing</h2>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-              Drop-in class fee and monthly membership price used at checkout and on the
-              membership page.
+              Drop-in class fee, 4-week course block fee, and monthly membership price
+              used at checkout and on the membership page.
             </p>
           </div>
           <p className="text-xs text-muted">
             Sources: drop-in {settings.dropInSource === "database" ? "admin" : "env"} ·
+            course{" "}
+            {settings.fourWeekCourseSource === "database" ? "admin" : "default"} ·
             membership {settings.membershipSource === "database" ? "admin" : "env"} ·
             monthly visibility{" "}
             {settings.monthlyMembershipActiveSource === "database" ? "admin" : "default"}
           </p>
         </div>
 
-        <form onSubmit={saveSettings} className="mt-6 grid gap-5 sm:grid-cols-2">
+        <form onSubmit={saveSettings} className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           <label className="block">
             <span className="text-xs font-semibold uppercase tracking-wider text-muted">
               Drop-in class price (£)
@@ -290,6 +302,22 @@ export function AdminPricingPanel({
 
           <label className="block">
             <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+              4-week course price (£)
+            </span>
+            <input
+              required
+              inputMode="decimal"
+              value={coursePounds}
+              onChange={(event) => setCoursePounds(event.target.value)}
+              className="mt-1.5 w-full rounded-sm border border-plum/15 bg-white px-3 py-2.5 text-sm text-plum outline-none focus:border-pink focus:ring-2 focus:ring-pink/20"
+            />
+            <p className="mt-1 text-xs text-muted">
+              Full block fee for beginner-courses. Preview: {coursePreview}
+            </p>
+          </label>
+
+          <label className="block">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted">
               Monthly membership (£)
             </span>
             <input
@@ -302,7 +330,7 @@ export function AdminPricingPanel({
             <p className="mt-1 text-xs text-muted">Preview: {membershipPreview} / month</p>
           </label>
 
-          <div className="sm:col-span-2 rounded-sm border border-plum/10 bg-cream/40 p-4">
+          <div className="sm:col-span-2 lg:col-span-3 rounded-sm border border-plum/10 bg-cream/40 p-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-semibold text-plum">Monthly membership visibility</p>
