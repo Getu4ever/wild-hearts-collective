@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentSection } from "@/app/components/content-section";
 import { PageHero } from "@/app/components/page-hero";
+import { ScrollToTopOnMount } from "@/app/components/scroll-to-top-on-mount";
 import { ShopClearBasketOnSuccess } from "@/app/components/shop-floating-basket";
 import { isStripeConfigured } from "@/lib/booking-config";
 import { fulfillShopVoucherBySessionId } from "@/lib/shop-checkout";
@@ -85,6 +86,7 @@ export default async function ShopSuccessPage({ searchParams }: SuccessPageProps
 
   return (
     <>
+      <ScrollToTopOnMount />
       {deliveryOk ? <ShopClearBasketOnSuccess /> : null}
       <PageHero
         title={heroTitle}

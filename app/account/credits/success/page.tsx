@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ScrollToTopOnMount } from "@/app/components/scroll-to-top-on-mount";
 import { formatMoneyFromPence } from "@/lib/booking-config";
 import { fulfillPendingClassPackPurchase } from "@/lib/credit-service";
 import { getMemberSession } from "@/lib/member-auth";
@@ -45,6 +46,7 @@ export default async function CreditsSuccessPage({ searchParams }: SuccessPagePr
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
+      <ScrollToTopOnMount />
       <div className="overflow-hidden rounded-2xl border border-plum/10 bg-surface shadow-sm">
         <div className="bg-gradient-to-r from-sage to-sage/80 px-8 py-6 text-white">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-pink-light">

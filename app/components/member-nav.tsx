@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { MemberLogoutButton } from "@/app/components/member-logout-button";
 import type { PublicMember } from "@/lib/member-auth";
 
 const links = [
@@ -25,27 +26,30 @@ export function MemberNav({ member }: { member: PublicMember }) {
           <h1 className="font-display text-3xl text-plum">Hi, {member.name.split(" ")[0]}</h1>
         </div>
 
-        <nav aria-label="Account navigation" className="flex flex-wrap gap-2">
-          {links.map((link) => {
-            const isActive = link.exact
-              ? pathname === link.href
-              : pathname.startsWith(link.href);
+        <div className="flex flex-col items-start gap-3 sm:items-end">
+          <nav aria-label="Account navigation" className="flex flex-wrap gap-2">
+            {links.map((link) => {
+              const isActive = link.exact
+                ? pathname === link.href
+                : pathname.startsWith(link.href);
 
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`rounded-sm px-4 py-2 text-sm font-semibold transition ${
-                  isActive
-                    ? "bg-sage text-white"
-                    : "border border-plum/15 bg-white text-plum hover:border-pink hover:text-brand"
-                }`}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
-        </nav>
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`rounded-sm px-4 py-2 text-sm font-semibold transition ${
+                    isActive
+                      ? "bg-sage text-white"
+                      : "border border-plum/15 bg-white text-plum hover:border-pink hover:text-brand"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
+          </nav>
+          <MemberLogoutButton />
+        </div>
       </div>
     </div>
   );

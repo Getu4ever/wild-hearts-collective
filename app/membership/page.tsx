@@ -11,6 +11,7 @@ import { MembershipSubscribeButton } from "@/app/components/membership-subscribe
 import { PageHero } from "@/app/components/page-hero";
 import { SectionHeading } from "@/app/components/section-heading";
 import { BOOKING_URL } from "@/lib/constants";
+import { getCurrentMember } from "@/lib/member-auth";
 import { buildMembershipPlans, MEMBERSHIP_PLAN } from "@/lib/membership-config";
 import {
   getStudioPricingSettings,
@@ -26,7 +27,7 @@ export const metadata: Metadata = {
     "Join Wild Hearts Collective — create your member account, book classes online, and manage your bookings in one place.",
 };
 
-const steps = [
+const guestSteps = [
   {
     title: "Create your account",
     description: "Sign up with your email to access your personal member dashboard.",
@@ -39,7 +40,22 @@ const steps = [
     title: "Track everything",
     description: "View upcoming bookings, waitlist entries, and update your profile anytime.",
   },
-];
+] as const;
+
+const memberSteps = [
+  {
+    title: "You\u2019re signed in",
+    description: "Your member dashboard is ready — bookings, credits, and profile in one place.",
+  },
+  {
+    title: "Book a class",
+    description: "Choose a session from our timetable and pay the full class fee securely online.",
+  },
+  {
+    title: "Track everything",
+    description: "View upcoming bookings, waitlist entries, and update your profile anytime.",
+  },
+] as const;
 
 function classPackSubtitle(packCount: number) {
   if (packCount === 0) return undefined;
@@ -52,9 +68,10 @@ function classPackSubtitle(packCount: number) {
 export default async function MembershipPage() {
   await connection();
 
-  const [classPacks, pricingSettings] = await Promise.all([
+  const [classPacks, pricingSettings, member] = await Promise.all([
     listActiveClassPacks(),
     getStudioPricingSettings(),
+    getCurrentMember(),
   ]);
 
   const packs = classPacks.map((pack) => ({
@@ -69,12 +86,18 @@ export default async function MembershipPage() {
 
   const monthlyMembershipActive = pricingSettings.monthlyMembershipActive;
   const membershipPlans = buildMembershipPlans(pricingSettings.membershipPriceLabel);
+  const isSignedIn = Boolean(member);
+  const steps = isSignedIn ? memberSteps : guestSteps;
 
   return (
     <>
       <PageHero
-        title="Become a member"
-        subtitle="Your Wild Hearts account — book classes, pay online, and manage your studio journey."
+        title={isSignedIn ? "Your membership" : "Become a member"}
+        subtitle={
+          isSignedIn
+            ? "Manage your account, book classes, and grow your studio journey."
+            : "Your Wild Hearts account — book classes, pay online, and manage your studio journey."
+        }
         image="community"
       />
 
@@ -138,6 +161,16 @@ export default async function MembershipPage() {
             } ${monthlyMembershipActive ? "" : "opacity-95"}`}
           >
             {membershipPlans.map((plan) => {
+              const isAccountPlan = plan.id === MEMBERSHIP_PLAN.account;
+              const planHref =
+                isAccountPlan && isSignedIn ? "/account" : plan.href;
+              const planCta =
+                isAccountPlan && isSignedIn ? "Go to my account" : plan.cta;
+              const planPriceNote =
+                isAccountPlan && isSignedIn
+                  ? "You\u2019re already a member"
+                  : plan.priceNote;
+
               const card = (
                 <>
                   {plan.highlighted && (
@@ -148,8 +181,8 @@ export default async function MembershipPage() {
                   <h3 className="font-display text-3xl text-plum">{plan.name}</h3>
                   <p className="mt-2">
                     <span className="font-display text-4xl text-brand">{plan.price}</span>
-                    {plan.priceNote && (
-                      <span className="ml-2 text-sm text-muted">{plan.priceNote}</span>
+                    {planPriceNote && (
+                      <span className="ml-2 text-sm text-muted">{planPriceNote}</span>
                     )}
                   </p>
                   <p className="mt-4 text-sm leading-relaxed text-muted">{plan.description}</p>
@@ -168,10 +201,10 @@ export default async function MembershipPage() {
                       <MembershipSubscribeButton />
                     ) : (
                       <Link
-                        href={plan.href}
+                        href={planHref}
                         className="block w-full rounded-sm bg-sage py-3 text-center text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-sage-hover"
                       >
-                        {plan.cta}
+                        {planCta}
                       </Link>
                     )}
                   </div>
@@ -208,23 +241,42 @@ export default async function MembershipPage() {
         <ProseBlock>
           <h2 className="font-display text-3xl text-plum">Ready to fly?</h2>
           <p>
-            All classes must be booked in advance. Once you&apos;re signed in, your bookings
-            are linked to your account automatically — even when you use our existing booking
-            page.
+            {isSignedIn
+              ? "All classes must be booked in advance. Your bookings are linked to your account automatically."
+              : "All classes must be booked in advance. Once you\u2019re signed in, your bookings are linked to your account automatically — even when you use our existing booking page."}
           </p>
           <div className="mt-6 flex flex-wrap gap-4">
-            <Link
-              href="/register"
-              className="rounded-sm bg-sage px-6 py-3 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-sage-hover"
-            >
-              Create free account
-            </Link>
-            <Link
-              href={BOOKING_URL}
-              className="rounded-sm border border-plum/20 px-6 py-3 text-sm font-semibold uppercase tracking-wider text-plum transition hover:border-brand hover:text-brand"
-            >
-              Book a class
-            </Link>
+            {isSignedIn ? (
+              <>
+                <Link
+                  href={BOOKING_URL}
+                  className="rounded-sm bg-sage px-6 py-3 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-sage-hover"
+                >
+                  Book a class
+                </Link>
+                <Link
+                  href="/account"
+                  className="rounded-sm border border-plum/20 px-6 py-3 text-sm font-semibold uppercase tracking-wider text-plum transition hover:border-brand hover:text-brand"
+                >
+                  Go to my account
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/register"
+                  className="rounded-sm bg-sage px-6 py-3 text-sm font-semibold uppercase tracking-wider text-white transition hover:bg-sage-hover"
+                >
+                  Create free account
+                </Link>
+                <Link
+                  href={BOOKING_URL}
+                  className="rounded-sm border border-plum/20 px-6 py-3 text-sm font-semibold uppercase tracking-wider text-plum transition hover:border-brand hover:text-brand"
+                >
+                  Book a class
+                </Link>
+              </>
+            )}
           </div>
         </ProseBlock>
       </ContentSection>

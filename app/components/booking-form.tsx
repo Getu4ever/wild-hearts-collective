@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { BookingEmbeddedCheckout } from "@/app/components/booking-embedded-checkout";
 import { CLASS_TYPE_OPTIONS } from "@/lib/admin-studio-config";
 import { formatSessionDateParts } from "@/lib/booking-config";
@@ -113,11 +113,14 @@ function fieldClassName() {
 }
 
 export function BookingForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
+  const confirmationRef = useRef<HTMLDivElement>(null);
   const [sessions, setSessions] = useState<SessionOption[]>([]);
   const [config, setConfig] = useState<BookingConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<BookingResult | null>(null);
   const [pendingPayment, setPendingPayment] = useState<PendingPayment | null>(null);
@@ -154,13 +157,24 @@ export function BookingForm() {
   );
 
   useEffect(() => {
+    let cancelled = false;
+
     async function loadMember() {
       try {
         const response = await fetch("/api/members/me");
-        if (!response.ok) return;
+        if (!response.ok) {
+          if (!cancelled) setMemberLoaded(true);
+          return;
+        }
 
         const data = (await response.json()) as { user: MemberProfile | null };
-        if (!data.user) return;
+        if (cancelled) return;
+
+        if (!data.user) {
+          setMember(null);
+          setMemberLoaded(true);
+          return;
+        }
 
         setMember(data.user);
         setContact({
@@ -168,14 +182,28 @@ export function BookingForm() {
           email: data.user.email,
           phone: data.user.phone ?? "",
         });
-      } catch {
-        // Guest booking remains available if the session check fails.
-      } finally {
         setMemberLoaded(true);
+      } catch {
+        // Keep any existing signed-in state if a refresh fails.
+        if (!cancelled) setMemberLoaded(true);
       }
     }
 
     loadMember();
+
+    function refreshOnFocus() {
+      if (document.visibilityState === "hidden") return;
+      loadMember();
+    }
+
+    window.addEventListener("focus", refreshOnFocus);
+    document.addEventListener("visibilitychange", refreshOnFocus);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", refreshOnFocus);
+      document.removeEventListener("visibilitychange", refreshOnFocus);
+    };
   }, []);
 
   useEffect(() => {
@@ -234,6 +262,28 @@ export function BookingForm() {
       setUseCredit(false);
     }
   }, [isCourseBooking, useCredit]);
+
+  // After booking success (or payment step), confirmation sits at the top but
+  // mobile browsers often keep the previous scroll position near the submit button.
+  useEffect(() => {
+    if (!result && !pendingPayment) return;
+
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    confirmationRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
+  }, [result, pendingPayment]);
+
+  async function handleLogout() {
+    setLoggingOut(true);
+    try {
+      await fetch("/api/members/logout", { method: "POST" });
+      setMember(null);
+      setContact({ name: "", email: "", phone: "" });
+      setUseCredit(false);
+      router.refresh();
+    } finally {
+      setLoggingOut(false);
+    }
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -339,7 +389,10 @@ export function BookingForm() {
     const date = formatSessionDate(pendingPayment.booking.startsAt);
 
     return (
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
+      <div
+        ref={confirmationRef}
+        className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start"
+      >
         <div className="overflow-hidden rounded-2xl border border-plum/10 bg-surface shadow-lg ring-1 ring-plum/5">
           <div className="border-b border-plum/8 bg-gradient-to-r from-pink-soft/50 to-surface px-6 py-6 sm:px-8">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand">
@@ -454,7 +507,10 @@ export function BookingForm() {
     }
 
     return (
-      <div className="overflow-hidden rounded-2xl border border-plum/10 bg-surface shadow-lg ring-1 ring-plum/5">
+      <div
+        ref={confirmationRef}
+        className="overflow-hidden rounded-2xl border border-plum/10 bg-surface shadow-lg ring-1 ring-plum/5"
+      >
         <div className="bg-gradient-to-r from-sage to-sage/80 px-8 py-6 text-white">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-pink-light">
             {isWaitlist ? "Waitlist" : "Success"}
@@ -680,7 +736,7 @@ export function BookingForm() {
               </div>
             </div>
 
-            {isSignedIn && member ? (
+            {member ? (
               <div className="mt-4 space-y-5">
                 <div className="rounded-xl border border-plum/10 bg-gradient-to-br from-pink-soft/50 to-white px-5 py-5">
                   <div className="flex flex-wrap items-start justify-between gap-4">
@@ -694,12 +750,22 @@ export function BookingForm() {
                         <p className="mt-1 text-sm text-muted">{member.phone}</p>
                       )}
                     </div>
-                    <Link
-                      href="/account/profile"
-                      className="text-sm font-semibold text-brand hover:underline"
-                    >
-                      Edit profile
-                    </Link>
+                    <div className="flex flex-col items-start gap-2 sm:items-end">
+                      <Link
+                        href="/account/profile"
+                        className="text-sm font-semibold text-brand hover:underline"
+                      >
+                        Edit profile
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={handleLogout}
+                        disabled={loggingOut}
+                        className="text-sm font-semibold text-brand hover:underline disabled:opacity-60"
+                      >
+                        {loggingOut ? "Signing out…" : "Logout"}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -854,7 +920,7 @@ export function BookingForm() {
                   />
                 </div>
               </div>
-            ) : memberLoaded ? (
+            ) : memberLoaded && !member ? (
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <div className="sm:col-span-2 rounded-xl border border-plum/10 bg-pink-soft/30 px-4 py-4 text-sm text-muted">
                   <Link href="/login?next=/book" className="font-semibold text-brand hover:underline">

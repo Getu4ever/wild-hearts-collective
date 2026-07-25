@@ -26,7 +26,7 @@ export function MemberLogoutButton() {
       disabled={loading}
       className="text-sm font-semibold text-brand underline-offset-4 hover:underline disabled:opacity-60"
     >
-      {loading ? "Signing out…" : "Sign out"}
+      {loading ? "Signing out…" : "Logout"}
     </button>
   );
 }

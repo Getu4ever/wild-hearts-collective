@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentSection } from "@/app/components/content-section";
 import { PageHero } from "@/app/components/page-hero";
+import { ScrollToTopOnMount } from "@/app/components/scroll-to-top-on-mount";
 import {
   BOOKING_STATUS,
   formatMoneyFromPence,
@@ -71,6 +72,7 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
 
   return (
     <>
+      <ScrollToTopOnMount />
       <PageHero
         title={isConfirmed ? "Booking confirmed" : "Payment received"}
         subtitle="Thank you for booking with Wild Hearts Collective."
