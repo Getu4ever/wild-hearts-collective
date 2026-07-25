@@ -51,4 +51,5 @@ export const classSlugToHero: Record<string, HeroImageKey> = {
   children: "children",
   "aerial-workshops": "aerial-workshops",
   "pole-workshops": "pole-workshops",
+  "beginner-courses": "classes",
 };

@@ -27,6 +27,7 @@ const classMenuSections = [
   "Studio classes",
   "Wild Hearts Juniors",
   "Workshops",
+  "Courses",
   "Browse",
 ] as const;
 
@@ -100,6 +101,14 @@ function ClassMenuIcon({ icon }: { icon: ClassMenuIcon }) {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className={className} aria-hidden="true">
           <path strokeLinecap="round" d="M4 19h16M7 19V9l5-4 5 4v10" />
           <path strokeLinecap="round" d="M10 19v-5h4v5" />
+        </svg>
+      );
+    case "course":
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" className={className} aria-hidden="true">
+          <rect x="4" y="5" width="16" height="15" rx="1.5" />
+          <path strokeLinecap="round" d="M8 3v4M16 3v4M4 10h16" />
+          <path strokeLinecap="round" d="M8 14h3M8 17h5" />
         </svg>
       );
   }

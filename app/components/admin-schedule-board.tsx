@@ -6,6 +6,7 @@ import { useState } from "react";
 import { AdminCapacityBadge, occupancyBarClass } from "@/app/components/admin-capacity-badge";
 import { AdminQuickCapacityEdit } from "@/app/components/admin-quick-capacity-edit";
 import {
+  CLASS_TYPE_OPTIONS,
   formatSessionTimeRange,
   getOccupancyLevel,
   SESSION_STATUS,
@@ -35,9 +36,11 @@ export function AdminScheduleBoard({
   const router = useRouter();
   const [filter, setFilter] = useState<string>("all");
 
-  const classTypes = Array.from(
-    new Map(sessions.map((s) => [s.classSlug, s.classTitle])).entries(),
-  );
+  // Always show every studio service, even when none are scheduled yet.
+  const classTypes = CLASS_TYPE_OPTIONS.map((option) => [
+    option.slug,
+    option.title,
+  ] as const);
 
   const filtered =
     filter === "all"

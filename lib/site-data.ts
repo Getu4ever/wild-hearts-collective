@@ -80,13 +80,19 @@ export type ClassMenuIcon =
   | "family"
   | "teens"
   | "children"
-  | "workshop";
+  | "workshop"
+  | "course";
 
 export const classMenuLinks: {
   href: string;
   label: string;
   icon: ClassMenuIcon;
-  section: "Studio classes" | "Wild Hearts Juniors" | "Workshops" | "Browse";
+  section:
+    | "Studio classes"
+    | "Wild Hearts Juniors"
+    | "Workshops"
+    | "Courses"
+    | "Browse";
 }[] = [
   { href: "/classes/pole", label: "Pole Dancing", icon: "pole", section: "Studio classes" },
   { href: "/classes/aerial-hoop", label: "Aerial Hoop", icon: "hoop", section: "Studio classes" },
@@ -101,6 +107,12 @@ export const classMenuLinks: {
     label: "Creative Arts Workshops",
     icon: "arts",
     section: "Workshops",
+  },
+  {
+    href: "/classes/beginner-courses",
+    label: "4-Week Beginner Courses",
+    icon: "course",
+    section: "Courses",
   },
   { href: "/classes", label: "All Classes", icon: "grid", section: "Browse" },
 ];
@@ -124,6 +136,7 @@ export const footerServiceLinks = [
   { href: "/classes/aerial-workshops", label: "Aerial Workshops" },
   { href: "/classes/pole-workshops", label: "Pole Workshops" },
   { href: "/classes/creative-arts-workshops", label: "Creative Arts Workshops" },
+  { href: "/classes/beginner-courses", label: "4-Week Beginner Courses" },
   { href: "/parties", label: "Parties & Events" },
   { href: "/hire", label: "Studio Hire" },
 ];
@@ -698,6 +711,53 @@ export const classes = [
       "Comfortable clothes you do not mind getting a little paint, glue or glitter on. Aprons are not provided, feel free to bring your own along with a willingness to try something new. Our branded aprons are available to purchase on our website.",
     whoFor:
       "Open to all ages and abilities — perfect for families, friends, or anyone looking for a creative outlet. No movement or fitness background required. Contact us for age guidance on specific sessions.",
+  },
+  {
+    slug: "beginner-courses",
+    title: "4-Week Beginner Courses",
+    shortDescription:
+      "Fixed-term beginner courses booked and paid in full for the complete four-week block.",
+    intro:
+      "Our beginner courses give you a clear starting point — a structured four-week block so you can learn the foundations with the same group and build confidence week by week.",
+    description:
+      "4-week beginner courses are booked and paid for as a full block rather than single drop-in classes. They are designed for newcomers who want a supportive introduction to pole or aerial, with progressive teaching across the course. Spaces are limited, so book early — and look out for course-only gift vouchers in the shop if you are treating someone special.",
+    levels: "Beginner courses",
+    href: "/classes/beginner-courses",
+    gradient: "from-pink-soft via-pink-light to-background",
+    imageKey: "classes" as const,
+    photoOverlay: "with our fully qualified and experienced instructors",
+    whatToExpect: [
+      "A complete four-week block booked and paid in full",
+      "Progressive beginner teaching from week one to week four",
+      "A consistent group so you can settle in and make friends",
+      "Clear course dates listed on each booking",
+    ],
+    highlights: [
+      {
+        title: "A proper start",
+        description:
+          "Learn foundations in a structured sequence instead of piecing things together across random drop-ins.",
+      },
+      {
+        title: "Book the full block",
+        description:
+          "Course places are reserved for the whole four weeks, so you can commit to your progress with confidence.",
+      },
+      {
+        title: "Beginner-focused coaching",
+        description:
+          "Sessions are paced for newcomers, with safety, technique, and encouragement at the heart of every class.",
+      },
+      {
+        title: "Gift-friendly",
+        description:
+          "Course-only gift vouchers are available in the shop — ideal for birthdays and first-class treats.",
+      },
+    ],
+    whatToWear:
+      "Fitted clothing suitable for movement — shorts or leggings and a sports top. Remove jewellery, avoid lotion on class days, and bring water plus a warm layer.",
+    whoFor:
+      "Complete beginners (and returning beginners) who want a structured four-week introduction. Check each course listing for apparatus and dates, or contact us if you need help choosing.",
   },
 ];
 

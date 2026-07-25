@@ -1,80 +1,60 @@
 import type { PrismaClient } from "@prisma/client";
+import { CLASS_TYPE_OPTIONS } from "@/lib/admin-studio-config";
 import { UK_TIMEZONE, ukLocalToUtc } from "@/lib/booking-config";
 import { db } from "@/lib/db";
 import { seedShopProductsIfEmpty } from "@/lib/shop-catalog-service";
 
-const classSeed = [
-  {
-    slug: "pole",
-    title: "Pole Dancing",
-    description:
-      "Build strength, flow, and confidence in a supportive studio environment for all levels.",
-    maxCapacity: 12,
-  },
-  {
-    slug: "aerial-hoop",
-    title: "Aerial Hoop",
-    description:
-      "Learn beautiful poses, spins, and transitions on the hoop with our fully qualified and experienced instructors.",
-    maxCapacity: 10,
-  },
-  {
-    slug: "aerial-silks",
-    title: "Aerial Silks",
-    description:
-      "Climb, wrap, and create stunning lines with step-by-step instruction from certified teachers.",
-    maxCapacity: 10,
-  },
-  {
-    slug: "family",
-    title: "Family Classes",
-    description:
-      "Fun, inclusive sessions for families to move, play, and connect together with our DBS-checked team.",
-    maxCapacity: 12,
-  },
-  {
-    slug: "teens",
-    title: "Teen Classes",
-    description:
-      "Supportive teen classes building strength, self-belief, and creativity with friends.",
-    maxCapacity: 12,
-  },
-  {
-    slug: "children",
-    title: "Children's Classes",
-    description:
-      "Age-appropriate movement and creative play with our qualified, experienced, and DBS-checked instructors.",
-    maxCapacity: 12,
-  },
-  {
-    slug: "aerial-workshops",
-    title: "Aerial Workshops",
-    description:
-      "In-house and guest aerial workshops carefully selected to complement our timetable.",
-    maxCapacity: 12,
-  },
-  {
-    slug: "pole-workshops",
-    title: "Pole Workshops",
-    description:
-      "In-house and guest pole workshops carefully selected to complement our timetable.",
-    maxCapacity: 12,
-  },
-  {
-    slug: "creative-arts-workshops",
-    title: "Creative Arts Workshops",
-    description:
-      "Expressive workshops blending movement, creativity, and community in a welcoming studio space.",
-    maxCapacity: 15,
-  },
-  {
-    slug: "beginner-courses",
-    title: "4-Week Beginner Courses",
-    description:
-      "Fixed-term beginner courses booked and paid in full for the full four-week block.",
-    maxCapacity: 12,
-  },
-];
+/** Marketing/copy descriptions keyed by class slug (capacity/duration come from CLASS_TYPE_OPTIONS). */
+const classDescriptions: Record<string, string> = {
+  pole: "Build strength, flow, and confidence in a supportive studio environment for all levels.",
+  "aerial-hoop":
+    "Learn beautiful poses, spins, and transitions on the hoop with our fully qualified and experienced instructors.",
+  "aerial-silks":
+    "Climb, wrap, and create stunning lines with step-by-step instruction from certified teachers.",
+  family:
+    "Fun, inclusive sessions for families to move, play, and connect together with our DBS-checked team.",
+  teens:
+    "Supportive teen classes building strength, self-belief, and creativity with friends.",
+  children:
+    "Age-appropriate movement and creative play with our qualified, experienced, and DBS-checked instructors.",
+  "aerial-workshops":
+    "In-house and guest aerial workshops carefully selected to complement our timetable.",
+  "pole-workshops":
+    "In-house and guest pole workshops carefully selected to complement our timetable.",
+  "creative-arts-workshops":
+    "Expressive workshops blending movement, creativity, and community in a welcoming studio space.",
+  "beginner-courses":
+    "Fixed-term beginner courses booked and paid in full for the full four-week block.",
+};
+
+/**
+ * Upsert every studio class type from CLASS_TYPE_OPTIONS so admin scheduling
+ * and booking always have the full service list (including newer offerings).
+ */
+export async function ensureStudioClassTypes(client: PrismaClient = db) {
+  for (const option of CLASS_TYPE_OPTIONS) {
+    const description =
+      classDescriptions[option.slug] ??
+      `${option.title} at Wild Hearts Collective.`;
+
+    await client.class.upsert({
+      where: { slug: option.slug },
+      update: {
+        title: option.title,
+        description,
+        maxCapacity: option.maxCapacity,
+        duration: option.defaultDuration,
+      },
+      create: {
+        slug: option.slug,
+        title: option.title,
+        description,
+        maxCapacity: option.maxCapacity,
+        duration: option.defaultDuration,
+      },
+    });
+  }
+}
 
 const sessionTemplates = [
   { day: 2, hour: 18, minute: 0, classSlug: "pole" },
@@ -145,17 +125,7 @@ function nextDateForWeekday(day: number, hour: number, minute: number, weeksAhea
 }
 
 export async function seedDatabaseIfEmpty(client: PrismaClient) {
-  for (const item of classSeed) {
-    await client.class.upsert({
-      where: { slug: item.slug },
-      update: {
-        title: item.title,
-        description: item.description,
-        maxCapacity: item.maxCapacity,
-      },
-      create: item,
-    });
-  }
+  await ensureStudioClassTypes(client);
 
   const futureSessionCount = await client.session.count({
     where: { startsAt: { gte: new Date() } },

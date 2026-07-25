@@ -12,6 +12,12 @@ export const DISCIPLINE_INTERESTS = [
   { id: "silks", label: "Silks" },
   { id: "flexibility", label: "Flexibility" },
   { id: "creative-workshops", label: "Creative Workshops" },
+  { id: "family", label: "Family Classes" },
+  { id: "teens", label: "Teen Classes" },
+  { id: "children", label: "Children's Classes" },
+  { id: "aerial-workshops", label: "Aerial Workshops" },
+  { id: "pole-workshops", label: "Pole Workshops" },
+  { id: "beginner-courses", label: "4-Week Beginner Courses" },
 ] as const;
 
 export type DisciplineInterestId = (typeof DISCIPLINE_INTERESTS)[number]["id"];

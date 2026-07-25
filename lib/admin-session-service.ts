@@ -1,13 +1,14 @@
 import {
   clampCapacity,
   computeEndsAt,
+  getClassTypeOption,
   getOccupancyLevel,
   occupancyLabel,
   SESSION_STATUS,
 } from "@/lib/admin-studio-config";
 import { logAdminAction } from "@/lib/admin-audit";
 import { BOOKING_STATUS, ukLocalToUtc, UK_TIMEZONE } from "@/lib/booking-config";
-import { CANCELLATION_TYPE } from "@/lib/booking-advanced-config";
+import { CANCELLATION_TYPE, requiresParQ } from "@/lib/booking-advanced-config";
 import {
   expireStalePendingBookings,
   paymentHoldCutoff,
@@ -15,6 +16,7 @@ import {
 import { refundCreditForCancellation } from "@/lib/credit-service";
 import { db } from "@/lib/db";
 import { sendSessionCancelledEmail } from "@/lib/email";
+import { ensureStudioClassTypes } from "@/lib/seed-database";
 
 function heldBookingsWhere() {
   return {
@@ -83,6 +85,7 @@ export async function listAdminSessions(options?: {
   from?: Date;
   to?: Date;
 }) {
+  await ensureStudioClassTypes();
   await expireStalePendingBookings();
 
   const now = new Date();
@@ -183,9 +186,7 @@ export async function getAdminSessionRoster(sessionId: string) {
             phone: booking.user.phone,
             creditsRemaining: booking.user.creditsRemaining,
             parQCompleted: Boolean(booking.user.parQCompletedAt),
-            parQRequired: ["pole", "aerial-hoop", "aerial-silks"].includes(
-              session.class.slug,
-            ),
+            parQRequired: requiresParQ(session.class.slug),
             safetyNotes: [
               booking.user.medicalNotes,
               booking.user.injuriesLimitations,
@@ -217,6 +218,12 @@ type CreateSessionInput = {
 };
 
 export async function createAdminSession(input: CreateSessionInput) {
+  await ensureStudioClassTypes();
+
+  if (!getClassTypeOption(input.classSlug)) {
+    throw new Error("Unknown class type.");
+  }
+
   const classRecord = await db.class.findUnique({
     where: { slug: input.classSlug },
   });
@@ -455,6 +462,7 @@ export async function listAdminTutors() {
 }
 
 export async function listAdminClasses() {
+  await ensureStudioClassTypes();
   return db.class.findMany({
     orderBy: { title: "asc" },
     select: {

@@ -103,11 +103,19 @@ export function AdminSessionForm({ mode, sessionId, initial }: AdminSessionFormP
             onChange={(event) => setClassSlug(event.target.value)}
             className="w-full rounded-sm border border-plum/15 px-3 py-2 text-sm"
           >
-            {CLASS_TYPE_OPTIONS.map((option) => (
-              <option key={option.slug} value={option.slug}>
-                {option.label}
-              </option>
-            ))}
+            {(["Studio", "Juniors", "Workshops", "Courses"] as const).map(
+              (group) => (
+                <optgroup key={group} label={group}>
+                  {CLASS_TYPE_OPTIONS.filter(
+                    (option) => option.filterGroup === group,
+                  ).map((option) => (
+                    <option key={option.slug} value={option.slug}>
+                      {option.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ),
+            )}
           </select>
         </Field>
 
