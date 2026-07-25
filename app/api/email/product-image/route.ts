@@ -5,7 +5,7 @@ export const runtime = "nodejs";
 
 /**
  * Legacy query-string form kept for older emails already in inboxes.
- * Prefer /api/email/product-image/shop/….svg (path form) for new mail.
+ * Prefer /api/email/product-image/shop/….png (path form) for new mail.
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

@@ -6,8 +6,9 @@ import { getAppBaseUrl } from "@/lib/booking-config";
  * fail on remote SVG `<img src>` and show a broken icon, while Gmail may still
  * display them. SVG paths are routed through a PNG conversion endpoint.
  *
- * Uses a path-based URL (not `?src=`) because Zoho Mail’s image proxy often
- * strips query strings, which broke the previous PNG endpoint for admin mail.
+ * Uses a path-based URL ending in `.png` (not `.svg` or `?src=`):
+ * - Zoho Mail’s image proxy often strips query strings
+ * - Zoho also drops `src` entirely when the URL path looks like SVG (`.svg`)
  */
 export function resolveEmailProductImageUrl(
   image: string | null | undefined,
@@ -20,8 +21,9 @@ export function resolveEmailProductImageUrl(
     : `/${image.trim()}`;
 
   if (/\.svg$/i.test(normalized)) {
-    // /shop/foo.svg → /api/email/product-image/shop/foo.svg (serves PNG)
-    return `${baseUrl}/api/email/product-image${normalized}`;
+    // /shop/foo.svg → /api/email/product-image/shop/foo.png (serves PNG)
+    const pngPath = normalized.replace(/\.svg$/i, ".png");
+    return `${baseUrl}/api/email/product-image${pngPath}`;
   }
 
   return `${baseUrl}${normalized}`;
@@ -49,4 +51,23 @@ export function resolveSafeEmailPublicAssetPath(src: string) {
   }
 
   return normalized;
+}
+
+/**
+ * Map an email product-image path back to candidate public asset paths.
+ * New emails use `.png` in the URL while the catalog file may still be `.svg`.
+ * Old emails may still request the `.svg` path directly.
+ */
+export function emailProductImageAssetCandidates(src: string): string[] {
+  const safeSrc = resolveSafeEmailPublicAssetPath(src);
+  if (!safeSrc) return [];
+
+  const candidates = [safeSrc];
+  if (/\.png$/i.test(safeSrc)) {
+    const svgSrc = safeSrc.replace(/\.png$/i, ".svg");
+    if (resolveSafeEmailPublicAssetPath(svgSrc)) {
+      candidates.push(svgSrc);
+    }
+  }
+  return candidates;
 }

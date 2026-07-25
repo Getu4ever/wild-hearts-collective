@@ -5,8 +5,10 @@ export const runtime = "nodejs";
 
 /**
  * Email-safe raster thumbnail for catalog images (especially SVG → PNG).
- * Path form: /api/email/product-image/shop/liquid-chalk.svg
+ * Path form: /api/email/product-image/shop/liquid-chalk.png
+ * (`.png` in the URL so Zoho does not strip `src`; on-disk asset may still be `.svg`.)
  * Prefer this over ?src= — Zoho Mail’s image proxy often strips query strings.
+ * Legacy `.svg` path URLs still resolve for older emails.
  */
 export async function GET(
   _request: Request,
