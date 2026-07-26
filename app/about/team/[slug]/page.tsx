@@ -8,7 +8,19 @@ import {
   ProseBlock,
 } from "@/app/components/content-section";
 import { PageHero } from "@/app/components/page-hero";
+import { TeamSocialLinks } from "@/app/components/team-social-links";
+import { socialLinks } from "@/lib/site-data";
 import { getTeamMember, teamMembers } from "@/lib/team-data";
+
+function resolveTeamSocial(memberUrl: string | undefined, label: string) {
+  const candidate =
+    memberUrl?.trim() ||
+    socialLinks.find((link) => link.label === label)?.href?.trim();
+
+  // Hide empty / unset links; keep `#` placeholders so UI matches footer until real URLs land
+  if (!candidate) return undefined;
+  return candidate;
+}
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -120,6 +132,12 @@ export default async function InstructorBioPage({ params }: PageProps) {
                 ))}
               </dl>
             </div>
+
+            <TeamSocialLinks
+              name={member.name}
+              instagram={resolveTeamSocial(member.instagram, "Instagram")}
+              facebook={resolveTeamSocial(member.facebook, "Facebook")}
+            />
           </div>
         </div>
       </ContentSection>

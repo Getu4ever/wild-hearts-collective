@@ -9,6 +9,10 @@ export type TeamMember = {
   keyFacts: { label: string; value: string }[];
   imageSrc: string;
   imagePosition?: string;
+  /** Optional personal Instagram — falls back to studio socialLinks when unset */
+  instagram?: string;
+  /** Optional personal Facebook — falls back to studio socialLinks when unset */
+  facebook?: string;
 };
 
 export const qualificationBadges = [
