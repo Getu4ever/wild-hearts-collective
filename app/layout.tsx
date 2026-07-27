@@ -18,11 +18,18 @@ const raleway = Raleway({
 
 export const metadata: Metadata = {
   title: {
-    default: "Wild Hearts Collective | Inclusive Aerial & Pole Studio",
+    default: "Wild Hearts Collective | Pole & Aerial Classes in Mansfield",
     template: "%s | Wild Hearts Collective",
   },
   description:
-    "A joyful, inclusive aerial and pole studio offering pole, hoop, silks, and creative arts for all ages, abilities, and backgrounds.",
+    "Inclusive aerial and pole studio in Mansfield offering pole, hoop, silks, and creative arts for all ages, abilities, and backgrounds.",
+  icons: {
+    icon: [
+      { url: "/favicon/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: [{ url: "/favicon/apple-touch-icon.png", sizes: "180x180" }],
+  },
 };
 
 export default function RootLayout({

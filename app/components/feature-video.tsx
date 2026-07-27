@@ -56,11 +56,10 @@ export function FeatureVideo({
         <>
           <Image
             src={poster}
-            alt=""
+            alt={title}
             fill
             sizes="(max-width: 1024px) 100vw, 960px"
             className="object-cover"
-            aria-hidden="true"
           />
           <div
             aria-hidden="true"

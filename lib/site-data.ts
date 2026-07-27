@@ -124,7 +124,7 @@ export const footerLinks = [
 ];
 
 export const footerDescription =
-  "Spin, climb, stretch, play, create and connect in a safe, inclusive studio for all bodies, ages and abilities.";
+  "Inclusive aerial and pole classes in Mansfield — community, confidence, and creativity for every body.";
 
 export const footerServiceLinks = [
   { href: "/classes/pole", label: "Pole Dancing" },

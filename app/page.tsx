@@ -23,7 +23,7 @@ export default function Home() {
     <>
       <VideoHero
         title="Wild Hearts Collective"
-        titleLine2="Pole & Aerial Classes in Nottingham"
+        titleLine2="Pole & Aerial Classes in Mansfield"
         subtitle="Spin, climb, stretch, play, create and connect in a safe, inclusive studio for all bodies, ages and abilities."
         videoSrc="/hero/hero-home.mp4"
         posterSrc="/hero/hero-home.jpg"
@@ -33,11 +33,10 @@ export default function Home() {
         <SectionHeading title="About us" />
         <ProseBlock>
           <p>
-            Wild Hearts Collective is an inclusive aerial and pole studio and
-            community hub, founded by qualified and experienced instructors
-            Rosie, Jacqui, and Sarah. We offer accessible pole, aerial hoop,
-            silks, and creative arts workshops in a welcoming, supportive
-            environment.
+            Wild Hearts Collective is an inclusive aerial and pole studio in
+            Mansfield, founded by qualified and experienced instructors Rosie,
+            Jacqui, and Sarah. We offer accessible pole, aerial hoop, silks, and
+            creative arts workshops in a welcoming, supportive environment.
           </p>
           <p>
             With a community-driven focus on accessibility and wellbeing, we
@@ -59,9 +58,6 @@ export default function Home() {
           title="Our Classes"
           subtitle={siteConfig.bookingNote}
         />
-        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted">
-          {siteConfig.levelNote}
-        </p>
         <ul className="mt-12 grid gap-8 sm:grid-cols-2">
           {classes.map((item) => (
             <li key={item.slug}>

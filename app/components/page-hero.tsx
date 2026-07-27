@@ -28,7 +28,7 @@ export function PageHero({
     >
       <Image
         src={src}
-        alt=""
+        alt={`${title} — Wild Hearts Collective`}
         fill
         priority={priority}
         sizes="100vw"
