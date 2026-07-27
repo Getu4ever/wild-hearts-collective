@@ -7,6 +7,7 @@ import { HeroEnter } from "./hero-enter";
 
 type VideoHeroProps = {
   title: string;
+  titleLine2?: string;
   subtitle?: string;
   videoSrc: string;
   posterSrc: string;
@@ -14,6 +15,7 @@ type VideoHeroProps = {
 
 export function VideoHero({
   title,
+  titleLine2,
   subtitle,
   videoSrc,
   posterSrc,
@@ -55,8 +57,15 @@ export function VideoHero({
 
       <div className="relative mx-auto mt-36 w-full max-w-6xl px-6 pb-10 sm:mt-40 lg:mt-44 lg:px-8 lg:pb-14">
         <HeroEnter className="max-w-3xl border-l-2 border-pink pl-6 sm:pl-8">
-          <h1 className="font-display text-5xl leading-[1.05] text-white sm:text-6xl lg:text-7xl">
-            {title}
+          <h1 className="text-white">
+            <span className="block font-display text-5xl leading-[1.05] sm:text-6xl lg:text-7xl">
+              {title}
+            </span>
+            {titleLine2 && (
+              <span className="mt-3 block text-lg font-medium leading-snug text-white/90 sm:text-xl lg:text-2xl">
+                {titleLine2}
+              </span>
+            )}
           </h1>
           {subtitle && (
             <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/90 sm:text-lg">

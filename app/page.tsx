@@ -22,7 +22,8 @@ export default function Home() {
   return (
     <>
       <VideoHero
-        title="Welcome to Wild Hearts Collective"
+        title="Wild Hearts Collective"
+        titleLine2="Pole & Aerial Classes in Nottingham"
         subtitle="Spin, climb, stretch, play, create and connect in a safe, inclusive studio for all bodies, ages and abilities."
         videoSrc="/hero/hero-home.mp4"
         posterSrc="/hero/hero-home.jpg"
