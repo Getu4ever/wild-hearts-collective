@@ -30,6 +30,9 @@ export default function Home() {
       />
 
       <ContentSection>
+        <p className="mb-3 font-display text-lg tracking-[0.08em] text-sage sm:mb-4 sm:text-xl">
+          Welcome to Wild Hearts Collective
+        </p>
         <SectionHeading title="About us" />
         <ProseBlock>
           <p>
