@@ -32,7 +32,8 @@ export default async function AdminTimetablePage() {
             Timetable
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
-            Edit the marketing weekly pattern shown on the homepage. This is
+            Edit the marketing weekly pattern shown on the homepage. Add promotions
+            beneath the seven-day pattern for dated courses or special events. This is
             separate from live bookable sessions — manage those under Schedule.
           </p>
           <AdminNav active="timetable" />

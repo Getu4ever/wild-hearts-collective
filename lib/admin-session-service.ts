@@ -229,6 +229,9 @@ export async function listAdminSessions(options?: {
   const sessions = await db.session.findMany({
     where: {
       startsAt: { gte: resolved.from, lt: resolved.to },
+      // Keep cancelled sessions for audit and notification history, but do not
+      // leave unavailable cards on the working admin schedule.
+      status: { not: SESSION_STATUS.cancelled },
     },
     include: sessionInclude(),
     orderBy: { startsAt: options?.range === "past" ? "desc" : "asc" },

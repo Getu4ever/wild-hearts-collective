@@ -145,6 +145,7 @@ export function Timetable({
   days?: TimetableDay[];
 }) {
   const overlayDays = days.slice(0, DAY_REGIONS.length);
+  const promotionalRows = days.slice(DAY_REGIONS.length);
 
   return (
     <div className="mx-auto w-full max-w-xl">
@@ -177,6 +178,31 @@ export function Timetable({
           />
         ))}
       </div>
+
+      {promotionalRows.length > 0 && (
+        <section className="mt-5 space-y-3" aria-label="Upcoming courses and special events">
+          {promotionalRows.map((row, index) => (
+            <div
+              key={`${row.day}-${index}`}
+              className="rounded-sm border border-plum/10 bg-white/70 px-5 py-4 text-left shadow-sm"
+            >
+              <p className="text-xs font-semibold uppercase tracking-wider text-brand">
+                {row.day}
+              </p>
+              <ul className="mt-2 space-y-1.5">
+                {row.classes.map((item, classIndex) => (
+                  <li key={`${item.title}-${classIndex}`} className="text-sm text-plum">
+                    <Link href={bookHref(item)} className="font-semibold hover:underline">
+                      {item.time ? `${item.time} · ` : ""}{item.title}
+                    </Link>
+                    {item.note ? <span className="text-muted"> — {item.note}</span> : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </section>
+      )}
 
       <div className="mt-6 flex flex-col items-center gap-3 text-center sm:flex-row sm:justify-between sm:text-left">
         <p className="max-w-md text-sm leading-relaxed text-muted">

@@ -11,6 +11,8 @@ const inputClass =
 const selectClass =
   "w-full rounded-sm border border-plum/15 bg-white px-3 py-2.5 text-sm text-plum outline-none focus:border-pink focus:ring-2 focus:ring-pink/20";
 
+const WEEKLY_DAY_COUNT = 7;
+
 type DayDraft = {
   key: string;
   day: string;
@@ -210,7 +212,7 @@ export function AdminTimetablePanel({
             onClick={addDay}
             className="rounded-sm border border-plum/15 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wider text-plum transition hover:border-pink hover:text-brand"
           >
-            Add day
+            Add promotion
           </button>
           <button
             type="submit"
@@ -223,7 +225,7 @@ export function AdminTimetablePanel({
       </div>
 
       <div className="space-y-6">
-        {days.map((day) => (
+        {days.map((day, dayIndex) => (
           <section
             key={day.key}
             className="rounded-lg border border-plum/10 bg-surface p-5 shadow-sm sm:p-6"
@@ -231,7 +233,7 @@ export function AdminTimetablePanel({
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <label className="block min-w-0 flex-1">
                 <span className="text-xs font-semibold uppercase tracking-wider text-muted">
-                  Day name
+                  {dayIndex < WEEKLY_DAY_COUNT ? "Day name" : "Date / promotion label"}
                 </span>
                 <input
                   required
@@ -369,6 +371,8 @@ export function AdminTimetablePanel({
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-plum/10 pt-6">
         <p className="max-w-xl text-sm text-muted">
+          The first seven rows are the weekly homepage timetable. Additional promotions
+          appear below it on the homepage — use a date or label such as “1 September”.{" "}
           Class rows with a book link open{" "}
           <code className="text-xs">/book?class=…</code>; blank uses{" "}
           <code className="text-xs">/book</code>.

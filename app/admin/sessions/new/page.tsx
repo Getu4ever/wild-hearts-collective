@@ -33,7 +33,15 @@ export default async function AdminNewSessionPage() {
           </p>
           <AdminNav active="schedule" />
         </div>
-        <AdminLogoutButton />
+        <div className="flex flex-wrap items-center gap-4">
+          <Link
+            href="/admin/schedule"
+            className="rounded-sm border border-plum/15 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wider text-plum transition hover:border-pink hover:text-brand"
+          >
+            ← Back to schedule
+          </Link>
+          <AdminLogoutButton />
+        </div>
       </div>
 
       <div className="mt-10">
