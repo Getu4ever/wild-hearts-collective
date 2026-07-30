@@ -34,6 +34,10 @@ type SessionOption = {
   creditCost?: number;
   creditCostLabel?: string;
   creditCostDisplay?: string;
+  courseSeriesId?: string | null;
+  courseWeek?: number | null;
+  courseDates?: string[];
+  isFourWeekCourse?: boolean;
 };
 
 function sessionDisplayTitle(session: Pick<SessionOption, "classTitle" | "tutor">) {
@@ -772,8 +776,20 @@ export function BookingForm() {
             {isCourseBooking && !selectedSession?.isFull && (
               <p className="mt-4 rounded-lg border border-sage/30 bg-sage/10 px-4 py-3 text-sm text-plum">
                 This is a fixed 4-week course. Payment covers the full block from the
-                start date; missed weeks cannot be transferred. Use a 4-week course
-                voucher here, or pay {priceNote} online.
+                start date; you are enrolled for all four weekly sessions. Missed weeks
+                cannot be transferred. Use a 4-week course voucher here, or pay{" "}
+                {priceNote} online.
+                {selectedSession.courseDates && selectedSession.courseDates.length > 1 ? (
+                  <>
+                    <br />
+                    <span className="mt-2 block text-muted">
+                      Dates:{" "}
+                      {selectedSession.courseDates
+                        .map((iso) => formatSessionDate(iso).shortDate)
+                        .join(" · ")}
+                    </span>
+                  </>
+                ) : null}
               </p>
             )}
           </section>

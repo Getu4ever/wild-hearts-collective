@@ -282,6 +282,14 @@ export function AdminSessionForm({ mode, sessionId, initial }: AdminSessionFormP
       {classes.length > 0 && mode === "create" && (
         <p className="text-xs text-muted">
           Equipment limit for this class type: {maxCapacity} students maximum.
+          {classSlug === "beginner-courses" ? (
+            <>
+              {" "}
+              Scheduling a <strong>4-week course</strong> creates four weekly sessions
+              automatically (same day/time for four weeks). Public booking closes once
+              week 1 starts; all four weeks stay on the admin schedule.
+            </>
+          ) : null}
         </p>
       )}
 

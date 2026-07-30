@@ -3,7 +3,9 @@ import { NextResponse } from "next/server";
 import { BOOKING_STATUS, formatMoneyFromPence } from "@/lib/booking-config";
 import { formatCredits, formatCreditLabel } from "@/lib/credit-units";
 import { expireStalePendingBookings, paymentHoldCutoff } from "@/lib/booking-service";
+import { courseSeriesHasStarted } from "@/lib/course-series";
 import { db } from "@/lib/db";
+import { isCourseClassSlug } from "@/lib/gift-redeem-scope";
 import { getMemberSession } from "@/lib/member-auth";
 import {
   resolveBookingPaymentAmountPence,
@@ -50,10 +52,11 @@ function formatDurationLabel(minutes: number) {
 async function loadSessions(classSlug: string | null) {
   const cutoff = paymentHoldCutoff();
   const memberSession = await getMemberSession();
+  const now = new Date();
 
   const sessions = await db.session.findMany({
     where: {
-      startsAt: { gte: new Date() },
+      startsAt: { gte: now },
       status: { not: "cancelled" },
       ...(classSlug ? { class: { slug: classSlug } } : {}),
     },
@@ -80,6 +83,55 @@ async function loadSessions(classSlug: string | null) {
     orderBy: { startsAt: "asc" },
   });
 
+  // Load all series anchors so we can hide courses that have already started
+  // and only list week 1 for bookable course blocks.
+  const seriesIds = [
+    ...new Set(
+      sessions
+        .map((session) => session.courseSeriesId)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+
+  const seriesSessions =
+    seriesIds.length > 0
+      ? await db.session.findMany({
+          where: {
+            courseSeriesId: { in: seriesIds },
+            status: { not: "cancelled" },
+          },
+          select: {
+            id: true,
+            courseSeriesId: true,
+            courseWeek: true,
+            startsAt: true,
+          },
+          orderBy: { startsAt: "asc" },
+        })
+      : [];
+
+  const seriesById = new Map<string, typeof seriesSessions>();
+  for (const row of seriesSessions) {
+    if (!row.courseSeriesId) continue;
+    const list = seriesById.get(row.courseSeriesId) ?? [];
+    list.push(row);
+    seriesById.set(row.courseSeriesId, list);
+  }
+
+  const publicSessions = sessions.filter((session) => {
+    if (!session.courseSeriesId || !isCourseClassSlug(session.class.slug)) {
+      return true;
+    }
+    const series = seriesById.get(session.courseSeriesId) ?? [];
+    if (courseSeriesHasStarted(series, now)) {
+      // Course already started — not publicly bookable (still on admin schedule).
+      return false;
+    }
+    // Only show week 1 as the bookable course entry.
+    const week = session.courseWeek ?? 1;
+    return week === 1;
+  });
+
   let memberEmail: string | null = null;
   if (memberSession?.userId) {
     const member = await db.user.findUnique({
@@ -90,7 +142,7 @@ async function loadSessions(classSlug: string | null) {
   }
 
   const priced = await Promise.all(
-    sessions.map(async (session) => {
+    publicSessions.map(async (session) => {
       const pricePence = await resolveBookingPaymentAmountPence({
         classSlug: session.class.slug,
         sessionPricePence: session.pricePence,
@@ -125,6 +177,11 @@ async function loadSessions(classSlug: string | null) {
       session.class.description?.trim() ||
       null;
 
+    const series = session.courseSeriesId
+      ? seriesById.get(session.courseSeriesId) ?? []
+      : [];
+    const courseDates = series.map((row) => row.startsAt.toISOString());
+
     return {
       id: session.id,
       classId: session.classId,
@@ -148,6 +205,10 @@ async function loadSessions(classSlug: string | null) {
       creditCost,
       creditCostLabel: formatCreditLabel(creditCost),
       creditCostDisplay: formatCredits(creditCost),
+      courseSeriesId: session.courseSeriesId,
+      courseWeek: session.courseWeek,
+      courseDates: courseDates.length > 1 ? courseDates : undefined,
+      isFourWeekCourse: isCourseClassSlug(session.class.slug),
     };
   });
 }

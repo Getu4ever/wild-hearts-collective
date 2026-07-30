@@ -30,6 +30,8 @@ export type AdminScheduleSession = {
   needsCheckIn?: boolean;
   hasStarted?: boolean;
   hasEnded?: boolean;
+  courseSeriesId?: string | null;
+  courseWeek?: number | null;
 };
 
 const rangeTabs: { value: AdminScheduleRange; label: string }[] = [
@@ -176,7 +178,12 @@ export function AdminScheduleBoard({
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
-                        <p className="font-display text-xl text-plum">{session.classTitle}</p>
+                        <p className="font-display text-xl text-plum">
+                          {session.classTitle}
+                          {session.courseWeek
+                            ? ` · Week ${session.courseWeek}`
+                            : ""}
+                        </p>
                         <p className="mt-1 text-sm text-muted">
                           {formatSessionTimeRange(
                             new Date(session.startsAt),

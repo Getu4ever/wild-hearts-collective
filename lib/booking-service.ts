@@ -311,6 +311,14 @@ export async function confirmBooking(
     paymentSummary,
   );
 
+  // 4-week courses: enrol the same person on remaining weekly sessions.
+  try {
+    const { enrolRemainingCourseWeeks } = await import("@/lib/course-series");
+    await enrolRemainingCourseWeeks(booking.id);
+  } catch (error) {
+    console.error("[booking] failed to enrol remaining course weeks:", booking.id, error);
+  }
+
   return booking;
 }
 

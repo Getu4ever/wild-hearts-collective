@@ -335,6 +335,11 @@ export function AdminForceBookForm({ sessionId }: { sessionId: string }) {
     >
       <h2 className="font-display text-2xl text-plum">Force book student</h2>
       <p className="mt-2 text-sm text-muted">
+        Override capacity and add a student even when the class is full. For 4-week
+        courses, this also enrols them on any remaining future weeks in the block.
+        Public booking closes once week 1 has started — use this to add late joiners.
+      </p>
+      <p className="mt-2 text-sm text-muted">
         Override capacity and credit checks to add a student manually.
       </p>
 

@@ -146,8 +146,12 @@ export async function forceBookAsAdmin(input: ForceBookInput) {
     throw new Error("Cannot book into a cancelled session.");
   }
 
+  // Allow force-booking future weeks of a started 4-week course.
+  // Block only when this specific session has already started.
   if (session.startsAt < new Date()) {
-    throw new Error("Cannot force-book into a past session.");
+    throw new Error(
+      "Cannot force-book into a past session. Choose a future week of the course (or a future class).",
+    );
   }
 
   let userId = input.userId ?? null;
@@ -208,6 +212,18 @@ export async function forceBookAsAdmin(input: ForceBookInput) {
     }
   }
 
+  // For 4-week courses, also enrol on remaining future weeks in the block.
+  let seriesBookingsCreated = 0;
+  if (session.courseSeriesId) {
+    try {
+      const { enrolRemainingCourseWeeks } = await import("@/lib/course-series");
+      const created = await enrolRemainingCourseWeeks(booking.id);
+      seriesBookingsCreated = created.length;
+    } catch (error) {
+      console.error("[admin] course series enrol failed:", booking.id, error);
+    }
+  }
+
   await sendBookingConfirmedEmails(
     { name: booking.name, email: booking.email },
     {
@@ -227,6 +243,8 @@ export async function forceBookAsAdmin(input: ForceBookInput) {
       sessionId: input.sessionId,
       deductCredit: Boolean(input.deductCredit),
       overrideCapacity: true,
+      seriesBookingsCreated,
+      courseSeriesId: session.courseSeriesId,
     },
   });
 
@@ -241,6 +259,7 @@ export async function forceBookAsAdmin(input: ForceBookInput) {
     },
     confirmedCount,
     capacity: session.capacity,
+    seriesBookingsCreated,
   };
 }
 

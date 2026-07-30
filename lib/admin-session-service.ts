@@ -19,6 +19,12 @@ import { db } from "@/lib/db";
 import { sendSessionCancelledEmail } from "@/lib/email";
 import { ensureStudioClassTypes } from "@/lib/seed-database";
 import { resolveSessionCreditCost } from "@/lib/studio-pricing-service";
+import {
+  addUkWeeks,
+  COURSE_SERIES_WEEKS,
+  newCourseSeriesId,
+} from "@/lib/course-series";
+import { isCourseClassSlug } from "@/lib/gift-redeem-scope";
 
 export type AdminScheduleRange = "schedule" | "today" | "past";
 
@@ -116,6 +122,8 @@ function mapSessionRecord(session: {
   publicDescription: string | null;
   pricePence: number | null;
   creditCost: number | null;
+  courseSeriesId?: string | null;
+  courseWeek?: number | null;
   class: {
     id: string;
     slug: string;
@@ -171,6 +179,8 @@ function mapSessionRecord(session: {
     pricePence: session.pricePence,
     creditCost: session.creditCost,
     resolvedCreditCost: creditCost,
+    courseSeriesId: session.courseSeriesId ?? null,
+    courseWeek: session.courseWeek ?? null,
     unmarkedAttendanceCount: unmarkedCount,
     needsCheckIn: hasStarted && unmarkedCount > 0,
     hasStarted,
@@ -368,15 +378,16 @@ export async function createAdminSession(input: CreateSessionInput) {
   const [startHour, startMinute] = input.startTime.split(":").map(Number);
   const startsAt = ukLocalToUtc(year, month, day, startHour, startMinute);
 
-  let endsAt: Date;
+  let durationMs: number;
   if (input.endTime) {
     const [endHour, endMinute] = input.endTime.split(":").map(Number);
-    endsAt = ukLocalToUtc(year, month, day, endHour, endMinute);
+    const endsAt = ukLocalToUtc(year, month, day, endHour, endMinute);
     if (endsAt <= startsAt) {
       throw new Error("End time must be after start time.");
     }
+    durationMs = endsAt.getTime() - startsAt.getTime();
   } else {
-    endsAt = computeEndsAt(startsAt, classRecord.duration);
+    durationMs = classRecord.duration * 60_000;
   }
 
   const capacity = clampCapacity(classRecord.slug, input.capacity);
@@ -396,32 +407,47 @@ export async function createAdminSession(input: CreateSessionInput) {
     if (!tutor) throw new Error("Tutor not found.");
   }
 
-  const session = await db.session.create({
-    data: {
-      classId: classRecord.id,
-      startsAt,
-      endsAt,
-      capacity,
-      tutorId: input.tutorId || null,
-      adminNotes: input.adminNotes?.trim() || null,
-      publicDescription: input.publicDescription?.trim() || null,
-      pricePence,
-      creditCost,
-      status: SESSION_STATUS.scheduled,
-    },
-    include: sessionInclude(),
-  });
+  const isCourse = isCourseClassSlug(classRecord.slug);
+  const courseSeriesId = isCourse ? newCourseSeriesId() : null;
+  const weekCount = isCourse ? COURSE_SERIES_WEEKS : 1;
+
+  const created = [];
+  for (let week = 1; week <= weekCount; week += 1) {
+    const weekStartsAt = week === 1 ? startsAt : addUkWeeks(startsAt, week - 1);
+    const weekEndsAt = new Date(weekStartsAt.getTime() + durationMs);
+
+    const session = await db.session.create({
+      data: {
+        classId: classRecord.id,
+        startsAt: weekStartsAt,
+        endsAt: weekEndsAt,
+        capacity,
+        tutorId: input.tutorId || null,
+        adminNotes: input.adminNotes?.trim() || null,
+        publicDescription: input.publicDescription?.trim() || null,
+        pricePence,
+        creditCost,
+        courseSeriesId,
+        courseWeek: isCourse ? week : null,
+        status: SESSION_STATUS.scheduled,
+      },
+      include: sessionInclude(),
+    });
+    created.push(session);
+  }
 
   await logAdminAction({
     action: "session_created",
     details: {
-      sessionId: session.id,
+      sessionId: created[0].id,
       classSlug: classRecord.slug,
       startsAt: startsAt.toISOString(),
+      courseSeriesId,
+      weeksCreated: created.length,
     },
   });
 
-  return mapSessionRecord(session);
+  return mapSessionRecord(created[0]);
 }
 
 type UpdateSessionInput = {

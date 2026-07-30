@@ -31,6 +31,10 @@ import {
   resolveSessionCreditCost,
 } from "@/lib/studio-pricing-service";
 import { isCourseClassSlug } from "@/lib/gift-redeem-scope";
+import {
+  courseSeriesHasStarted,
+  listCourseSeriesSessions,
+} from "@/lib/course-series";
 import { redeemVoucherForBooking } from "@/lib/voucher-service";
 
 type BookingBody = {
@@ -92,6 +96,29 @@ export async function POST(request: Request) {
 
   if (!session || session.startsAt < new Date()) {
     return NextResponse.json({ error: "This session is no longer available." }, { status: 404 });
+  }
+
+  // 4-week courses: public booking closes once week 1 has started.
+  if (session.courseSeriesId && isCourseClassSlug(session.class.slug)) {
+    const series = await listCourseSeriesSessions(session.courseSeriesId);
+    if (courseSeriesHasStarted(series)) {
+      return NextResponse.json(
+        {
+          error:
+            "This 4-week course has already started and is no longer open for public booking. Please contact the studio if you need to join late.",
+        },
+        { status: 400 },
+      );
+    }
+    if ((session.courseWeek ?? 1) !== 1) {
+      return NextResponse.json(
+        {
+          error:
+            "Please book the 4-week course from its first session. That enrols you for all four weeks.",
+        },
+        { status: 400 },
+      );
+    }
   }
 
   const heldCount = await countHeldBookings(sessionId);
@@ -442,13 +469,15 @@ export async function POST(request: Request) {
         classTitle: booking.session.class.title,
         startsAt: booking.session.startsAt,
       },
-      giftApplied
-        ? {
-            amountPence: amountDuePence,
-            giftCardId: giftApplied.giftCardId,
-            giftAmountApplied: giftApplied.appliedPence,
-          }
-        : undefined,
+      {
+        amountPence: amountDuePence,
+        ...(giftApplied
+          ? {
+              giftCardId: giftApplied.giftCardId,
+              giftAmountApplied: giftApplied.appliedPence,
+            }
+          : {}),
+      },
     );
 
     if (!checkout.client_secret) {

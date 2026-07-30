@@ -54,6 +54,10 @@ model Session {
   pricePence        Int?
   /** Optional credit cost override; null falls back to class creditCost. */
   creditCost        Float?
+  /** Shared id for a 4-week course block (all weekly sessions in the block). */
+  courseSeriesId    String?
+  /** Week number within the course block (1–4). */
+  courseWeek        Int?
   bookings          Booking[]
   waitlist          WaitlistEntry[]
   createdAt         DateTime        @default(now())
@@ -63,6 +67,7 @@ model Session {
   @@index([classId])
   @@index([tutorId])
   @@index([status])
+  @@index([courseSeriesId])
 }
 
 model User {

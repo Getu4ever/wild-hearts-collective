@@ -552,6 +552,16 @@ async function main() {
     'ALTER TABLE "CreditTransaction" ALTER COLUMN "balanceAfter" TYPE DOUBLE PRECISION USING ("balanceAfter"::double precision)',
   );
 
+  await run(
+    'ALTER TABLE "Session" ADD COLUMN IF NOT EXISTS "courseSeriesId" TEXT',
+  );
+  await run(
+    'ALTER TABLE "Session" ADD COLUMN IF NOT EXISTS "courseWeek" INTEGER',
+  );
+  await runOptional(
+    'CREATE INDEX IF NOT EXISTS "Session_courseSeriesId_idx" ON "Session"("courseSeriesId")',
+  );
+
   console.log("Schema sync complete.");
 }
 
