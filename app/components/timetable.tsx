@@ -32,6 +32,22 @@ const CARD_WIDTH = 82.4;
 const CARD_CREAM = "#fbf8f2";
 const INK = "#4a5d4e";
 
+/** Public display only — admin/data can keep full day names. */
+const DAY_SHORT_LABELS: Record<string, string> = {
+  monday: "Mon",
+  tuesday: "Tue",
+  wednesday: "Wed",
+  thursday: "Thu",
+  friday: "Fri",
+  saturday: "Sat",
+  sunday: "Sun",
+};
+
+function shortDayLabel(day: string) {
+  const key = day.trim().toLowerCase();
+  return DAY_SHORT_LABELS[key] ?? day.slice(0, 3);
+}
+
 function bookHref(item: TimetableClass) {
   if (item.bookClassSlug) return `${BOOKING_URL}?class=${item.bookClassSlug}`;
   return BOOKING_URL;
@@ -57,10 +73,10 @@ function DayOverlay({
     >
       <div className="flex h-full min-h-0 items-stretch gap-[2cqw] px-[2.4cqw] py-[1.6cqw]">
         <p
-          className="flex w-[18cqw] shrink-0 items-center text-[2.85cqw] font-semibold uppercase leading-tight tracking-[0.12em]"
+          className="flex w-[14cqw] shrink-0 items-center text-[2.85cqw] font-semibold uppercase leading-tight tracking-[0.08em]"
           style={{ color: INK, fontFamily: "Georgia, 'Times New Roman', serif" }}
         >
-          {day.day}
+          {shortDayLabel(day.day)}
         </p>
         <div
           className="w-px shrink-0 self-stretch opacity-50"

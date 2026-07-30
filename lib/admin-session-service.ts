@@ -17,6 +17,7 @@ import { parseCreditInput } from "@/lib/credit-units";
 import { refundCreditForCancellation } from "@/lib/credit-service";
 import { db } from "@/lib/db";
 import { sendSessionCancelledEmail } from "@/lib/email";
+import { sessionPublicTitle } from "@/lib/session-display";
 import { ensureStudioClassTypes } from "@/lib/seed-database";
 import { resolveSessionCreditCost } from "@/lib/studio-pricing-service";
 import {
@@ -119,6 +120,7 @@ function mapSessionRecord(session: {
   capacity: number;
   status: string;
   adminNotes: string | null;
+  displayTitle: string | null;
   publicDescription: string | null;
   pricePence: number | null;
   creditCost: number | null;
@@ -163,6 +165,7 @@ function mapSessionRecord(session: {
     classId: session.class.id,
     classSlug: session.class.slug,
     classTitle: session.class.title,
+    displayTitle: session.displayTitle,
     classDescription: session.class.description,
     publicDescription: session.publicDescription,
     startsAt: session.startsAt.toISOString(),
@@ -353,6 +356,7 @@ type CreateSessionInput = {
   capacity: number;
   tutorId?: string | null;
   adminNotes?: string;
+  displayTitle?: string;
   publicDescription?: string;
   /** Price in pounds (e.g. 15.50), or null/omit for studio default. */
   pricePounds?: number | string | null;
@@ -424,6 +428,7 @@ export async function createAdminSession(input: CreateSessionInput) {
         capacity,
         tutorId: input.tutorId || null,
         adminNotes: input.adminNotes?.trim() || null,
+        displayTitle: input.displayTitle?.trim() || null,
         publicDescription: input.publicDescription?.trim() || null,
         pricePence,
         creditCost,
@@ -457,6 +462,7 @@ type UpdateSessionInput = {
   capacity?: number;
   tutorId?: string | null;
   adminNotes?: string | null;
+  displayTitle?: string | null;
   publicDescription?: string | null;
   pricePounds?: number | string | null;
   creditCost?: number | string | null;
@@ -480,6 +486,7 @@ export async function updateAdminSession(sessionId: string, input: UpdateSession
     capacity?: number;
     tutorId?: string | null;
     adminNotes?: string | null;
+    displayTitle?: string | null;
     publicDescription?: string | null;
     pricePence?: number | null;
     creditCost?: number | null;
@@ -507,6 +514,10 @@ export async function updateAdminSession(sessionId: string, input: UpdateSession
 
   if (input.adminNotes !== undefined) {
     data.adminNotes = input.adminNotes?.trim() || null;
+  }
+
+  if (input.displayTitle !== undefined) {
+    data.displayTitle = input.displayTitle?.trim() || null;
   }
 
   if (input.publicDescription !== undefined) {
@@ -591,7 +602,7 @@ export async function cancelAdminSession(sessionId: string, reason?: string) {
     await sendSessionCancelledEmail(
       { name: booking.name, email: booking.email },
       {
-        classTitle: session.class.title,
+        classTitle: sessionPublicTitle(session),
         startsAt: session.startsAt,
         reason: reason ?? "This class has been cancelled by the studio.",
       },

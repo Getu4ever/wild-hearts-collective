@@ -48,6 +48,8 @@ model Session {
   status            String          @default("scheduled")
   /** Private studio notes — not shown on the public booking page. */
   adminNotes        String?
+  /** Optional public label override (e.g. "Flow"); blank uses class title. */
+  displayTitle      String?
   /** Public blurb shown on the booking schedule for this session. */
   publicDescription String?
   /** Optional price override in pence; null falls back to class then studio default. */

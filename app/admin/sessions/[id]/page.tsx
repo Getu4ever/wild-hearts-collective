@@ -14,6 +14,7 @@ import { isAdminAuthenticated } from "@/lib/admin-auth";
 import { formatSessionTimeRange, SESSION_STATUS } from "@/lib/admin-studio-config";
 import { formatSessionDateTime, UK_TIMEZONE } from "@/lib/booking-config";
 import { getAdminSessionRoster } from "@/lib/admin-session-service";
+import { sessionPublicTitle } from "@/lib/session-display";
 
 export const metadata: Metadata = {
   title: "Session Roster",
@@ -60,13 +61,18 @@ export default async function AdminSessionDetailPage({ params }: PageProps) {
             Session roster
           </p>
           <h1 className="font-display text-4xl text-plum sm:text-5xl">
-            {session.classTitle}
+            {sessionPublicTitle(session)}
             {session.courseWeek ? ` · Week ${session.courseWeek}` : ""}
           </h1>
           <p className="mt-3 text-sm text-muted">
             {formatSessionDateTime(startsAt)} ·{" "}
             {formatSessionTimeRange(startsAt, endsAt)}
           </p>
+          {session.displayTitle?.trim() ? (
+            <p className="mt-1 text-xs text-muted">
+              Class type: {session.classTitle}
+            </p>
+          ) : null}
           {(session.publicDescription ||
             session.pricePence != null ||
             session.creditCost != null) && (
@@ -129,6 +135,7 @@ export default async function AdminSessionDetailPage({ params }: PageProps) {
                     capacity: session.capacity,
                     tutorId: session.tutor?.id ?? null,
                     adminNotes: session.adminNotes,
+                    displayTitle: session.displayTitle,
                     publicDescription: session.publicDescription,
                     pricePence: session.pricePence,
                     creditCost: session.creditCost,

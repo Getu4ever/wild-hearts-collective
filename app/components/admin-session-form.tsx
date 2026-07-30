@@ -28,6 +28,7 @@ type AdminSessionFormProps = {
     capacity?: number;
     tutorId?: string | null;
     adminNotes?: string | null;
+    displayTitle?: string | null;
     publicDescription?: string | null;
     pricePence?: number | null;
     creditCost?: number | null;
@@ -47,6 +48,7 @@ export function AdminSessionForm({ mode, sessionId, initial }: AdminSessionFormP
   );
   const [tutorId, setTutorId] = useState(initial?.tutorId ?? "");
   const [adminNotes, setAdminNotes] = useState(initial?.adminNotes ?? "");
+  const [displayTitle, setDisplayTitle] = useState(initial?.displayTitle ?? "");
   const [publicDescription, setPublicDescription] = useState(
     initial?.publicDescription ?? "",
   );
@@ -119,6 +121,7 @@ export function AdminSessionForm({ mode, sessionId, initial }: AdminSessionFormP
           capacity,
           tutorId: tutorId || null,
           adminNotes: adminNotes || undefined,
+          displayTitle: displayTitle || null,
           publicDescription: publicDescription || null,
           pricePounds: pricePounds.trim() === "" ? null : pricePounds,
           creditCost: creditCost.trim() === "" ? null : creditCost,
@@ -258,6 +261,20 @@ export function AdminSessionForm({ mode, sessionId, initial }: AdminSessionFormP
           </p>
         </Field>
       </div>
+
+      <Field label="Public title">
+        <input
+          type="text"
+          value={displayTitle}
+          onChange={(event) => setDisplayTitle(event.target.value)}
+          className="w-full rounded-sm border border-plum/15 px-3 py-2 text-sm"
+          placeholder="e.g. Flow — leave blank to use class type name"
+        />
+        <p className="mt-1 text-xs text-muted">
+          Optional display name on the booking page and schedule. Class type (for
+          filters, pricing, and credits) stays the same.
+        </p>
+      </Field>
 
       <Field label="Public description">
         <textarea

@@ -57,6 +57,12 @@ export async function POST(request: Request) {
       typeof body.tutorId === "string" && body.tutorId ? body.tutorId : null;
     const adminNotes =
       typeof body.adminNotes === "string" ? body.adminNotes : undefined;
+    const displayTitle =
+      typeof body.displayTitle === "string"
+        ? body.displayTitle
+        : body.displayTitle === null
+          ? ""
+          : undefined;
     const publicDescription =
       typeof body.publicDescription === "string"
         ? body.publicDescription
@@ -91,6 +97,7 @@ export async function POST(request: Request) {
       capacity,
       tutorId,
       adminNotes,
+      displayTitle,
       publicDescription,
       pricePounds,
       creditCost,

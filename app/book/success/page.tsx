@@ -10,6 +10,7 @@ import {
 } from "@/lib/booking-config";
 import { finalizeBookingPayment } from "@/lib/booking-payment";
 import { db } from "@/lib/db";
+import { sessionPublicTitle } from "@/lib/session-display";
 
 export const metadata: Metadata = {
   title: "Booking Confirmed",
@@ -98,7 +99,7 @@ export default async function BookingSuccessPage({ searchParams }: SuccessPagePr
             <>
               <p className="text-muted">
                 Hi {booking.name}, your booking for{" "}
-                <strong className="text-foreground">{booking.session.class.title}</strong>{" "}
+                <strong className="text-foreground">{sessionPublicTitle(booking.session)}</strong>{" "}
                 on {formatSessionDateTime(booking.session.startsAt)}{" "}
                 {isConfirmed ? "is confirmed." : "is being processed."}
               </p>

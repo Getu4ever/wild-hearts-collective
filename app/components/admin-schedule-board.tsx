@@ -17,6 +17,7 @@ export type AdminScheduleSession = {
   id: string;
   classSlug: string;
   classTitle: string;
+  displayTitle?: string | null;
   startsAt: string;
   endsAt: string | null;
   capacity: number;
@@ -179,11 +180,16 @@ export function AdminScheduleBoard({
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <p className="font-display text-xl text-plum">
-                          {session.classTitle}
+                          {session.displayTitle?.trim() || session.classTitle}
                           {session.courseWeek
                             ? ` · Week ${session.courseWeek}`
                             : ""}
                         </p>
+                        {session.displayTitle?.trim() ? (
+                          <p className="mt-0.5 text-xs text-muted">
+                            {session.classTitle}
+                          </p>
+                        ) : null}
                         <p className="mt-1 text-sm text-muted">
                           {formatSessionTimeRange(
                             new Date(session.startsAt),

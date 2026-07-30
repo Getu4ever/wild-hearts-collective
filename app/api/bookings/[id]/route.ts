@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { sessionPublicTitle } from "@/lib/session-display";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -24,7 +25,7 @@ export async function GET(_request: Request, context: RouteContext) {
     name: booking.name,
     email: booking.email,
     status: booking.status,
-    classTitle: booking.session.class.title,
+    classTitle: sessionPublicTitle(booking.session),
     startsAt: booking.session.startsAt.toISOString(),
     amountPaid: booking.amountPaid,
   });

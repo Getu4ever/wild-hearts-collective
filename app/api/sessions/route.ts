@@ -6,6 +6,7 @@ import { expireStalePendingBookings, paymentHoldCutoff } from "@/lib/booking-ser
 import { courseSeriesHasStarted } from "@/lib/course-series";
 import { db } from "@/lib/db";
 import { isCourseClassSlug } from "@/lib/gift-redeem-scope";
+import { sessionPublicTitle } from "@/lib/session-display";
 import { getMemberSession } from "@/lib/member-auth";
 import {
   resolveBookingPaymentAmountPence,
@@ -186,7 +187,9 @@ async function loadSessions(classSlug: string | null) {
       id: session.id,
       classId: session.classId,
       classSlug: session.class.slug,
-      classTitle: session.class.title,
+      classTitle: sessionPublicTitle(session),
+      classTypeTitle: session.class.title,
+      displayTitle: session.displayTitle?.trim() || null,
       tutor: session.tutor
         ? { id: session.tutor.id, name: session.tutor.name }
         : null,

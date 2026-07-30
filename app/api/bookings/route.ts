@@ -17,6 +17,7 @@ import {
   sendBookingReceivedEmails,
   sendWaitlistJoinedEmails,
 } from "@/lib/email";
+import { sessionPublicTitle } from "@/lib/session-display";
 import {
   applyGiftCodeToCharge,
   GIFT_REDEMPTION_REASON,
@@ -229,7 +230,7 @@ export async function POST(request: Request) {
     await sendWaitlistJoinedEmails(
       { name: waitlistEntry.name, email: waitlistEntry.email },
       {
-        classTitle: waitlistEntry.session.class.title,
+        classTitle: sessionPublicTitle(waitlistEntry.session),
         startsAt: waitlistEntry.session.startsAt,
       },
     );
@@ -239,7 +240,7 @@ export async function POST(request: Request) {
       id: waitlistEntry.id,
       name: waitlistEntry.name,
       email: waitlistEntry.email,
-      classTitle: waitlistEntry.session.class.title,
+      classTitle: sessionPublicTitle(waitlistEntry.session),
       startsAt: waitlistEntry.session.startsAt.toISOString(),
     });
   }
@@ -332,7 +333,7 @@ export async function POST(request: Request) {
       name: confirmed.name,
       email: confirmed.email,
       status: confirmed.status,
-      classTitle: confirmed.session.class.title,
+      classTitle: sessionPublicTitle(confirmed.session),
       startsAt: confirmed.session.startsAt.toISOString(),
       paidWithCredit: true,
       creditsCharged: creditCost,
@@ -394,7 +395,7 @@ export async function POST(request: Request) {
             name: confirmed.name,
             email: confirmed.email,
             status: confirmed.status,
-            classTitle: confirmed.session.class.title,
+            classTitle: sessionPublicTitle(confirmed.session),
             startsAt: confirmed.session.startsAt.toISOString(),
             giftCardApplied: true,
             giftAmountAppliedLabel: applied.appliedLabel,
@@ -419,7 +420,7 @@ export async function POST(request: Request) {
             name: confirmed.name,
             email: confirmed.email,
             status: confirmed.status,
-            classTitle: confirmed.session.class.title,
+            classTitle: sessionPublicTitle(confirmed.session),
             startsAt: confirmed.session.startsAt.toISOString(),
             voucherApplied: true,
           });
@@ -452,7 +453,7 @@ export async function POST(request: Request) {
       name: confirmed.name,
       email: confirmed.email,
       status: confirmed.status,
-      classTitle: confirmed.session.class.title,
+      classTitle: sessionPublicTitle(confirmed.session),
       startsAt: confirmed.session.startsAt.toISOString(),
       paymentSkipped: true,
       giftCardApplied: Boolean(giftApplied),
@@ -466,7 +467,7 @@ export async function POST(request: Request) {
         id: booking.id,
         email: booking.email,
         name: booking.name,
-        classTitle: booking.session.class.title,
+        classTitle: sessionPublicTitle(booking.session),
         startsAt: booking.session.startsAt,
       },
       {
@@ -501,7 +502,7 @@ export async function POST(request: Request) {
     await sendBookingReceivedEmails(
       { name: booking.name, email: booking.email },
       {
-        classTitle: booking.session.class.title,
+        classTitle: sessionPublicTitle(booking.session),
         startsAt: booking.session.startsAt,
       },
     );
@@ -512,7 +513,7 @@ export async function POST(request: Request) {
       name: booking.name,
       email: booking.email,
       status: booking.status,
-      classTitle: booking.session.class.title,
+      classTitle: sessionPublicTitle(booking.session),
       startsAt: booking.session.startsAt.toISOString(),
       clientSecret: checkout.client_secret,
       classPriceLabel: formatMoneyFromPence(amountDuePence),

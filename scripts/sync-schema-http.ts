@@ -527,6 +527,9 @@ async function main() {
     'ALTER TABLE "Session" ADD COLUMN IF NOT EXISTS "publicDescription" TEXT',
   );
   await run(
+    'ALTER TABLE "Session" ADD COLUMN IF NOT EXISTS "displayTitle" TEXT',
+  );
+  await run(
     'ALTER TABLE "Session" ADD COLUMN IF NOT EXISTS "pricePence" INTEGER',
   );
   await run(

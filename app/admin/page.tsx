@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AdminCapacityBadge } from "@/app/components/admin-capacity-badge";
+import { AdminCollapsibleSection } from "@/app/components/admin-collapsible-section";
 import { AdminLogoutButton } from "@/app/components/admin-logout-button";
 import { AdminNav } from "@/app/components/admin-nav";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
@@ -11,6 +12,7 @@ import {
   membershipPlanLabel,
   membershipStatusLabel,
 } from "@/lib/membership-config";
+import { sessionPublicTitle } from "@/lib/session-display";
 
 export const metadata: Metadata = {
   title: "Admin Dashboard",
@@ -74,11 +76,16 @@ export default async function AdminDashboardPage() {
                           href={`/admin/sessions/${session.id}`}
                           className="font-semibold text-plum hover:text-brand hover:underline"
                         >
-                          {session.class.title}
+                          {sessionPublicTitle(session)}
                         </Link>
                         <p className="mt-1 text-sm text-muted">
                           {formatSessionDateTime(session.startsAt)}
                         </p>
+                        {session.displayTitle?.trim() ? (
+                          <p className="mt-1 text-xs text-muted">
+                            Class type: {session.class.title}
+                          </p>
+                        ) : null}
                         <p className="mt-2 text-xs text-muted">
                           Tutor: {session.tutor?.name ?? "Unassigned"}
                         </p>
@@ -191,8 +198,11 @@ export default async function AdminDashboardPage() {
         </section>
       </div>
 
-      <section className="mt-8 rounded-lg border border-plum/10 bg-surface p-6 shadow-sm">
-        <h2 className="font-display text-2xl text-plum">Recent admin activity</h2>
+      <AdminCollapsibleSection
+        title="Recent admin activity"
+        defaultOpen={false}
+        empty={stats.recentAudit.length === 0}
+      >
         {stats.recentAudit.length === 0 ? (
           <p className="mt-4 text-sm text-muted">No admin actions logged yet.</p>
         ) : (
@@ -215,7 +225,7 @@ export default async function AdminDashboardPage() {
             ))}
           </ul>
         )}
-      </section>
+      </AdminCollapsibleSection>
     </div>
   );
 }

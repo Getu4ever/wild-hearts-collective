@@ -17,6 +17,7 @@ import {
   sendWaitlistSpotAvailableEmail,
 } from "@/lib/email";
 import { restoreGiftCardBalance } from "@/lib/gift-card-service";
+import { sessionPublicTitle } from "@/lib/session-display";
 
 export function paymentHoldCutoff(now = new Date()) {
   return new Date(now.getTime() - PAYMENT_HOLD_MS);
@@ -75,7 +76,7 @@ export async function cancelBookingForPaymentExpiry(bookingId: string) {
     await sendUnpaidBookingExpiredAdminEmail(
       { name: updated.name, email: updated.email },
       {
-        classTitle: updated.session.class.title,
+        classTitle: sessionPublicTitle(updated.session),
         startsAt: updated.session.startsAt,
       },
     );
@@ -302,7 +303,7 @@ export async function confirmBooking(
   await sendBookingConfirmedEmails(
     { name: booking.name, email: booking.email },
     {
-      classTitle: booking.session.class.title,
+      classTitle: sessionPublicTitle(booking.session),
       startsAt: booking.session.startsAt,
       endsAt: booking.session.endsAt,
       durationMinutes: booking.session.class.duration,
@@ -340,7 +341,7 @@ export async function cancelBooking(
   await sendBookingCancelledEmails(
     { name: booking.name, email: booking.email },
     {
-      classTitle: booking.session.class.title,
+      classTitle: sessionPublicTitle(booking.session),
       startsAt: booking.session.startsAt,
     },
     {
@@ -386,7 +387,7 @@ export async function notifyNextWaitlistEntry(sessionId: string) {
   await sendWaitlistSpotAvailableEmail(
     { name: updated.name, email: updated.email },
     {
-      classTitle: session.class.title,
+      classTitle: sessionPublicTitle(session),
       startsAt: session.startsAt,
     },
     bookUrl,

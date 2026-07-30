@@ -60,6 +60,12 @@ export async function PATCH(request: Request, context: RouteContext) {
           : typeof body.adminNotes === "string"
             ? body.adminNotes
             : undefined,
+      displayTitle:
+        body.displayTitle === null
+          ? null
+          : typeof body.displayTitle === "string"
+            ? body.displayTitle
+            : undefined,
       publicDescription:
         body.publicDescription === null
           ? null
