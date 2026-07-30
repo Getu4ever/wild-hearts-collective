@@ -505,6 +505,7 @@ export async function POST(request: Request) {
         classTitle: sessionPublicTitle(booking.session),
         startsAt: booking.session.startsAt,
       },
+      amountDuePence,
     );
 
     return NextResponse.json({

@@ -300,6 +300,16 @@ export async function confirmBooking(
     }
   }
 
+  // 4-week courses: enrol the same person on remaining weekly sessions before
+  // sending email, so an email/pricing failure cannot leave a paid course only
+  // partly enrolled.
+  try {
+    const { enrolRemainingCourseWeeks } = await import("@/lib/course-series");
+    await enrolRemainingCourseWeeks(booking.id);
+  } catch (error) {
+    console.error("[booking] failed to enrol remaining course weeks:", booking.id, error);
+  }
+
   await sendBookingConfirmedEmails(
     { name: booking.name, email: booking.email },
     {
@@ -311,14 +321,6 @@ export async function confirmBooking(
     options?.amountPaid ?? booking.amountPaid,
     paymentSummary,
   );
-
-  // 4-week courses: enrol the same person on remaining weekly sessions.
-  try {
-    const { enrolRemainingCourseWeeks } = await import("@/lib/course-series");
-    await enrolRemainingCourseWeeks(booking.id);
-  } catch (error) {
-    console.error("[booking] failed to enrol remaining course weeks:", booking.id, error);
-  }
 
   return booking;
 }

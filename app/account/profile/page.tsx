@@ -6,6 +6,7 @@ import { getMemberSession } from "@/lib/member-auth";
 import { profileSelectFields, toMemberProfile } from "@/lib/member-profile-service";
 import { getMembershipTimeline } from "@/lib/membership-actions";
 import { db } from "@/lib/db";
+import { enrolMemberInRemainingCourseWeeks } from "@/lib/course-series";
 
 export const metadata: Metadata = {
   title: "Profile",
@@ -17,6 +18,7 @@ export default async function AccountProfilePage() {
   if (!session) return null;
 
   await expireStalePendingBookings();
+  await enrolMemberInRemainingCourseWeeks(session.userId);
   await ensureGoogleProfileImage(session.userId);
 
   const [user, oauthAccounts, upcomingBookings, pastBookings, timeline] = await Promise.all([

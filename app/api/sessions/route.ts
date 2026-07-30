@@ -84,8 +84,7 @@ async function loadSessions(classSlug: string | null) {
     orderBy: { startsAt: "asc" },
   });
 
-  // Load all series anchors so we can hide courses that have already started
-  // and only list week 1 for bookable course blocks.
+  // Load all course sessions so the schedule can show every date in a block.
   const seriesIds = [
     ...new Set(
       sessions
@@ -119,20 +118,6 @@ async function loadSessions(classSlug: string | null) {
     seriesById.set(row.courseSeriesId, list);
   }
 
-  const publicSessions = sessions.filter((session) => {
-    if (!session.courseSeriesId || !isCourseClassSlug(session.class.slug)) {
-      return true;
-    }
-    const series = seriesById.get(session.courseSeriesId) ?? [];
-    if (courseSeriesHasStarted(series, now)) {
-      // Course already started — not publicly bookable (still on admin schedule).
-      return false;
-    }
-    // Only show week 1 as the bookable course entry.
-    const week = session.courseWeek ?? 1;
-    return week === 1;
-  });
-
   let memberEmail: string | null = null;
   if (memberSession?.userId) {
     const member = await db.user.findUnique({
@@ -143,7 +128,7 @@ async function loadSessions(classSlug: string | null) {
   }
 
   const priced = await Promise.all(
-    publicSessions.map(async (session) => {
+    sessions.map(async (session) => {
       const pricePence = await resolveBookingPaymentAmountPence({
         classSlug: session.class.slug,
         sessionPricePence: session.pricePence,
@@ -182,6 +167,14 @@ async function loadSessions(classSlug: string | null) {
       ? seriesById.get(session.courseSeriesId) ?? []
       : [];
     const courseDates = series.map((row) => row.startsAt.toISOString());
+    const isFourWeekCourse = isCourseClassSlug(session.class.slug);
+    const courseHasStarted = isFourWeekCourse && courseSeriesHasStarted(series, now);
+    const courseWeek = session.courseWeek ?? 1;
+    const bookingDisabledReason = courseHasStarted
+      ? "This 4-week course has already started. Please look out for a future course."
+      : isFourWeekCourse && courseWeek !== 1
+        ? "This session is included when you book the 4-week course from its first date."
+        : null;
 
     return {
       id: session.id,
@@ -204,14 +197,18 @@ async function loadSessions(classSlug: string | null) {
       waitlistCount: session.waitlist.length,
       alreadyBooked,
       pricePence,
-      priceLabel: formatMoneyFromPence(pricePence),
+      priceLabel:
+        isFourWeekCourse && courseWeek !== 1
+          ? "Included in the 4-week course"
+          : formatMoneyFromPence(pricePence),
       creditCost,
       creditCostLabel: formatCreditLabel(creditCost),
       creditCostDisplay: formatCredits(creditCost),
       courseSeriesId: session.courseSeriesId,
-      courseWeek: session.courseWeek,
+      courseWeek,
       courseDates: courseDates.length > 1 ? courseDates : undefined,
-      isFourWeekCourse: isCourseClassSlug(session.class.slug),
+      isFourWeekCourse,
+      bookingDisabledReason,
     };
   });
 }

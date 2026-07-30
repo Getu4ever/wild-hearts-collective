@@ -128,3 +128,22 @@ export async function enrolRemainingCourseWeeks(primaryBookingId: string) {
 
   return createdIds;
 }
+
+/**
+ * Backfill future sessions for a member's already-confirmed course bookings.
+ * Safe to call on account pages: enrolment is idempotent.
+ */
+export async function enrolMemberInRemainingCourseWeeks(userId: string) {
+  const courseBookings = await db.booking.findMany({
+    where: {
+      userId,
+      status: BOOKING_STATUS.confirmed,
+      session: { courseSeriesId: { not: null } },
+    },
+    select: { id: true },
+  });
+
+  await Promise.all(
+    courseBookings.map(({ id }) => enrolRemainingCourseWeeks(id)),
+  );
+}

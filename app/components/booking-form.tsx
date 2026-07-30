@@ -38,6 +38,7 @@ type SessionOption = {
   courseWeek?: number | null;
   courseDates?: string[];
   isFourWeekCourse?: boolean;
+  bookingDisabledReason?: string | null;
 };
 
 function sessionDisplayTitle(session: Pick<SessionOption, "classTitle" | "tutor">) {
@@ -108,14 +109,16 @@ const classFilters = [
   })),
 ] as const;
 
-function availabilityLabel(session: Pick<SessionOption, "isFull" | "alreadyBooked">) {
+function availabilityLabel(session: Pick<SessionOption, "isFull" | "alreadyBooked" | "bookingDisabledReason">) {
+  if (session.bookingDisabledReason) return "Course unavailable";
   if (session.alreadyBooked) return "Already booked";
   return session.isFull ? "Fully booked" : "Slots available";
 }
 
 function availabilityBadgeClass(
-  session: Pick<SessionOption, "isFull" | "alreadyBooked">,
+  session: Pick<SessionOption, "isFull" | "alreadyBooked" | "bookingDisabledReason">,
 ) {
+  if (session.bookingDisabledReason) return "bg-plum/10 text-plum";
   if (session.alreadyBooked) return "bg-brand/15 text-brand";
   return session.isFull ? "bg-plum/10 text-plum" : "bg-sage/15 text-sage";
 }
@@ -192,7 +195,7 @@ export function BookingForm() {
     "£10.00";
   const hasSelectableSession = sessions.some(
     (session) =>
-      !session.alreadyBooked && (!session.isFull || joinWaitlist),
+      !session.alreadyBooked && !session.bookingDisabledReason && (!session.isFull || joinWaitlist),
   );
 
   useEffect(() => {
@@ -272,13 +275,13 @@ export function BookingForm() {
         setSelectedSessionId((current) => {
           if (
             current &&
-            data.some((session) => session.id === current && !session.alreadyBooked)
+            data.some((session) => session.id === current && !session.alreadyBooked && !session.bookingDisabledReason)
           ) {
             return current;
           }
           const firstAvailable =
-            data.find((session) => !session.alreadyBooked && !session.isFull)?.id ??
-            data.find((session) => !session.alreadyBooked)?.id ??
+            data.find((session) => !session.alreadyBooked && !session.bookingDisabledReason && !session.isFull)?.id ??
+            data.find((session) => !session.alreadyBooked && !session.bookingDisabledReason)?.id ??
             "";
           return firstAvailable;
         });
@@ -360,6 +363,12 @@ export function BookingForm() {
 
     if (selectedSession?.alreadyBooked) {
       setError("You have already booked this session.");
+      setSubmitting(false);
+      return;
+    }
+
+    if (selectedSession?.bookingDisabledReason) {
+      setError(selectedSession.bookingDisabledReason);
       setSubmitting(false);
       return;
     }
@@ -710,12 +719,12 @@ export function BookingForm() {
                       key={session.id}
                       type="button"
                       onClick={() => {
-                        if (session.alreadyBooked) return;
+                        if (session.alreadyBooked || session.bookingDisabledReason) return;
                         setSelectedSessionId(session.id);
                       }}
-                      disabled={session.alreadyBooked}
+                      disabled={session.alreadyBooked || Boolean(session.bookingDisabledReason)}
                       className={`flex w-full items-start justify-between gap-4 rounded-xl border px-4 py-4 text-left transition ${
-                        session.alreadyBooked
+                        session.alreadyBooked || session.bookingDisabledReason
                           ? "cursor-not-allowed border-plum/10 bg-cream/60 opacity-80"
                           : isSelected
                             ? "border-plum bg-pink-soft/60 ring-2 ring-pink/40"
@@ -736,6 +745,11 @@ export function BookingForm() {
                         {session.description ? (
                           <p className="mt-2 text-sm leading-relaxed text-muted">
                             {session.description}
+                          </p>
+                        ) : null}
+                        {session.bookingDisabledReason ? (
+                          <p className="mt-2 text-sm font-medium text-plum">
+                            {session.bookingDisabledReason}
                           </p>
                         ) : null}
                         <p className="mt-2 text-xs text-muted">

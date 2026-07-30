@@ -4,6 +4,7 @@ import { CancelBookingButton } from "@/app/components/cancel-booking-button";
 import { formatSessionDateTime, formatUkDateTimeShort } from "@/lib/booking-config";
 import { getCurrentMember } from "@/lib/member-auth";
 import { db } from "@/lib/db";
+import { enrolMemberInRemainingCourseWeeks } from "@/lib/course-series";
 
 export const metadata: Metadata = {
   title: "My bookings",
@@ -14,6 +15,9 @@ export const metadata: Metadata = {
 export default async function AccountBookingsPage() {
   const member = await getCurrentMember();
   if (!member) return null;
+
+  // Repair any older course booking that predates automatic enrolment.
+  await enrolMemberInRemainingCourseWeeks(member.id);
 
   const [bookings, waitlist] = await Promise.all([
     db.booking.findMany({

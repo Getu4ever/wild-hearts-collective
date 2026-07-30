@@ -17,6 +17,7 @@ import {
   MEMBERSHIP_STATUS,
 } from "@/lib/membership-config";
 import { db } from "@/lib/db";
+import { enrolMemberInRemainingCourseWeeks } from "@/lib/course-series";
 
 export const metadata: Metadata = {
   title: "My account",
@@ -35,6 +36,7 @@ export default async function AccountPage({
   const showMembershipSuccess = params.membership === "success";
 
   await expireStalePendingBookings();
+  await enrolMemberInRemainingCourseWeeks(member.id);
 
   const [upcomingBookings, recentBookings, profileRecord] = await Promise.all([
     db.booking.findMany({

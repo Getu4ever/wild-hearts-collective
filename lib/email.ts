@@ -106,9 +106,10 @@ async function sendEmail({
 export async function sendBookingReceivedEmails(
   customer: CustomerDetails,
   session: SessionDetails,
+  amountDuePence: number,
 ) {
   const bookUrl = `${getAppBaseUrl()}/book`;
-  const priceLabel = formatMoneyFromPence(await resolveClassPaymentAmountPence());
+  const priceLabel = formatMoneyFromPence(amountDuePence);
 
   await Promise.all([
     sendEmail({
@@ -251,7 +252,11 @@ export async function sendBookingPendingEmails(
   customer: CustomerDetails,
   session: SessionDetails,
 ) {
-  return sendBookingReceivedEmails(customer, session);
+  return sendBookingReceivedEmails(
+    customer,
+    session,
+    await resolveClassPaymentAmountPence(),
+  );
 }
 
 export async function sendBookingCancelledEmails(
