@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MemberLogoutButton } from "@/app/components/member-logout-button";
+import { MemberCollapsibleSection } from "@/app/components/member-collapsible-section";
 import { MembershipSubscribeButton } from "@/app/components/membership-subscribe-button";
 import { BOOKING_URL } from "@/lib/constants";
 import { formatSessionDateTime, formatUkDateLong } from "@/lib/booking-config";
@@ -238,13 +239,7 @@ export default async function AccountPage({
       </div>
 
       {recentBookings.length > 0 && (
-        <section className="mt-10 rounded-sm border border-plum/10 bg-surface p-6">
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="font-display text-2xl text-plum">Recent activity</h2>
-            <Link href="/account/bookings" className="text-sm font-semibold text-brand hover:underline">
-              View all
-            </Link>
-          </div>
+        <MemberCollapsibleSection title="Recent activity">
           <ul className="mt-4 divide-y divide-plum/10">
             {recentBookings.map((booking) => (
               <li key={booking.id} className="py-4">
@@ -262,7 +257,7 @@ export default async function AccountPage({
               </li>
             ))}
           </ul>
-        </section>
+        </MemberCollapsibleSection>
       )}
     </div>
   );
