@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { AdminLogoutButton } from "@/app/components/admin-logout-button";
+import { AdminMemberAvatar } from "@/app/components/admin-member-avatar";
 import { AdminMemberFilters } from "@/app/components/admin-member-filters";
 import { AdminNav } from "@/app/components/admin-nav";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
@@ -55,7 +56,7 @@ export default async function AdminMembersPage({ searchParams }: PageProps) {
     },
     orderBy: { createdAt: "desc" },
     include: {
-      oauthAccounts: { select: { provider: true } },
+      oauthAccounts: { select: { provider: true, profileImageUrl: true } },
       _count: { select: { bookings: true } },
     },
   });
@@ -113,10 +114,10 @@ export default async function AdminMembersPage({ searchParams }: PageProps) {
               <thead className="border-b border-plum/10 bg-pink-soft/60 text-xs uppercase tracking-wider text-plum">
                 <tr>
                   <th className="w-[12%] px-3 py-3 font-semibold">Registered</th>
-                  <th className="w-[16%] px-3 py-3 font-semibold">Name</th>
-                  <th className="w-[22%] px-3 py-3 font-semibold">Email</th>
+                  <th className="w-[20%] px-3 py-3 font-semibold">Name</th>
+                  <th className="w-[20%] px-3 py-3 font-semibold">Email</th>
                   <th className="w-[12%] px-3 py-3 font-semibold">Status</th>
-                  <th className="w-[14%] px-3 py-3 font-semibold">Plan</th>
+                  <th className="w-[12%] px-3 py-3 font-semibold">Plan</th>
                   <th className="w-[8%] px-3 py-3 font-semibold">Bookings</th>
                   <th className="w-[16%] px-3 py-3 font-semibold">Actions</th>
                 </tr>
@@ -128,6 +129,11 @@ export default async function AdminMembersPage({ searchParams }: PageProps) {
                   )
                     ? "Google"
                     : "Email";
+                  const image =
+                    member.image ??
+                    member.oauthAccounts.find((account) => account.profileImageUrl)
+                      ?.profileImageUrl ??
+                    null;
 
                   return (
                     <tr
@@ -138,14 +144,19 @@ export default async function AdminMembersPage({ searchParams }: PageProps) {
                         {formatUkDateTimeShort(member.createdAt)}
                       </td>
                       <td className="px-3 py-3">
-                        <Link
-                          href={`/admin/members/${member.id}`}
-                          className="block truncate font-medium text-plum hover:text-brand hover:underline"
-                          title={member.name}
-                        >
-                          {member.name}
-                        </Link>
-                        <p className="mt-1 text-xs text-muted">{signupMethod}</p>
+                        <div className="flex items-start gap-3">
+                          <AdminMemberAvatar name={member.name} image={image} />
+                          <div className="min-w-0">
+                            <Link
+                              href={`/admin/members/${member.id}`}
+                              className="block truncate font-medium text-plum hover:text-brand hover:underline"
+                              title={member.name}
+                            >
+                              {member.name}
+                            </Link>
+                            <p className="mt-1 text-xs text-muted">{signupMethod}</p>
+                          </div>
+                        </div>
                       </td>
                       <td className="px-3 py-3">
                         <a

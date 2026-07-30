@@ -13,10 +13,65 @@ import {
   expireStalePendingBookings,
   paymentHoldCutoff,
 } from "@/lib/booking-service";
+import { parseCreditInput } from "@/lib/credit-units";
 import { refundCreditForCancellation } from "@/lib/credit-service";
 import { db } from "@/lib/db";
 import { sendSessionCancelledEmail } from "@/lib/email";
 import { ensureStudioClassTypes } from "@/lib/seed-database";
+import { resolveSessionCreditCost } from "@/lib/studio-pricing-service";
+
+export type AdminScheduleRange = "schedule" | "today" | "past";
+
+function ukYmdParts(date = new Date()) {
+  const [year, month, day] = new Intl.DateTimeFormat("en-CA", {
+    timeZone: UK_TIMEZONE,
+  })
+    .format(date)
+    .split("-")
+    .map(Number);
+  return { year, month, day };
+}
+
+/** Start of a UK calendar day as UTC Date. */
+export function ukStartOfDay(date = new Date()) {
+  const { year, month, day } = ukYmdParts(date);
+  return ukLocalToUtc(year, month, day, 0, 0);
+}
+
+/** Exclusive end bound: start of the next UK calendar day. */
+export function ukEndOfDayExclusive(date = new Date()) {
+  const start = ukStartOfDay(date);
+  return new Date(start.getTime() + 24 * 60 * 60 * 1000);
+}
+
+export function resolveAdminScheduleRange(range: AdminScheduleRange = "schedule") {
+  const now = new Date();
+  const todayStart = ukStartOfDay(now);
+
+  if (range === "today") {
+    return {
+      range,
+      from: todayStart,
+      to: ukEndOfDayExclusive(now),
+    };
+  }
+
+  if (range === "past") {
+    return {
+      range,
+      from: new Date(todayStart.getTime() - 14 * 24 * 60 * 60 * 1000),
+      to: now,
+    };
+  }
+
+  // Default "schedule": from start of today (so finished classes today stay visible)
+  // through the next 6 weeks.
+  return {
+    range: "schedule" as const,
+    from: todayStart,
+    to: new Date(now.getTime() + 42 * 24 * 60 * 60 * 1000),
+  };
+}
 
 function heldBookingsWhere() {
   return {
@@ -36,13 +91,19 @@ function sessionInclude() {
     tutor: true,
     bookings: {
       where: heldBookingsWhere(),
-      select: { id: true },
+      select: { id: true, status: true, attendance: true },
     },
     waitlist: {
       where: { status: { in: ["waiting", "notified"] as string[] } },
       select: { id: true },
     },
   };
+}
+
+function durationMinutesFromSession(startsAt: Date, endsAt: Date | null, fallback: number) {
+  if (!endsAt) return fallback;
+  const minutes = Math.round((endsAt.getTime() - startsAt.getTime()) / 60000);
+  return minutes > 0 ? minutes : fallback;
 }
 
 function mapSessionRecord(session: {
@@ -52,21 +113,53 @@ function mapSessionRecord(session: {
   capacity: number;
   status: string;
   adminNotes: string | null;
-  class: { id: string; slug: string; title: string; duration: number };
+  publicDescription: string | null;
+  pricePence: number | null;
+  creditCost: number | null;
+  class: {
+    id: string;
+    slug: string;
+    title: string;
+    description: string;
+    duration: number;
+    pricePence: number | null;
+    creditCost: number;
+  };
   tutor: { id: string; name: string } | null;
-  bookings: { id: string }[];
+  bookings: { id: string; status?: string; attendance?: string | null }[];
   waitlist: { id: string }[];
 }) {
   const confirmedCount = session.bookings.length;
   const level = getOccupancyLevel(confirmedCount, session.capacity, session.status);
+  const durationMinutes = durationMinutesFromSession(
+    session.startsAt,
+    session.endsAt,
+    session.class.duration,
+  );
+  const creditCost = resolveSessionCreditCost({
+    sessionCreditCost: session.creditCost,
+    classCreditCost: session.class.creditCost,
+  });
+  const unmarkedCount = session.bookings.filter(
+    (booking) =>
+      booking.status === BOOKING_STATUS.confirmed && !booking.attendance,
+  ).length;
+  const now = Date.now();
+  const hasStarted = session.startsAt.getTime() <= now;
+  const hasEnded =
+    (session.endsAt?.getTime() ??
+      session.startsAt.getTime() + durationMinutes * 60_000) <= now;
 
   return {
     id: session.id,
     classId: session.class.id,
     classSlug: session.class.slug,
     classTitle: session.class.title,
+    classDescription: session.class.description,
+    publicDescription: session.publicDescription,
     startsAt: session.startsAt.toISOString(),
     endsAt: session.endsAt?.toISOString() ?? null,
+    durationMinutes,
     capacity: session.capacity,
     confirmedCount,
     waitlistCount: session.waitlist.length,
@@ -75,31 +168,57 @@ function mapSessionRecord(session: {
     occupancyLevel: level,
     status: session.status,
     adminNotes: session.adminNotes,
+    pricePence: session.pricePence,
+    creditCost: session.creditCost,
+    resolvedCreditCost: creditCost,
+    unmarkedAttendanceCount: unmarkedCount,
+    needsCheckIn: hasStarted && unmarkedCount > 0,
+    hasStarted,
+    hasEnded,
     tutor: session.tutor
       ? { id: session.tutor.id, name: session.tutor.name }
       : null,
   };
 }
 
+function parseOptionalPricePence(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
+  const pounds =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+        ? Number.parseFloat(value)
+        : Number.NaN;
+  if (!Number.isFinite(pounds) || pounds <= 0) {
+    throw new Error("Price must be greater than zero, or leave blank for the studio default.");
+  }
+  return Math.round(pounds * 100);
+}
+
+function parseOptionalCreditCost(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
+  return parseCreditInput(value);
+}
+
 export async function listAdminSessions(options?: {
   from?: Date;
   to?: Date;
+  range?: AdminScheduleRange;
 }) {
   await ensureStudioClassTypes();
   await expireStalePendingBookings();
 
-  const now = new Date();
-  const from = options?.from ?? now;
-  const to =
-    options?.to ??
-    new Date(now.getTime() + 1000 * 60 * 60 * 24 * 42);
+  const resolved =
+    options?.from && options?.to
+      ? { from: options.from, to: options.to }
+      : resolveAdminScheduleRange(options?.range ?? "schedule");
 
   const sessions = await db.session.findMany({
     where: {
-      startsAt: { gte: from, lte: to },
+      startsAt: { gte: resolved.from, lt: resolved.to },
     },
     include: sessionInclude(),
-    orderBy: { startsAt: "asc" },
+    orderBy: { startsAt: options?.range === "past" ? "desc" : "asc" },
   });
 
   return sessions.map(mapSessionRecord);
@@ -123,12 +242,17 @@ export async function getAdminSessionRoster(sessionId: string) {
               name: true,
               email: true,
               phone: true,
+              image: true,
               parQCompletedAt: true,
               parQData: true,
               medicalNotes: true,
               injuriesLimitations: true,
               allergiesSafetyAlerts: true,
               creditsRemaining: true,
+              oauthAccounts: {
+                select: { profileImageUrl: true },
+                take: 1,
+              },
             },
           },
         },
@@ -184,6 +308,10 @@ export async function getAdminSessionRoster(sessionId: string) {
             name: booking.user.name,
             email: booking.user.email,
             phone: booking.user.phone,
+            image:
+              booking.user.image ??
+              booking.user.oauthAccounts[0]?.profileImageUrl ??
+              null,
             creditsRemaining: booking.user.creditsRemaining,
             parQCompleted: Boolean(booking.user.parQCompletedAt),
             parQRequired: requiresParQ(session.class.slug),
@@ -215,6 +343,10 @@ type CreateSessionInput = {
   capacity: number;
   tutorId?: string | null;
   adminNotes?: string;
+  publicDescription?: string;
+  /** Price in pounds (e.g. 15.50), or null/omit for studio default. */
+  pricePounds?: number | string | null;
+  creditCost?: number | string | null;
 };
 
 export async function createAdminSession(input: CreateSessionInput) {
@@ -248,6 +380,14 @@ export async function createAdminSession(input: CreateSessionInput) {
   }
 
   const capacity = clampCapacity(classRecord.slug, input.capacity);
+  const pricePence =
+    input.pricePounds === undefined
+      ? null
+      : parseOptionalPricePence(input.pricePounds);
+  const creditCost =
+    input.creditCost === undefined
+      ? null
+      : parseOptionalCreditCost(input.creditCost);
 
   if (input.tutorId) {
     const tutor = await db.tutor.findFirst({
@@ -264,6 +404,9 @@ export async function createAdminSession(input: CreateSessionInput) {
       capacity,
       tutorId: input.tutorId || null,
       adminNotes: input.adminNotes?.trim() || null,
+      publicDescription: input.publicDescription?.trim() || null,
+      pricePence,
+      creditCost,
       status: SESSION_STATUS.scheduled,
     },
     include: sessionInclude(),
@@ -288,6 +431,9 @@ type UpdateSessionInput = {
   capacity?: number;
   tutorId?: string | null;
   adminNotes?: string | null;
+  publicDescription?: string | null;
+  pricePounds?: number | string | null;
+  creditCost?: number | string | null;
   clearTutor?: boolean;
 };
 
@@ -308,6 +454,9 @@ export async function updateAdminSession(sessionId: string, input: UpdateSession
     capacity?: number;
     tutorId?: string | null;
     adminNotes?: string | null;
+    publicDescription?: string | null;
+    pricePence?: number | null;
+    creditCost?: number | null;
   } = {};
 
   if (input.capacity != null) {
@@ -318,8 +467,12 @@ export async function updateAdminSession(sessionId: string, input: UpdateSession
     data.tutorId = null;
   } else if (input.tutorId !== undefined) {
     if (input.tutorId) {
+      // Allow re-saving an already-assigned tutor even if they were deactivated.
+      const keepingCurrent = input.tutorId === existing.tutorId;
       const tutor = await db.tutor.findFirst({
-        where: { id: input.tutorId, active: true },
+        where: keepingCurrent
+          ? { id: input.tutorId }
+          : { id: input.tutorId, active: true },
       });
       if (!tutor) throw new Error("Tutor not found.");
     }
@@ -328,6 +481,18 @@ export async function updateAdminSession(sessionId: string, input: UpdateSession
 
   if (input.adminNotes !== undefined) {
     data.adminNotes = input.adminNotes?.trim() || null;
+  }
+
+  if (input.publicDescription !== undefined) {
+    data.publicDescription = input.publicDescription?.trim() || null;
+  }
+
+  if (input.pricePounds !== undefined) {
+    data.pricePence = parseOptionalPricePence(input.pricePounds);
+  }
+
+  if (input.creditCost !== undefined) {
+    data.creditCost = parseOptionalCreditCost(input.creditCost);
   }
 
   if (input.date && input.startTime) {
@@ -452,6 +617,19 @@ export async function ensureDefaultTutors() {
   }
 }
 
+const tutorAdminSelect = {
+  id: true,
+  name: true,
+  email: true,
+  phone: true,
+  bio: true,
+  active: true,
+  createdAt: true,
+  updatedAt: true,
+  _count: { select: { sessions: true } },
+} as const;
+
+/** Active tutors only — used by session assignment dropdowns. */
 export async function listAdminTutors() {
   await ensureDefaultTutors();
   return db.tutor.findMany({
@@ -459,6 +637,104 @@ export async function listAdminTutors() {
     orderBy: { name: "asc" },
     select: { id: true, name: true, email: true, phone: true, bio: true },
   });
+}
+
+/** All tutors including inactive — used by staff management page. */
+export async function listAllAdminTutors() {
+  await ensureDefaultTutors();
+  return db.tutor.findMany({
+    orderBy: [{ active: "desc" }, { name: "asc" }],
+    select: tutorAdminSelect,
+  });
+}
+
+export async function getAdminTutor(id: string) {
+  return db.tutor.findUnique({
+    where: { id },
+    select: tutorAdminSelect,
+  });
+}
+
+type TutorInput = {
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  bio?: string | null;
+  active?: boolean;
+};
+
+function normalizeTutorInput(input: TutorInput) {
+  const name = input.name.trim();
+  if (!name) throw new Error("Name is required.");
+
+  return {
+    name,
+    email: input.email?.trim() || null,
+    phone: input.phone?.trim() || null,
+    bio: input.bio?.trim() || null,
+    active: input.active ?? true,
+  };
+}
+
+export async function createAdminTutor(input: TutorInput) {
+  const data = normalizeTutorInput(input);
+  return db.tutor.create({
+    data,
+    select: tutorAdminSelect,
+  });
+}
+
+export async function updateAdminTutor(id: string, input: Partial<TutorInput>) {
+  const existing = await db.tutor.findUnique({ where: { id } });
+  if (!existing) throw new Error("Instructor not found.");
+
+  const data: {
+    name?: string;
+    email?: string | null;
+    phone?: string | null;
+    bio?: string | null;
+    active?: boolean;
+  } = {};
+
+  if (input.name !== undefined) {
+    const name = input.name.trim();
+    if (!name) throw new Error("Name is required.");
+    data.name = name;
+  }
+  if (input.email !== undefined) data.email = input.email?.trim() || null;
+  if (input.phone !== undefined) data.phone = input.phone?.trim() || null;
+  if (input.bio !== undefined) data.bio = input.bio?.trim() || null;
+  if (input.active !== undefined) data.active = input.active;
+
+  return db.tutor.update({
+    where: { id },
+    data,
+    select: tutorAdminSelect,
+  });
+}
+
+/**
+ * Soft-deactivate when the tutor has sessions; otherwise hard-delete.
+ * Returns `{ deleted: true }` or `{ deactivated: true }`.
+ */
+export async function removeAdminTutor(id: string) {
+  const existing = await db.tutor.findUnique({
+    where: { id },
+    include: { _count: { select: { sessions: true } } },
+  });
+  if (!existing) throw new Error("Instructor not found.");
+
+  if (existing._count.sessions > 0) {
+    const tutor = await db.tutor.update({
+      where: { id },
+      data: { active: false },
+      select: tutorAdminSelect,
+    });
+    return { deactivated: true as const, tutor };
+  }
+
+  await db.tutor.delete({ where: { id } });
+  return { deleted: true as const };
 }
 
 export async function listAdminClasses() {
@@ -472,6 +748,8 @@ export async function listAdminClasses() {
       description: true,
       duration: true,
       maxCapacity: true,
+      pricePence: true,
+      creditCost: true,
     },
   });
 }
@@ -482,10 +760,14 @@ type UpsertClassInput = {
   description: string;
   duration?: number;
   maxCapacity?: number;
+  pricePence?: number | null;
+  creditCost?: number;
 };
 
 export async function upsertAdminClass(input: UpsertClassInput) {
   const maxCapacity = input.maxCapacity ?? 12;
+  const creditCost =
+    input.creditCost != null ? parseCreditInput(input.creditCost) : undefined;
   return db.class.upsert({
     where: { slug: input.slug },
     update: {
@@ -493,6 +775,8 @@ export async function upsertAdminClass(input: UpsertClassInput) {
       description: input.description,
       duration: input.duration ?? 60,
       maxCapacity,
+      ...(input.pricePence !== undefined ? { pricePence: input.pricePence } : {}),
+      ...(creditCost !== undefined ? { creditCost } : {}),
     },
     create: {
       slug: input.slug,
@@ -500,6 +784,8 @@ export async function upsertAdminClass(input: UpsertClassInput) {
       description: input.description,
       duration: input.duration ?? 60,
       maxCapacity,
+      pricePence: input.pricePence ?? null,
+      creditCost: creditCost ?? 1,
     },
   });
 }

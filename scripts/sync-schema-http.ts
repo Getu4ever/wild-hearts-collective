@@ -516,6 +516,42 @@ async function main() {
     )
   `);
 
+  // Per-session / per-class pricing, public description, and fractional credits.
+  await run(
+    'ALTER TABLE "Class" ADD COLUMN IF NOT EXISTS "pricePence" INTEGER',
+  );
+  await run(
+    'ALTER TABLE "Class" ADD COLUMN IF NOT EXISTS "creditCost" DOUBLE PRECISION NOT NULL DEFAULT 1',
+  );
+  await run(
+    'ALTER TABLE "Session" ADD COLUMN IF NOT EXISTS "publicDescription" TEXT',
+  );
+  await run(
+    'ALTER TABLE "Session" ADD COLUMN IF NOT EXISTS "pricePence" INTEGER',
+  );
+  await run(
+    'ALTER TABLE "Session" ADD COLUMN IF NOT EXISTS "creditCost" DOUBLE PRECISION',
+  );
+  await run(
+    'ALTER TABLE "Booking" ADD COLUMN IF NOT EXISTS "creditsCharged" DOUBLE PRECISION',
+  );
+
+  await runOptional(
+    'ALTER TABLE "User" ALTER COLUMN "creditsRemaining" TYPE DOUBLE PRECISION USING ("creditsRemaining"::double precision)',
+  );
+  await runOptional(
+    'ALTER TABLE "ClassPackPurchase" ALTER COLUMN "creditsGranted" TYPE DOUBLE PRECISION USING ("creditsGranted"::double precision)',
+  );
+  await runOptional(
+    'ALTER TABLE "ClassPackPurchase" ALTER COLUMN "creditsRemaining" TYPE DOUBLE PRECISION USING ("creditsRemaining"::double precision)',
+  );
+  await runOptional(
+    'ALTER TABLE "CreditTransaction" ALTER COLUMN "amount" TYPE DOUBLE PRECISION USING ("amount"::double precision)',
+  );
+  await runOptional(
+    'ALTER TABLE "CreditTransaction" ALTER COLUMN "balanceAfter" TYPE DOUBLE PRECISION USING ("balanceAfter"::double precision)',
+  );
+
   console.log("Schema sync complete.");
 }
 

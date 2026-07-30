@@ -100,12 +100,63 @@ export async function resolveFourWeekCoursePricePence() {
   return fromDb ?? DEFAULT_FOUR_WEEK_COURSE_PRICE_PENCE;
 }
 
-/** Drop-in vs full 4-week course block fee for a booked class type. */
-export async function resolveBookingPaymentAmountPence(classSlug: string) {
-  if (isCourseClassSlug(classSlug)) {
+type BookingPriceSource = {
+  classSlug: string;
+  sessionPricePence?: number | null;
+  classPricePence?: number | null;
+};
+
+/** Drop-in / course fee, with optional per-session or per-class override. */
+export async function resolveBookingPaymentAmountPence(
+  classSlugOrSource: string | BookingPriceSource,
+) {
+  const source =
+    typeof classSlugOrSource === "string"
+      ? { classSlug: classSlugOrSource }
+      : classSlugOrSource;
+
+  if (
+    source.sessionPricePence != null &&
+    Number.isFinite(source.sessionPricePence) &&
+    source.sessionPricePence > 0
+  ) {
+    return Math.round(source.sessionPricePence);
+  }
+
+  if (
+    source.classPricePence != null &&
+    Number.isFinite(source.classPricePence) &&
+    source.classPricePence > 0
+  ) {
+    return Math.round(source.classPricePence);
+  }
+
+  if (isCourseClassSlug(source.classSlug)) {
     return resolveFourWeekCoursePricePence();
   }
   return resolveClassPaymentAmountPence();
+}
+
+/** Credits charged for a session (session override → class default → 1). */
+export function resolveSessionCreditCost(input: {
+  sessionCreditCost?: number | null;
+  classCreditCost?: number | null;
+}) {
+  if (
+    input.sessionCreditCost != null &&
+    Number.isFinite(input.sessionCreditCost) &&
+    input.sessionCreditCost > 0
+  ) {
+    return Math.round(input.sessionCreditCost * 100) / 100;
+  }
+  if (
+    input.classCreditCost != null &&
+    Number.isFinite(input.classCreditCost) &&
+    input.classCreditCost > 0
+  ) {
+    return Math.round(input.classCreditCost * 100) / 100;
+  }
+  return 1;
 }
 
 export async function resolveMonthlyMembershipPricePence() {

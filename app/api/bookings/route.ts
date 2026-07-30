@@ -11,6 +11,7 @@ import {
   DuplicateSessionBookingError,
 } from "@/lib/booking-service";
 import { deductCreditForBooking, getUserCreditBalance } from "@/lib/credit-service";
+import { formatCreditLabel, hasEnoughCredits } from "@/lib/credit-units";
 import { db } from "@/lib/db";
 import {
   sendBookingReceivedEmails,
@@ -25,7 +26,10 @@ import {
 import { getMemberSession } from "@/lib/member-auth";
 import { assertParQCompleteForSession, ParQRequiredError } from "@/lib/parq-service";
 import { createBookingCheckoutSession } from "@/lib/stripe";
-import { resolveBookingPaymentAmountPence } from "@/lib/studio-pricing-service";
+import {
+  resolveBookingPaymentAmountPence,
+  resolveSessionCreditCost,
+} from "@/lib/studio-pricing-service";
 import { isCourseClassSlug } from "@/lib/gift-redeem-scope";
 import { redeemVoucherForBooking } from "@/lib/voucher-service";
 
@@ -264,15 +268,35 @@ export async function POST(request: Request) {
       );
     }
 
+    const creditCost = resolveSessionCreditCost({
+      sessionCreditCost: session.creditCost,
+      classCreditCost: session.class.creditCost,
+    });
     const balance = await getUserCreditBalance(userId);
-    if (balance < 1) {
+    if (!hasEnoughCredits(balance, creditCost)) {
+      await db.booking.delete({ where: { id: booking.id } }).catch(() => null);
       return NextResponse.json(
-        { error: "You do not have enough class credits." },
+        {
+          error: `You need ${formatCreditLabel(creditCost)} for this class. You have ${balance}.`,
+        },
         { status: 402 },
       );
     }
 
-    await deductCreditForBooking(userId, booking.id);
+    try {
+      await deductCreditForBooking(userId, booking.id, creditCost);
+    } catch (error) {
+      await db.booking.delete({ where: { id: booking.id } }).catch(() => null);
+      return NextResponse.json(
+        {
+          error:
+            error instanceof Error
+              ? error.message
+              : "You do not have enough class credits.",
+        },
+        { status: 402 },
+      );
+    }
     const confirmed = await confirmBooking(booking.id, { amountPaid: 0 });
 
     return NextResponse.json({
@@ -284,11 +308,16 @@ export async function POST(request: Request) {
       classTitle: confirmed.session.class.title,
       startsAt: confirmed.session.startsAt.toISOString(),
       paidWithCredit: true,
+      creditsCharged: creditCost,
     });
   }
 
   const trimmedCode = voucherCode?.trim();
-  const classPricePence = await resolveBookingPaymentAmountPence(session.class.slug);
+  const classPricePence = await resolveBookingPaymentAmountPence({
+    classSlug: session.class.slug,
+    sessionPricePence: session.pricePence,
+    classPricePence: session.class.pricePence,
+  });
   let amountDuePence = classPricePence;
   let giftApplied: {
     giftCardId: string;

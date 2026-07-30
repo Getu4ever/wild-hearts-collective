@@ -37,13 +37,12 @@ export async function ensureStudioClassTypes(client: PrismaClient = db) {
       classDescriptions[option.slug] ??
       `${option.title} at Wild Hearts Collective.`;
 
+    // Only seed missing class types — do not overwrite admin edits to
+    // description, duration, capacity, price, or credit cost.
     await client.class.upsert({
       where: { slug: option.slug },
       update: {
         title: option.title,
-        description,
-        maxCapacity: option.maxCapacity,
-        duration: option.defaultDuration,
       },
       create: {
         slug: option.slug,
@@ -51,6 +50,7 @@ export async function ensureStudioClassTypes(client: PrismaClient = db) {
         description,
         maxCapacity: option.maxCapacity,
         duration: option.defaultDuration,
+        creditCost: 1,
       },
     });
   }

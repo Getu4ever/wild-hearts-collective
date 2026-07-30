@@ -7,18 +7,32 @@ import {
   type AdminScheduleSession,
 } from "@/app/components/admin-schedule-board";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
-import { listAdminSessions } from "@/lib/admin-session-service";
+import {
+  type AdminScheduleRange,
+  listAdminSessions,
+} from "@/lib/admin-session-service";
 
 export const metadata: Metadata = {
   title: "Admin Schedule",
   robots: { index: false, follow: false },
 };
 
-export default async function AdminSchedulePage() {
+type PageProps = {
+  searchParams: Promise<{ range?: string }>;
+};
+
+function parseRange(value: string | undefined): AdminScheduleRange {
+  if (value === "today" || value === "past" || value === "schedule") return value;
+  return "schedule";
+}
+
+export default async function AdminSchedulePage({ searchParams }: PageProps) {
   const authed = await isAdminAuthenticated();
   if (!authed) redirect("/admin/login");
 
-  const sessions = (await listAdminSessions()) as AdminScheduleSession[];
+  const params = await searchParams;
+  const range = parseRange(params.range);
+  const sessions = (await listAdminSessions({ range })) as AdminScheduleSession[];
 
   return (
     <div className="mx-auto min-w-0 max-w-6xl overflow-x-hidden px-6 py-16 lg:px-8 lg:py-20">
@@ -27,8 +41,8 @@ export default async function AdminSchedulePage() {
           <div className="mb-5 h-px w-12 bg-pink" />
           <h1 className="font-display text-4xl text-plum sm:text-5xl">Schedule</h1>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
-            Live studio monitor — upcoming classes, tutor coverage, and real-time
-            occupancy at a glance.
+            Live studio monitor — today&apos;s classes stay visible after they finish so
+            you can complete check-in. Use Past to reopen earlier sessions.
           </p>
           <AdminNav active="schedule" />
         </div>
@@ -37,13 +51,14 @@ export default async function AdminSchedulePage() {
 
       <div className="mt-10 space-y-6">
         <div className="rounded-lg border border-plum/10 bg-pink-soft/30 px-5 py-4 text-sm text-muted">
-          <p className="font-semibold text-plum">Changing slots, times & tutors</p>
+          <p className="font-semibold text-plum">Check-in &amp; past classes</p>
           <p className="mt-1">
-            Use <strong>Max slots</strong> on each card to update capacity quickly, or open{" "}
-            <strong>View roster → Edit session</strong> to change date, time, tutor, and notes.
+            Finished classes no longer disappear at the end time. Mark attendance from{" "}
+            <strong>View roster</strong> once the class has started. Attendance cannot be
+            set on future classes by accident.
           </p>
         </div>
-        <AdminScheduleBoard sessions={sessions} />
+        <AdminScheduleBoard sessions={sessions} range={range} />
       </div>
     </div>
   );

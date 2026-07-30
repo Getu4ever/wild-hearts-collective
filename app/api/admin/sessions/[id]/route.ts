@@ -60,6 +60,24 @@ export async function PATCH(request: Request, context: RouteContext) {
           : typeof body.adminNotes === "string"
             ? body.adminNotes
             : undefined,
+      publicDescription:
+        body.publicDescription === null
+          ? null
+          : typeof body.publicDescription === "string"
+            ? body.publicDescription
+            : undefined,
+      pricePounds:
+        body.pricePounds === null || body.pricePounds === ""
+          ? null
+          : body.pricePounds !== undefined
+            ? body.pricePounds
+            : undefined,
+      creditCost:
+        body.creditCost === null || body.creditCost === ""
+          ? null
+          : body.creditCost !== undefined
+            ? body.creditCost
+            : undefined,
     });
 
     if (!session) {

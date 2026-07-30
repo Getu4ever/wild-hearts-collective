@@ -14,6 +14,10 @@ model Class {
   description String
   duration    Int       @default(60)
   maxCapacity Int       @default(12)
+  /** Optional drop-in override in pence; null uses studio default pricing. */
+  pricePence  Int?
+  /** Class credits charged when paying with a pack (supports fractions e.g. 1.5). */
+  creditCost  Float     @default(1)
   sessions    Session[]
   createdAt   DateTime  @default(now())
 }
@@ -33,20 +37,27 @@ model Tutor {
 }
 
 model Session {
-  id             String          @id @default(cuid())
-  classId        String
-  class          Class           @relation(fields: [classId], references: [id], onDelete: Cascade)
-  tutorId        String?
-  tutor          Tutor?          @relation(fields: [tutorId], references: [id], onDelete: SetNull)
-  startsAt       DateTime
-  endsAt         DateTime?
-  capacity       Int             @default(12)
-  status         String          @default("scheduled")
-  adminNotes     String?
-  bookings       Booking[]
-  waitlist       WaitlistEntry[]
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  id                String          @id @default(cuid())
+  classId           String
+  class             Class           @relation(fields: [classId], references: [id], onDelete: Cascade)
+  tutorId           String?
+  tutor             Tutor?          @relation(fields: [tutorId], references: [id], onDelete: SetNull)
+  startsAt          DateTime
+  endsAt            DateTime?
+  capacity          Int             @default(12)
+  status            String          @default("scheduled")
+  /** Private studio notes — not shown on the public booking page. */
+  adminNotes        String?
+  /** Public blurb shown on the booking schedule for this session. */
+  publicDescription String?
+  /** Optional price override in pence; null falls back to class then studio default. */
+  pricePence        Int?
+  /** Optional credit cost override; null falls back to class creditCost. */
+  creditCost        Float?
+  bookings          Booking[]
+  waitlist          WaitlistEntry[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
   @@index([startsAt])
   @@index([classId])
@@ -87,7 +98,7 @@ model User {
   membershipResumeAt           DateTime?
   membershipCancelledAt        DateTime?
   cancellationReason           String?
-  creditsRemaining             Int                 @default(0)
+  creditsRemaining             Float               @default(0)
   totalClassesAttended         Int                 @default(0)
   lastClassAttendedAt          DateTime?
   milestonesAwarded            Json?
@@ -198,8 +209,8 @@ model ClassPackPurchase {
   user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   packId             String
   pack               ClassPack           @relation(fields: [packId], references: [id], onDelete: Restrict)
-  creditsGranted     Int
-  creditsRemaining   Int
+  creditsGranted     Float
+  creditsRemaining   Float
   expiresAt          DateTime
   stripeSessionId    String?             @unique
   stripePaymentId    String?
@@ -226,8 +237,8 @@ model CreditTransaction {
   purchase     ClassPackPurchase? @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
   bookingId    String?
   booking      Booking?           @relation(fields: [bookingId], references: [id], onDelete: SetNull)
-  amount       Int
-  balanceAfter Int
+  amount       Float
+  balanceAfter Float
   reason       String
   createdAt    DateTime           @default(now())
 
@@ -450,6 +461,8 @@ model Booking {
   attendance       String?
   cancellationType String?
   paidWithCredit   Boolean             @default(false)
+  /** Credits deducted for this booking (for accurate refunds when cost ≠ 1). */
+  creditsCharged   Float?
   packPurchaseId   String?
   packPurchase     ClassPackPurchase?  @relation(fields: [packPurchaseId], references: [id], onDelete: SetNull)
   voucherId        String?

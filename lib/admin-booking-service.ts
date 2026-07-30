@@ -195,11 +195,16 @@ export async function forceBookAsAdmin(input: ForceBookInput) {
 
   if (input.deductCredit && userId) {
     const { deductCreditForBooking } = await import("@/lib/credit-service");
+    const { resolveSessionCreditCost } = await import("@/lib/studio-pricing-service");
+    const creditCost = resolveSessionCreditCost({
+      sessionCreditCost: session.creditCost,
+      classCreditCost: session.class.creditCost,
+    });
     try {
-      await deductCreditForBooking(userId, booking.id);
+      await deductCreditForBooking(userId, booking.id, creditCost);
     } catch {
       await db.booking.delete({ where: { id: booking.id } });
-      throw new Error("Unable to deduct credit — member may have zero credits.");
+      throw new Error("Unable to deduct credit — member may not have enough credits.");
     }
   }
 

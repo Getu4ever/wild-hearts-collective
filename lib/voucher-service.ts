@@ -125,6 +125,20 @@ export async function recordAttendanceAndAwardMilestones(
   bookingId: string,
 ) {
   return db.$transaction(async (tx) => {
+    const existing = await tx.booking.findUnique({
+      where: { id: bookingId },
+      select: { id: true, userId: true, attendance: true },
+    });
+
+    if (!existing) {
+      throw new Error("Booking not found.");
+    }
+
+    // Already marked attended — do not double-count classes or re-issue milestones.
+    if (existing.attendance === "attended") {
+      return { milestonesAwarded: [] as number[] };
+    }
+
     const booking = await tx.booking.update({
       where: { id: bookingId },
       data: { attendance: "attended" },

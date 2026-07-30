@@ -37,12 +37,8 @@ export const qualificationBadges = [
     alt: "Spin City Certified Grounded Hoop badge",
   },
   {
-    src: "/badges/sc-silks-beginners.jpg",
-    alt: "Spin City Certified Silks Instructor Beginners badge",
-  },
-  {
     src: "/badges/silks-cert.jpeg",
-    alt: "Aerial silks certification badge",
+    alt: "Spin City Certified Silks Instructor Beginners badge",
   },
 ] as const;
 

@@ -20,12 +20,15 @@ type AdminBookingActionsProps = {
   bookingId: string;
   currentStatus: string;
   currentAttendance?: string | null;
+  /** ISO timestamp — attendance is disabled until the class has started. */
+  sessionStartsAt?: string | null;
 };
 
 export function AdminBookingActions({
   bookingId,
   currentStatus,
   currentAttendance,
+  sessionStartsAt,
 }: AdminBookingActionsProps) {
   const router = useRouter();
   const [status, setStatus] = useState(currentStatus);
@@ -34,6 +37,10 @@ export function AdminBookingActions({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  const classHasStarted =
+    !sessionStartsAt || new Date(sessionStartsAt).getTime() <= Date.now();
+  const attendanceLocked = !classHasStarted;
 
   async function patchBooking(body: Record<string, string | boolean>) {
     setLoading(true);
@@ -113,9 +120,17 @@ export function AdminBookingActions({
 
       <select
         value={attendance}
-        disabled={loading}
-        onChange={(event) => patchBooking({ attendance: event.target.value })}
-        className="block w-full rounded-sm border border-plum/15 bg-surface px-2 py-1 text-xs font-semibold uppercase tracking-wide text-plum"
+        disabled={loading || attendanceLocked}
+        onChange={(event) => {
+          if (!event.target.value) return;
+          patchBooking({ attendance: event.target.value });
+        }}
+        className="block w-full rounded-sm border border-plum/15 bg-surface px-2 py-1 text-xs font-semibold uppercase tracking-wide text-plum disabled:cursor-not-allowed disabled:opacity-60"
+        title={
+          attendanceLocked
+            ? "Attendance can only be marked once the class has started"
+            : undefined
+        }
       >
         {attendanceOptions.map((option) => (
           <option key={option.label} value={option.value}>
@@ -123,6 +138,11 @@ export function AdminBookingActions({
           </option>
         ))}
       </select>
+      {attendanceLocked && (
+        <p className="text-[11px] leading-snug text-muted">
+          Check-in unlocks when the class starts.
+        </p>
+      )}
 
       <label className="flex items-center gap-2 text-[11px] text-muted">
         <input

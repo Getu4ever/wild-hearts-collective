@@ -8,8 +8,10 @@ export function AdminNav({
     | "schedule"
     | "bookings"
     | "members"
+    | "tutors"
     | "shop"
     | "pricing"
+    | "timetable"
     | "analytics";
 }) {
   const links = [
@@ -17,8 +19,10 @@ export function AdminNav({
     { href: "/admin/schedule", label: "Schedule", id: "schedule" as const },
     { href: "/admin/bookings", label: "Bookings", id: "bookings" as const },
     { href: "/admin/members", label: "Members", id: "members" as const },
+    { href: "/admin/tutors", label: "Instructors", id: "tutors" as const },
     { href: "/admin/shop", label: "Shop", id: "shop" as const },
     { href: "/admin/pricing", label: "Passes & pricing", id: "pricing" as const },
+    { href: "/admin/timetable", label: "Timetable", id: "timetable" as const },
     { href: "/admin/analytics", label: "Analytics", id: "analytics" as const },
   ];
 

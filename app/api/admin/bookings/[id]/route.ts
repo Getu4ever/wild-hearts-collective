@@ -71,11 +71,27 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     const booking = await db.booking.findUnique({
       where: { id },
-      select: { id: true, userId: true, status: true, attendance: true },
+      select: {
+        id: true,
+        userId: true,
+        status: true,
+        attendance: true,
+        session: { select: { startsAt: true, endsAt: true } },
+      },
     });
 
     if (!booking) {
       return NextResponse.json({ error: "Booking not found." }, { status: 404 });
+    }
+
+    if (booking.session.startsAt.getTime() > Date.now()) {
+      return NextResponse.json(
+        {
+          error:
+            "Attendance can only be marked once the class has started. This prevents accidentally marking future classes.",
+        },
+        { status: 400 },
+      );
     }
 
     if (attendance === ATTENDANCE_STATUS.attended && booking.userId) {

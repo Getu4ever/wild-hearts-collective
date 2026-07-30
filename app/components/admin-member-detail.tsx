@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AdminMemberAvatar } from "@/app/components/admin-member-avatar";
 import { AdminParQPanel } from "@/app/components/admin-parq-panel";
 import {
   ACCOUNT_STATUS,
@@ -176,14 +177,22 @@ export function AdminMemberDetail({
 
       <section className="rounded-lg border border-plum/10 bg-surface p-6 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-brand">Member profile</p>
-            <h2 className="mt-2 font-display text-3xl text-plum">{member.name}</h2>
-            <p className="mt-1 text-sm text-muted">{member.email}</p>
-            <p className="mt-2 text-xs text-muted">
-              Joined {formatDate(member.createdAt)} · {member.signupMethod} ·{" "}
-              {member.bookingCount} booking{member.bookingCount === 1 ? "" : "s"}
-            </p>
+          <div className="flex items-start gap-4">
+            <AdminMemberAvatar
+              name={member.name}
+              image={member.image}
+              sizeClass="h-20 w-20"
+              initialsClassName="text-2xl"
+            />
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-brand">Member profile</p>
+              <h2 className="mt-2 font-display text-3xl text-plum">{member.name}</h2>
+              <p className="mt-1 text-sm text-muted">{member.email}</p>
+              <p className="mt-2 text-xs text-muted">
+                Joined {formatDate(member.createdAt)} · {member.signupMethod} ·{" "}
+                {member.bookingCount} booking{member.bookingCount === 1 ? "" : "s"}
+              </p>
+            </div>
           </div>
           <div className="flex flex-wrap gap-2">
             <span

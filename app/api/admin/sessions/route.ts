@@ -13,15 +13,24 @@ export async function GET(request: Request) {
   const days = Number(searchParams.get("days") ?? "42");
   const from = searchParams.get("from");
   const to = searchParams.get("to");
+  const rangeParam = searchParams.get("range");
+  const range =
+    rangeParam === "today" || rangeParam === "past" || rangeParam === "schedule"
+      ? rangeParam
+      : undefined;
 
   try {
     const now = new Date();
-    const sessions = await listAdminSessions({
-      from: from ? new Date(from) : now,
-      to: to
-        ? new Date(to)
-        : new Date(now.getTime() + 1000 * 60 * 60 * 24 * Math.min(days, 90)),
-    });
+    const sessions = await listAdminSessions(
+      from || to
+        ? {
+            from: from ? new Date(from) : now,
+            to: to
+              ? new Date(to)
+              : new Date(now.getTime() + 1000 * 60 * 60 * 24 * Math.min(days, 90)),
+          }
+        : { range: range ?? "schedule" },
+    );
 
     return NextResponse.json({ sessions });
   } catch (error) {
@@ -48,6 +57,24 @@ export async function POST(request: Request) {
       typeof body.tutorId === "string" && body.tutorId ? body.tutorId : null;
     const adminNotes =
       typeof body.adminNotes === "string" ? body.adminNotes : undefined;
+    const publicDescription =
+      typeof body.publicDescription === "string"
+        ? body.publicDescription
+        : body.publicDescription === null
+          ? ""
+          : undefined;
+    const pricePounds =
+      body.pricePounds === null || body.pricePounds === ""
+        ? null
+        : body.pricePounds !== undefined
+          ? body.pricePounds
+          : undefined;
+    const creditCost =
+      body.creditCost === null || body.creditCost === ""
+        ? null
+        : body.creditCost !== undefined
+          ? body.creditCost
+          : undefined;
 
     if (!classSlug || !date || !startTime || !Number.isFinite(capacity)) {
       return NextResponse.json(
@@ -64,6 +91,9 @@ export async function POST(request: Request) {
       capacity,
       tutorId,
       adminNotes,
+      publicDescription,
+      pricePounds,
+      creditCost,
     });
 
     return NextResponse.json({ session }, { status: 201 });

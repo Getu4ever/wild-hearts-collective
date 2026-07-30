@@ -11,6 +11,7 @@ import { WhyChooseUs } from "./components/why-choose-us";
 import { VideoHero } from "./components/video-hero";
 import { SectionHeading } from "./components/section-heading";
 import { Timetable } from "./components/timetable";
+import { getMarketingTimetable } from "@/lib/marketing-timetable-service";
 import { classes, siteConfig } from "@/lib/site-data";
 import { classSlugToHero, type HeroImageKey } from "@/lib/hero-images";
 
@@ -18,7 +19,9 @@ function getClassHeroKey(slug: string): HeroImageKey {
   return classSlugToHero[slug] ?? "community";
 }
 
-export default function Home() {
+export default async function Home() {
+  const timetableDays = await getMarketingTimetable();
+
   return (
     <>
       <VideoHero
@@ -76,9 +79,8 @@ export default function Home() {
         </ul>
       </ContentSection>
 
-      <ContentSection className="bg-pink-soft">
-        <SectionHeading title="Class Timetable" />
-        <Timetable />
+      <ContentSection id="timetable" className="bg-pink-soft scroll-mt-24">
+        <Timetable days={timetableDays} />
       </ContentSection>
 
       <FaqPreview />

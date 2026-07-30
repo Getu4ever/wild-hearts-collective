@@ -64,6 +64,23 @@ export default async function AdminSessionDetailPage({ params }: PageProps) {
             {formatSessionDateTime(startsAt)} ·{" "}
             {formatSessionTimeRange(startsAt, endsAt)}
           </p>
+          {(session.publicDescription ||
+            session.pricePence != null ||
+            session.creditCost != null) && (
+            <p className="mt-2 text-sm text-muted">
+              {session.publicDescription ? (
+                <span className="block text-plum">{session.publicDescription}</span>
+              ) : null}
+              {session.pricePence != null
+                ? `Price override: £${(session.pricePence / 100).toFixed(2)}`
+                : "Studio default price"}
+              {" · "}
+              {session.resolvedCreditCost ?? session.creditCost ?? 1} credit
+              {(session.resolvedCreditCost ?? session.creditCost ?? 1) === 1
+                ? ""
+                : "s"}
+            </p>
+          )}
           <p className="mt-2 text-sm text-muted">
             Tutor:{" "}
             <span className="font-medium text-plum">
@@ -87,6 +104,7 @@ export default async function AdminSessionDetailPage({ params }: PageProps) {
           sessionId={id}
           bookings={roster.bookings}
           waitlist={roster.waitlist}
+          sessionStartsAt={session.startsAt}
         />
 
         {!cancelled && (
@@ -94,7 +112,7 @@ export default async function AdminSessionDetailPage({ params }: PageProps) {
             <section id="edit">
               <h2 className="font-display text-3xl text-plum">Edit session</h2>
               <p className="mt-2 text-sm text-muted">
-                Update the time, capacity, tutor assignment, or admin notes.
+                Update the time, capacity, pricing, credits, description, tutor, or notes.
               </p>
               <div className="mt-4">
                 <AdminSessionForm
@@ -108,6 +126,9 @@ export default async function AdminSessionDetailPage({ params }: PageProps) {
                     capacity: session.capacity,
                     tutorId: session.tutor?.id ?? null,
                     adminNotes: session.adminNotes,
+                    publicDescription: session.publicDescription,
+                    pricePence: session.pricePence,
+                    creditCost: session.creditCost,
                   }}
                 />
               </div>

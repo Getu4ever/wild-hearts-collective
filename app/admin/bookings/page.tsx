@@ -131,6 +131,7 @@ export default async function AdminBookingsPage() {
                         bookingId={booking.id}
                         currentStatus={booking.status}
                         currentAttendance={booking.attendance}
+                        sessionStartsAt={booking.session.startsAt.toISOString()}
                       />
                     </td>
                   </tr>

@@ -3,6 +3,7 @@ import {
   CLASS_PACK_STATUS,
   CREDIT_REASON,
 } from "@/lib/booking-advanced-config";
+import { DEFAULT_CREDIT_COST, hasEnoughCredits } from "@/lib/credit-units";
 import { db } from "@/lib/db";
 import { sendClassPackPurchaseEmails } from "@/lib/email";
 
@@ -171,46 +172,69 @@ export async function fulfillPendingClassPackPurchase(
 export async function deductCreditForBooking(
   userId: string,
   bookingId: string,
+  creditCost: number = DEFAULT_CREDIT_COST,
 ) {
+  const cost =
+    Number.isFinite(creditCost) && creditCost > 0
+      ? Math.round(creditCost * 100) / 100
+      : DEFAULT_CREDIT_COST;
+
   return db.$transaction(async (tx) => {
     await expireStalePurchases(tx, userId);
 
-    const user = await tx.user.update({
-      where: {
-        id: userId,
-        creditsRemaining: { gte: 1 },
-      },
-      data: { creditsRemaining: { decrement: 1 } },
+    const current = await tx.user.findUnique({
+      where: { id: userId },
       select: { creditsRemaining: true },
     });
 
-    const purchase = await tx.classPackPurchase.findFirst({
+    if (!current || !hasEnoughCredits(current.creditsRemaining, cost)) {
+      throw new Error("You do not have enough class credits.");
+    }
+
+    const user = await tx.user.update({
+      where: { id: userId },
+      data: { creditsRemaining: { decrement: cost } },
+      select: { creditsRemaining: true },
+    });
+
+    let remainingToDeduct = cost;
+    const purchases = await tx.classPackPurchase.findMany({
       where: {
         userId,
         status: CLASS_PACK_STATUS.active,
-        creditsRemaining: { gte: 1 },
+        creditsRemaining: { gt: 0 },
         expiresAt: { gte: new Date() },
       },
       orderBy: { expiresAt: "asc" },
     });
 
-    if (purchase) {
-      const nextRemaining = purchase.creditsRemaining - 1;
+    let primaryPurchaseId: string | null = null;
+
+    for (const purchase of purchases) {
+      if (remainingToDeduct <= 0) break;
+      const take = Math.min(purchase.creditsRemaining, remainingToDeduct);
+      const nextRemaining =
+        Math.round((purchase.creditsRemaining - take) * 100) / 100;
       await tx.classPackPurchase.update({
         where: { id: purchase.id },
         data: {
           creditsRemaining: nextRemaining,
-          status: nextRemaining <= 0 ? CLASS_PACK_STATUS.exhausted : CLASS_PACK_STATUS.active,
+          status:
+            nextRemaining <= 1e-9
+              ? CLASS_PACK_STATUS.exhausted
+              : CLASS_PACK_STATUS.active,
         },
       });
+      if (!primaryPurchaseId) primaryPurchaseId = purchase.id;
+      remainingToDeduct = Math.round((remainingToDeduct - take) * 100) / 100;
     }
 
     await tx.creditTransaction.create({
       data: {
         userId,
         bookingId,
-        purchaseId: purchase?.id ?? null,
-        amount: -1,
+        purchaseId: primaryPurchaseId,
+        amount: -cost,
         balanceAfter: user.creditsRemaining,
         reason: CREDIT_REASON.bookingDeduction,
       },
@@ -220,11 +244,16 @@ export async function deductCreditForBooking(
       where: { id: bookingId },
       data: {
         paidWithCredit: true,
-        packPurchaseId: purchase?.id ?? null,
+        creditsCharged: cost,
+        packPurchaseId: primaryPurchaseId,
       },
     });
 
-    return { balance: user.creditsRemaining, purchaseId: purchase?.id ?? null };
+    return {
+      balance: user.creditsRemaining,
+      purchaseId: primaryPurchaseId,
+      creditsCharged: cost,
+    };
   });
 }
 
@@ -235,16 +264,25 @@ export async function refundCreditForCancellation(
   return db.$transaction(async (tx) => {
     const booking = await tx.booking.findUnique({
       where: { id: bookingId },
-      select: { paidWithCredit: true, packPurchaseId: true },
+      select: {
+        paidWithCredit: true,
+        packPurchaseId: true,
+        creditsCharged: true,
+      },
     });
 
     if (!booking?.paidWithCredit) {
       return { refunded: false as const };
     }
 
+    const cost =
+      booking.creditsCharged != null && booking.creditsCharged > 0
+        ? booking.creditsCharged
+        : DEFAULT_CREDIT_COST;
+
     const user = await tx.user.update({
       where: { id: userId },
-      data: { creditsRemaining: { increment: 1 } },
+      data: { creditsRemaining: { increment: cost } },
       select: { creditsRemaining: true },
     });
 
@@ -254,7 +292,8 @@ export async function refundCreditForCancellation(
       });
 
       if (purchase) {
-        const nextRemaining = purchase.creditsRemaining + 1;
+        const nextRemaining =
+          Math.round((purchase.creditsRemaining + cost) * 100) / 100;
         await tx.classPackPurchase.update({
           where: { id: purchase.id },
           data: {
@@ -270,12 +309,12 @@ export async function refundCreditForCancellation(
         userId,
         bookingId,
         purchaseId: booking.packPurchaseId,
-        amount: 1,
+        amount: cost,
         balanceAfter: user.creditsRemaining,
         reason: CREDIT_REASON.cancellationRefund,
       },
     });
 
-    return { refunded: true as const, balance: user.creditsRemaining };
+    return { refunded: true as const, balance: user.creditsRemaining, creditsRefunded: cost };
   });
 }

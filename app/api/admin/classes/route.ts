@@ -40,12 +40,24 @@ export async function POST(request: Request) {
       );
     }
 
+    const pricePence =
+      body.pricePence === null
+        ? null
+        : body.pricePence != null && Number.isFinite(Number(body.pricePence))
+          ? Math.round(Number(body.pricePence))
+          : body.pricePounds != null && Number.isFinite(Number(body.pricePounds))
+            ? Math.round(Number(body.pricePounds) * 100)
+            : undefined;
+
     const classRecord = await upsertAdminClass({
       slug,
       title,
       description,
       duration: Number(body.duration) || 60,
       maxCapacity: Number(body.maxCapacity) || 12,
+      pricePence: pricePence === undefined ? null : pricePence,
+      creditCost:
+        body.creditCost != null ? Number(body.creditCost) : undefined,
     });
 
     return NextResponse.json({ class: classRecord }, { status: 201 });

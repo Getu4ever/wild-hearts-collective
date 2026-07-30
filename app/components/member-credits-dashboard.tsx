@@ -293,7 +293,7 @@ export function MemberCreditsDashboard({
       <section className="rounded-2xl border border-plum/10 bg-surface p-6 shadow-sm">
         <h2 className="font-display text-2xl text-plum">Buy a class pack</h2>
         <p className="mt-2 text-sm text-muted">
-          One credit equals one class booking. Pay with a pack to skip paying the class fee each time.
+          Most classes use 1 credit; longer sessions may use more (shown when you book). Pay with a pack to skip the class fee.
           Gift cards can cover part or all of a pack — leftover balance stays on the same code.
         </p>
 

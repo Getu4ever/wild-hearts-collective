@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AdminBookingActions } from "@/app/components/admin-booking-actions";
 import { AdminCapacityBadge } from "@/app/components/admin-capacity-badge";
+import { AdminMemberAvatar } from "@/app/components/admin-member-avatar";
 
 type RosterBooking = {
   id: string;
@@ -19,6 +20,7 @@ type RosterBooking = {
   amountPaid?: number | null;
   user: {
     id: string;
+    image: string | null;
     parQCompleted: boolean;
     parQRequired: boolean;
     creditsRemaining: number;
@@ -39,10 +41,12 @@ export function AdminSessionRosterPanel({
   sessionId,
   bookings,
   waitlist,
+  sessionStartsAt,
 }: {
   sessionId: string;
   bookings: RosterBooking[];
   waitlist: WaitlistEntry[];
+  sessionStartsAt?: string | null;
 }) {
   return (
     <div className="space-y-10">
@@ -78,22 +82,31 @@ export function AdminSessionRosterPanel({
                 {bookings.map((booking) => (
                   <tr key={booking.id} className="border-b border-plum/8 align-top">
                     <td className="px-3 py-3">
-                      <p className="truncate font-medium text-plum" title={booking.name}>
-                        {booking.name}
-                      </p>
-                      {booking.user && (
-                        <Link
-                          href={`/admin/members/${booking.user.id}`}
-                          className="text-xs text-brand hover:underline"
-                        >
-                          View member
-                        </Link>
-                      )}
-                      {booking.user?.safetyNotes.length ? (
-                        <p className="mt-2 line-clamp-2 text-xs text-brand">
-                          {booking.user.safetyNotes.join(" · ")}
-                        </p>
-                      ) : null}
+                      <div className="flex items-start gap-3">
+                        <AdminMemberAvatar
+                          name={booking.name}
+                          image={booking.user?.image}
+                          sizeClass="h-9 w-9"
+                        />
+                        <div className="min-w-0">
+                          <p className="truncate font-medium text-plum" title={booking.name}>
+                            {booking.name}
+                          </p>
+                          {booking.user && (
+                            <Link
+                              href={`/admin/members/${booking.user.id}`}
+                              className="text-xs text-brand hover:underline"
+                            >
+                              View member
+                            </Link>
+                          )}
+                          {booking.user?.safetyNotes.length ? (
+                            <p className="mt-2 line-clamp-2 text-xs text-brand">
+                              {booking.user.safetyNotes.join(" · ")}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
                     </td>
                     <td className="px-3 py-3 text-muted">
                       <a
@@ -123,6 +136,7 @@ export function AdminSessionRosterPanel({
                         bookingId={booking.id}
                         currentStatus={booking.status}
                         currentAttendance={booking.attendance}
+                        sessionStartsAt={sessionStartsAt}
                       />
                     </td>
                     <td className="px-3 py-3 text-muted">

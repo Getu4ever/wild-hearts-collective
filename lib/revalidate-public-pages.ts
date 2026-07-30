@@ -6,3 +6,8 @@ export function revalidateMembershipPricingPages() {
   revalidatePath("/account/credits");
   revalidatePath("/api/bundles");
 }
+
+/** Bust homepage marketing timetable after Admin → Timetable saves. */
+export function revalidateMarketingTimetablePages() {
+  revalidatePath("/");
+}

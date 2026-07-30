@@ -29,12 +29,17 @@ export default async function AdminMemberDetailPage({ params }: PageProps) {
     select: {
       ...profileSelectFields,
       internalNotes: true,
-      oauthAccounts: { select: { provider: true } },
+      oauthAccounts: { select: { provider: true, profileImageUrl: true } },
       _count: { select: { bookings: true } },
     },
   });
 
   if (!user) notFound();
+
+  const profileImage =
+    user.image ??
+    user.oauthAccounts.find((account) => account.profileImageUrl)?.profileImageUrl ??
+    null;
 
   const [timeline, recentBookings, auditLogs, parQStatus] = await Promise.all([
     db.membershipEvent.findMany({
@@ -78,6 +83,7 @@ export default async function AdminMemberDetailPage({ params }: PageProps) {
           memberId={id}
           initialMember={{
             ...toMemberProfile(user),
+            image: profileImage,
             internalNotes: user.internalNotes,
             signupMethod: user.oauthAccounts.some((account) => account.provider === "google")
               ? "Google"

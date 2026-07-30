@@ -151,10 +151,11 @@ export const footerQuickLinks = [
   { href: "/about", label: "About Us" },
   { href: "/about/team", label: "Our Team" },
   { href: "/classes", label: "Our Classes" },
+  { href: "/#timetable", label: "Timetable" },
+  { href: "/book", label: "Book a Class" },
   { href: "/membership", label: "Membership" },
   { href: "/shop", label: "Shop" },
   { href: "/reviews", label: "Reviews" },
-  { href: "/book", label: "Book a Class" },
   { href: "/community", label: "Community Hub" },
   { href: "/faqs", label: "FAQs" },
   { href: "/contact", label: "Contact" },
@@ -761,15 +762,90 @@ export const classes = [
   },
 ];
 
-export const timetable = [
+export type TimetableClass = {
+  time: string;
+  title: string;
+  /** Optional note under the class title */
+  note?: string;
+  /**
+   * Booking class filter slug (matches CLASS_TYPE_OPTIONS / `/book?class=`).
+   * Omit for open/general slots that should open the full booking schedule.
+   */
+  bookClassSlug?: string;
+};
+
+export type TimetableDay = {
+  day: string;
+  classes: TimetableClass[];
+};
+
+/**
+ * Weekly marketing timetable defaults (homepage /#timetable).
+ * Runtime source of truth is StudioSetting `marketing_timetable`
+ * (Admin → Timetable). Live bookable sessions are Admin → Schedule.
+ * Links open `/book` filtered by class type when `bookClassSlug` is set.
+ */
+export const timetable: TimetableDay[] = [
+  {
+    day: "Monday",
+    classes: [
+      { time: "5:00 – 6:00", title: "Open Training" },
+      {
+        time: "6:05 – 7:05",
+        title: "Improver/Intermediate Pole",
+        bookClassSlug: "pole",
+      },
+      {
+        time: "7:10 – 8:10",
+        title: "Flow & Heels Tech",
+        bookClassSlug: "pole",
+      },
+      {
+        time: "8:15 – 9:00",
+        title: "Beginner Pole",
+        bookClassSlug: "pole",
+      },
+    ],
+  },
   {
     day: "Tuesday",
     classes: [
+      { time: "5:00 – 6:00", title: "Open Training" },
       {
-        time: "6:00 pm – 7:00 pm",
-        title: "Mixed Level Pole",
-        description:
-          "Suitable for those with some previous pole experience. Instructor-led class covering spins, climbs, and combinations.",
+        time: "6:05 – 7:05",
+        title: "Advanced Pole",
+        bookClassSlug: "pole",
+      },
+      {
+        time: "7:10 – 8:10",
+        title: "Spin Pole Tech",
+        bookClassSlug: "pole",
+      },
+      {
+        time: "8:20 – 9:20",
+        title: "Intermediate Pole",
+        bookClassSlug: "pole",
+      },
+    ],
+  },
+  {
+    day: "Wednesday",
+    classes: [
+      { time: "5:00 – 6:00", title: "Open Training" },
+      {
+        time: "6:00 – 7:00",
+        title: "Aerial Hoop Intermediate",
+        bookClassSlug: "aerial-hoop",
+      },
+      {
+        time: "7:10 – 8:10",
+        title: "Advanced",
+        bookClassSlug: "aerial-hoop",
+      },
+      {
+        time: "8:20 – 9:05",
+        title: "Beginners",
+        bookClassSlug: "aerial-hoop",
       },
     ],
   },
@@ -777,16 +853,30 @@ export const timetable = [
     day: "Thursday",
     classes: [
       {
-        time: "6:00 pm – 7:00 pm",
-        title: "Intro to Aerial Hoop",
-        description:
-          "Perfect for beginners. Learn aerial terminology, basic mounts, shapes, and short transitions to build confidence.",
+        time: "6:00 – 7:00",
+        title: "Aerial Silks Beginner",
+        bookClassSlug: "aerial-silks",
       },
       {
-        time: "7:15 pm – 8:15 pm",
-        title: "Mixed Ability Aerial",
-        description:
-          "A relaxed, supportive class for aerialists of all levels. Beginners welcome.",
+        time: "7:05 – 8:05",
+        title: "Aerial Silks Intermediate",
+        bookClassSlug: "aerial-silks",
+      },
+      {
+        time: "8:10 – 8:55",
+        title: "Intro Classes",
+        bookClassSlug: "beginner-courses",
+      },
+    ],
+  },
+  {
+    day: "Friday",
+    classes: [
+      {
+        time: "6:30 – 8:00",
+        title: "Themed Flow Friday",
+        bookClassSlug: "pole",
+        note: "Equipment and theme will change on a weekly basis — please check our booking system.",
       },
     ],
   },
@@ -794,10 +884,20 @@ export const timetable = [
     day: "Saturday",
     classes: [
       {
-        time: "By appointment",
-        title: "Open Training & Workshops",
-        description:
-          "Private sessions and creative arts workshops. Please contact us to enquire.",
+        time: "",
+        title: "Privates and Workshops",
+        bookClassSlug: "pole-workshops",
+        note: "Please check our booking system.",
+      },
+    ],
+  },
+  {
+    day: "Sunday",
+    classes: [
+      {
+        time: "",
+        title: "Mixed Ability / Privates / Workshops",
+        note: "Please check our booking system.",
       },
     ],
   },

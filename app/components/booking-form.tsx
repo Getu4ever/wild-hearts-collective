@@ -7,6 +7,11 @@ import { BookingEmbeddedCheckout } from "@/app/components/booking-embedded-check
 import { CLASS_TYPE_OPTIONS } from "@/lib/admin-studio-config";
 import { formatSessionDateParts } from "@/lib/booking-config";
 import { BOOKING_TERMS_SCROLL_TEXT } from "@/lib/booking-terms";
+import {
+  formatCreditLabel,
+  formatCredits,
+  hasEnoughCredits,
+} from "@/lib/credit-units";
 import { isCourseClassSlug } from "@/lib/gift-redeem-scope";
 import { siteConfig } from "@/lib/site-data";
 
@@ -14,14 +19,27 @@ type SessionOption = {
   id: string;
   classSlug: string;
   classTitle: string;
+  tutor?: { id: string; name: string } | null;
+  description?: string | null;
   startsAt: string;
+  endsAt?: string | null;
+  durationMinutes?: number;
+  durationLabel?: string;
   spotsLeft: number;
   isFull: boolean;
   waitlistCount: number;
   alreadyBooked?: boolean;
   pricePence?: number;
   priceLabel?: string;
+  creditCost?: number;
+  creditCostLabel?: string;
+  creditCostDisplay?: string;
 };
+
+function sessionDisplayTitle(session: Pick<SessionOption, "classTitle" | "tutor">) {
+  const tutorName = session.tutor?.name?.trim();
+  return tutorName ? `${session.classTitle} with ${tutorName}` : session.classTitle;
+}
 
 type BookingConfig = {
   classPriceLabel?: string;
@@ -42,6 +60,7 @@ type BookingResult = {
   status?: string;
   paymentSkipped?: boolean;
   paidWithCredit?: boolean;
+  creditsCharged?: number;
   voucherApplied?: boolean;
   giftCardApplied?: boolean;
   giftAmountAppliedLabel?: string;
@@ -141,10 +160,26 @@ export function BookingForm() {
   const [voucherCode, setVoucherCode] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
+  // Keep filter in sync when arriving from the marketing timetable (?class=pole etc.).
+  useEffect(() => {
+    const fromUrl = searchParams.get("class") ?? "all";
+    setClassFilter(fromUrl);
+  }, [searchParams]);
+
   const cancelled = searchParams.get("cancelled") === "1";
   const selectedSession =
     sessions.find((session) => session.id === selectedSessionId) ?? null;
   const isCourseBooking = isCourseClassSlug(selectedSession?.classSlug);
+  const sessionCreditCost = selectedSession?.creditCost ?? 1;
+  const sessionCreditLabel =
+    selectedSession?.creditCostLabel ?? formatCreditLabel(sessionCreditCost);
+  const memberCredits = member?.creditsRemaining ?? 0;
+  const canPayWithCredit =
+    Boolean(member) &&
+    hasEnoughCredits(memberCredits, sessionCreditCost) &&
+    !selectedSession?.isFull &&
+    !joinWaitlist &&
+    !isCourseBooking;
   const priceNote =
     selectedSession?.priceLabel ??
     (isCourseBooking
@@ -262,6 +297,12 @@ export function BookingForm() {
       setUseCredit(false);
     }
   }, [isCourseBooking, useCredit]);
+
+  useEffect(() => {
+    if (useCredit && !canPayWithCredit) {
+      setUseCredit(false);
+    }
+  }, [useCredit, canPayWithCredit]);
 
   // After booking success (or payment step), confirmation sits at the top but
   // mobile browsers often keep the previous scroll position near the submit button.
@@ -491,7 +532,11 @@ export function BookingForm() {
     if (isWaitlist) {
       statusMessage = `We have recorded ${result.email} on the waitlist.`;
     } else if (result.paidWithCredit) {
-      statusMessage = `Your booking is confirmed — paid with 1 class credit. A confirmation email has been sent to ${result.email}.`;
+      const charged =
+        result.creditsCharged != null
+          ? formatCreditLabel(result.creditsCharged)
+          : "class credits";
+      statusMessage = `Your booking is confirmed — paid with ${charged}. A confirmation email has been sent to ${result.email}.`;
     } else if (result.giftCardApplied) {
       const applied = result.giftAmountAppliedLabel
         ? ` (${result.giftAmountAppliedLabel} applied)`
@@ -674,12 +719,26 @@ export function BookingForm() {
                       }`}
                     >
                       <div>
-                        <p className="font-semibold text-plum">{session.classTitle}</p>
+                        <p className="font-semibold text-plum">
+                          {sessionDisplayTitle(session)}
+                        </p>
                         <p className="mt-1 text-sm text-muted">
                           {date.weekday}, {date.shortDate}
                         </p>
                         <p className="mt-0.5 text-sm font-medium text-foreground">
                           {date.time}
+                          {session.durationLabel ? ` · ${session.durationLabel}` : ""}
+                        </p>
+                        {session.description ? (
+                          <p className="mt-2 text-sm leading-relaxed text-muted">
+                            {session.description}
+                          </p>
+                        ) : null}
+                        <p className="mt-2 text-xs text-muted">
+                          {session.priceLabel ?? "Price on request"}
+                          {session.creditCost != null && session.creditCost !== 1
+                            ? ` · ${session.creditCostDisplay ?? formatCredits(session.creditCost)} credits`
+                            : ""}
                         </p>
                       </div>
                       <span
@@ -841,7 +900,7 @@ export function BookingForm() {
                         Class credits
                       </p>
                       <p className="mt-2 font-display text-4xl text-plum">
-                        {member.creditsRemaining ?? 0}
+                        {formatCredits(member.creditsRemaining ?? 0)}
                       </p>
                       <p className="mt-1 text-sm text-muted">
                         {(member.creditsRemaining ?? 0) === 1 ? "credit" : "credits"} available
@@ -855,10 +914,7 @@ export function BookingForm() {
                     </Link>
                   </div>
 
-                  {(member.creditsRemaining ?? 0) > 0 &&
-                  !selectedSession?.isFull &&
-                  !joinWaitlist &&
-                  !isCourseBooking ? (
+                  {canPayWithCredit ? (
                     <label className="mt-5 flex items-start gap-3 rounded-lg border border-plum/10 bg-pink-soft/30 px-4 py-4 text-sm text-plum">
                       <input
                         type="checkbox"
@@ -867,7 +923,9 @@ export function BookingForm() {
                         className="mt-1"
                       />
                       <span>
-                        <strong className="block">Pay with 1 class credit</strong>
+                        <strong className="block">
+                          Pay with {sessionCreditLabel}
+                        </strong>
                         Skip the class fee and confirm instantly using your pack balance.
                       </span>
                     </label>
@@ -875,8 +933,11 @@ export function BookingForm() {
                     <p className="mt-4 rounded-lg bg-pink-soft/40 px-4 py-3 text-sm text-muted">
                       {isCourseBooking
                         ? "Class credits cannot be used for 4-week courses — pay the course fee or redeem a 4-week course voucher."
-                        : (member.creditsRemaining ?? 0) === 0
+                        : memberCredits === 0
                           ? "No credits yet — purchase a class pack to book without paying the class fee each time."
+                          : selectedSession &&
+                              !hasEnoughCredits(memberCredits, sessionCreditCost)
+                            ? `This class uses ${sessionCreditLabel}. You have ${formatCredits(memberCredits)}.`
                           : selectedSession?.isFull || joinWaitlist
                             ? "Credits cannot be used for waitlist entries."
                             : "Select an available session to use a credit."}
@@ -1025,16 +1086,29 @@ export function BookingForm() {
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand">
                 Your selection
               </p>
-              <p className="mt-2 font-semibold text-plum">{selectedSession.classTitle}</p>
+              <p className="mt-2 font-semibold text-plum">
+                {sessionDisplayTitle(selectedSession)}
+              </p>
               <p className="mt-1 text-sm text-muted">
                 {selectedDate.weekday}, {selectedDate.shortDate} · {selectedDate.time}
+                {selectedSession.durationLabel
+                  ? ` · ${selectedSession.durationLabel}`
+                  : ""}
               </p>
-              <p className="mt-1 text-sm text-muted">{siteConfig.durationNote}</p>
+              {selectedSession.description ? (
+                <p className="mt-2 text-sm leading-relaxed text-muted">
+                  {selectedSession.description}
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-muted">{siteConfig.durationNote}</p>
+              )}
               {!selectedSession.isFull && (
                 <p className="mt-2 text-sm text-muted">
                   {useCredit && isSignedIn ? (
                     <>
-                      Payment: <strong className="text-foreground">1 class credit</strong> (no card payment)
+                      Payment:{" "}
+                      <strong className="text-foreground">{sessionCreditLabel}</strong>{" "}
+                      (no card payment)
                     </>
                   ) : voucherCode.trim() ? (
                     <>
@@ -1147,7 +1221,9 @@ export function BookingForm() {
             <dl className="mt-4 space-y-3 text-sm">
               <div className="flex items-center justify-between gap-3">
                 <dt className="text-muted">Class credits</dt>
-                <dd className="font-semibold text-plum">{member.creditsRemaining ?? 0}</dd>
+                <dd className="font-semibold text-plum">
+                  {formatCredits(member.creditsRemaining ?? 0)}
+                </dd>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <dt className="text-muted">PAR-Q</dt>
@@ -1218,11 +1294,20 @@ export function BookingForm() {
                 : "Amount due"}
           </p>
           <p className="mt-2 text-3xl font-semibold">
-            {isSignedIn && useCredit ? "1 credit" : voucherCode.trim() ? "Code entered" : priceNote}
+            {isSignedIn && useCredit
+              ? formatCredits(sessionCreditCost)
+              : voucherCode.trim()
+                ? "Code entered"
+                : priceNote}
+            {isSignedIn && useCredit ? (
+              <span className="ml-2 text-base font-medium text-white/85">
+                {sessionCreditCost === 1 ? "credit" : "credits"}
+              </span>
+            ) : null}
           </p>
           <p className="mt-2 text-sm leading-relaxed text-white/85">
             {isSignedIn && useCredit
-              ? "Your booking confirms instantly when you use a class credit — no card payment needed."
+              ? `Your booking confirms instantly when you use ${sessionCreditLabel} — no card payment needed.`
               : voucherCode.trim()
                 ? "If your gift card or voucher covers the class fee, your booking confirms immediately. Any leftover gift balance stays on the code."
                 : "Pay online when you book, or enter a gift card / reward code. You will receive a confirmation email once payment is complete."}
