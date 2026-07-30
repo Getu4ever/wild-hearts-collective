@@ -23,7 +23,7 @@ const DAY_REGIONS = [
   { top: 65.1, height: 10.6 }, // Thursday
   { top: 75.6, height: 8.8 }, // Friday
   { top: 84.3, height: 6.1 }, // Saturday
-  { top: 90.3, height: 5.2 }, // Sunday
+  { top: 90.3, height: 4.2 }, // Sunday — leave space above the bottom heart motif
 ] as const;
 
 const CARD_LEFT = 10.1;
@@ -71,7 +71,11 @@ function DayOverlay({
         backgroundColor: CARD_CREAM,
       }}
     >
-      <div className="flex h-full min-h-0 items-stretch gap-[2cqw] px-[2.4cqw] py-[1.6cqw]">
+      <div
+        className={`flex h-full min-h-0 items-stretch gap-[2cqw] px-[2.4cqw] ${
+          region.height <= 5 ? "py-[0.45cqw]" : "py-[1.6cqw]"
+        }`}
+      >
         <p
           className="flex w-[14cqw] shrink-0 items-center text-[2.85cqw] font-semibold uppercase leading-tight tracking-[0.08em]"
           style={{ color: INK, fontFamily: "Georgia, 'Times New Roman', serif" }}
