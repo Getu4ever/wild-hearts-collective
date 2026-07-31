@@ -73,14 +73,15 @@ export function AdminAnalyticsDashboard() {
       <section>
         <h2 className="font-display text-3xl text-plum">Popular classes</h2>
         <div className="mt-4 overflow-hidden rounded-sm border border-plum/10 bg-surface">
-          <table className="w-full table-fixed text-left text-sm">
-            <thead className="border-b border-plum/10 bg-pink-soft/60 text-xs uppercase tracking-wider text-plum">
-              <tr>
-                <th className="w-[55%] px-3 py-3">Class</th>
-                <th className="w-[22%] px-3 py-3">Bookings</th>
-                <th className="w-[23%] px-3 py-3">Occupancy</th>
-              </tr>
-            </thead>
+          <div className="min-w-0 overflow-x-auto">
+            <table className="min-w-[700px] w-full table-auto text-left text-sm">
+              <thead className="border-b border-plum/10 bg-pink-soft/60 text-xs uppercase tracking-wider text-plum">
+                <tr>
+                  <th className="w-[55%] px-3 py-3">Class</th>
+                  <th className="w-[22%] px-3 py-3">Bookings</th>
+                  <th className="w-[23%] px-3 py-3">Occupancy</th>
+                </tr>
+              </thead>
             <tbody>
               {data.popularClasses.map((item) => (
                 <tr key={item.slug} className="border-b border-plum/10">

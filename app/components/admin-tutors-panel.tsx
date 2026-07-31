@@ -303,10 +303,11 @@ export function AdminTutorsPanel({
         {tutors.length === 0 ? (
           <p className="px-6 py-10 text-sm text-muted">No instructors yet.</p>
         ) : (
-          <table className="w-full table-fixed text-left text-sm">
-            <thead className="border-b border-plum/10 bg-pink-soft/60 text-xs uppercase tracking-wider text-plum">
-              <tr>
-                <th className="w-[22%] px-4 py-3 font-semibold">Name</th>
+          <div className="min-w-0 overflow-x-auto">
+            <table className="min-w-[860px] w-full table-auto text-left text-sm">
+              <thead className="border-b border-plum/10 bg-pink-soft/60 text-xs uppercase tracking-wider text-plum">
+                <tr>
+                  <th className="w-[22%] px-4 py-3 font-semibold">Name</th>
                 <th className="w-[28%] px-4 py-3 font-semibold">Contact</th>
                 <th className="w-[22%] px-4 py-3 font-semibold">Bio</th>
                 <th className="w-[10%] px-4 py-3 font-semibold">Sessions</th>

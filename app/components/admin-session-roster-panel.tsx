@@ -67,17 +67,18 @@ export function AdminSessionRosterPanel({
           </p>
         ) : (
           <div className="mt-4 overflow-hidden rounded-lg border border-plum/10 bg-surface shadow-sm">
-            <table className="w-full table-fixed text-left text-sm">
-              <thead className="border-b border-plum/10 bg-pink-soft/60 text-xs uppercase tracking-wider text-plum">
-                <tr>
-                  <th className="w-[18%] px-3 py-3">Student</th>
-                  <th className="w-[20%] px-3 py-3">Contact</th>
-                  <th className="w-[10%] px-3 py-3">PAR-Q</th>
-                  <th className="w-[22%] px-3 py-3">Check-in</th>
-                  <th className="w-[12%] px-3 py-3">Credit</th>
-                  <th className="w-[10%] px-3 py-3">Actions</th>
-                </tr>
-              </thead>
+            <div className="min-w-0 overflow-x-auto">
+              <table className="min-w-[860px] w-full table-auto text-left text-sm">
+                <thead className="border-b border-plum/10 bg-pink-soft/60 text-xs uppercase tracking-wider text-plum">
+                  <tr>
+                    <th className="w-[18%] px-3 py-3">Student</th>
+                    <th className="w-[20%] px-3 py-3">Contact</th>
+                    <th className="w-[10%] px-3 py-3">PAR-Q</th>
+                    <th className="w-[22%] px-3 py-3">Check-in</th>
+                    <th className="w-[12%] px-3 py-3">Credit</th>
+                    <th className="w-[10%] px-3 py-3">Actions</th>
+                  </tr>
+                </thead>
               <tbody>
                 {bookings.map((booking) => (
                   <tr key={booking.id} className="border-b border-plum/8 align-top">
