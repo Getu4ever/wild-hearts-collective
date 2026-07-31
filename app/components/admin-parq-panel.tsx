@@ -77,6 +77,7 @@ export function AdminParQPanel({
               </tbody>
             </table>
           </div>
+        </div>
 
           {Boolean(data?.emergencyContactName || data?.emergencyContactPhone) && data && (
             <dl className="grid gap-4 sm:grid-cols-2 text-sm">

@@ -97,6 +97,7 @@ export function AdminAnalyticsDashboard() {
             </tbody>
           </table>
         </div>
+      </div>
       </section>
 
       <section className="grid gap-8 lg:grid-cols-2">

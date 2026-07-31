@@ -162,6 +162,7 @@ export function AdminSessionRosterPanel({
               </tbody>
             </table>
           </div>
+        </div>
         )}
       </section>
 

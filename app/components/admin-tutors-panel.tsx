@@ -383,8 +383,9 @@ export function AdminTutorsPanel({
               ))}
             </tbody>
           </table>
-        )}
-      </div>
+        </div>
+      )}
+    </div>
     </div>
   );
 }
