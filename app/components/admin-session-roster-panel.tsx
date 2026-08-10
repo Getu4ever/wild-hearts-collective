@@ -67,8 +67,8 @@ export function AdminSessionRosterPanel({
           </p>
         ) : (
           <div className="mt-4 overflow-hidden rounded-lg border border-plum/10 bg-surface shadow-sm">
-            <div className="min-w-0 overflow-x-auto">
-              <table className="min-w-[860px] w-full table-auto text-left text-sm">
+            <div className="min-w-0">
+              <table className="w-full table-fixed text-left text-sm">
                 <thead className="border-b border-plum/10 bg-pink-soft/60 text-xs uppercase tracking-wider text-plum">
                   <tr>
                     <th className="w-[18%] px-3 py-3">Student</th>

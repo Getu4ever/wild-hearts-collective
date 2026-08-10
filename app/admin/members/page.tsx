@@ -109,8 +109,8 @@ export default async function AdminMembersPage({ searchParams }: PageProps) {
         {members.length === 0 ? (
           <p className="px-6 py-10 text-sm text-muted">No members match your filters.</p>
         ) : (
-          <div className="min-w-0 overflow-x-auto">
-            <table className="min-w-[900px] w-full table-auto text-left text-sm">
+          <div className="min-w-0">
+            <table className="w-full table-fixed text-left text-sm">
               <thead className="border-b border-plum/10 bg-pink-soft/60 text-xs uppercase tracking-wider text-plum">
                 <tr>
                   <th className="w-[12%] px-3 py-3 font-semibold">Registered</th>

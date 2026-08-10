@@ -43,7 +43,7 @@ export default async function AdminBookingsPage() {
   ]);
 
   return (
-    <div className="mx-auto min-w-0 max-w-6xl overflow-x-hidden px-6 py-16 lg:px-8 lg:py-20">
+    <div className="mx-auto min-w-0 max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="mb-5 h-px w-12 bg-pink" />
@@ -62,19 +62,19 @@ export default async function AdminBookingsPage() {
         {bookings.length === 0 ? (
           <p className="px-6 py-10 text-sm text-muted">No bookings yet.</p>
         ) : (
-          <div className="min-w-0 overflow-x-auto">
-            <table className="min-w-[900px] w-full table-auto text-left text-sm">
+          <div className="min-w-0">
+            <table className="w-full table-fixed text-left text-sm">
               <thead className="border-b border-plum/10 bg-pink-soft/60 text-xs uppercase tracking-wider text-plum">
                 <tr>
-                  <th className="w-[9%] px-3 py-3 font-semibold">Booked</th>
-                  <th className="w-[11%] px-3 py-3 font-semibold">Class</th>
-                  <th className="w-[11%] px-3 py-3 font-semibold">Session</th>
-                  <th className="w-[9%] px-3 py-3 font-semibold">Name</th>
-                  <th className="w-[14%] px-3 py-3 font-semibold">Email</th>
-                  <th className="w-[9%] px-3 py-3 font-semibold">Phone</th>
-                  <th className="w-[13%] px-3 py-3 font-semibold">Notes</th>
-                  <th className="w-[7%] px-3 py-3 font-semibold">Paid</th>
-                  <th className="w-[17%] px-3 py-3 font-semibold">Status</th>
+                  <th className="w-[9%] px-2 py-3 font-semibold">Booked</th>
+                  <th className="w-[11%] px-2 py-3 font-semibold">Class</th>
+                  <th className="w-[12%] px-2 py-3 font-semibold">Session</th>
+                  <th className="w-[10%] px-2 py-3 font-semibold">Name</th>
+                  <th className="w-[14%] px-2 py-3 font-semibold">Email</th>
+                  <th className="w-[9%] px-2 py-3 font-semibold">Phone</th>
+                  <th className="w-[10%] px-2 py-3 font-semibold">Notes</th>
+                  <th className="w-[6%] px-2 py-3 font-semibold">Paid</th>
+                  <th className="w-[19%] px-2 py-3 font-semibold">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -83,10 +83,10 @@ export default async function AdminBookingsPage() {
                     key={booking.id}
                     className="border-b border-plum/8 align-top last:border-b-0"
                   >
-                    <td className="px-3 py-3 text-muted">
+                    <td className="px-2 py-3 text-muted">
                       {formatUkDateTimeShort(booking.createdAt)}
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="px-2 py-3">
                       <p
                         className="truncate font-medium text-plum"
                         title={booking.session.class.title}
@@ -94,15 +94,17 @@ export default async function AdminBookingsPage() {
                         {booking.session.class.title}
                       </p>
                     </td>
-                    <td className="px-3 py-3 text-muted">
-                      {formatSessionDateTime(booking.session.startsAt)}
+                    <td className="px-2 py-3 text-muted">
+                      <p className="leading-snug break-words">
+                        {formatSessionDateTime(booking.session.startsAt)}
+                      </p>
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="px-2 py-3">
                       <p className="truncate text-foreground" title={booking.name}>
                         {booking.name}
                       </p>
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="px-2 py-3">
                       <a
                         href={`mailto:${booking.email}`}
                         className="block truncate text-plum hover:text-pink hover:underline"
@@ -111,22 +113,22 @@ export default async function AdminBookingsPage() {
                         {booking.email}
                       </a>
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="px-2 py-3">
                       <p className="truncate text-muted" title={booking.phone ?? undefined}>
                         {booking.phone ?? "—"}
                       </p>
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="px-2 py-3">
                       <p className="line-clamp-2 text-muted" title={booking.notes ?? undefined}>
                         {booking.notes ?? "—"}
                       </p>
                     </td>
-                    <td className="px-3 py-3 text-muted">
+                    <td className="px-2 py-3 text-muted">
                       {booking.amountPaid != null
                         ? `£${(booking.amountPaid / 100).toFixed(2)}`
                         : "—"}
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="px-2 py-3">
                       <AdminBookingActions
                         bookingId={booking.id}
                         currentStatus={booking.status}
@@ -153,16 +155,16 @@ export default async function AdminBookingsPage() {
           {waitlist.length === 0 ? (
             <p className="px-6 py-10 text-sm text-muted">No one is on the waitlist.</p>
           ) : (
-            <div className="min-w-0 overflow-x-auto">
-              <table className="min-w-[800px] w-full table-auto text-left text-sm">
+            <div className="min-w-0">
+              <table className="w-full table-fixed text-left text-sm">
                 <thead className="border-b border-plum/10 bg-pink-soft/60 text-xs uppercase tracking-wider text-plum">
                   <tr>
-                    <th className="w-[11%] px-3 py-3 font-semibold">Joined</th>
-                    <th className="w-[16%] px-3 py-3 font-semibold">Class</th>
-                    <th className="w-[16%] px-3 py-3 font-semibold">Session</th>
-                    <th className="w-[14%] px-3 py-3 font-semibold">Name</th>
-                    <th className="w-[24%] px-3 py-3 font-semibold">Email</th>
-                    <th className="w-[19%] px-3 py-3 font-semibold">Status</th>
+                    <th className="w-[12%] px-2 py-3 font-semibold">Joined</th>
+                    <th className="w-[16%] px-2 py-3 font-semibold">Class</th>
+                    <th className="w-[18%] px-2 py-3 font-semibold">Session</th>
+                    <th className="w-[14%] px-2 py-3 font-semibold">Name</th>
+                    <th className="w-[22%] px-2 py-3 font-semibold">Email</th>
+                    <th className="w-[18%] px-2 py-3 font-semibold">Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -171,10 +173,10 @@ export default async function AdminBookingsPage() {
                       key={entry.id}
                       className="border-b border-plum/8 align-top last:border-b-0"
                     >
-                      <td className="px-3 py-3 text-muted">
+                      <td className="px-2 py-3 text-muted">
                         {formatUkDateTimeShort(entry.createdAt)}
                       </td>
-                      <td className="px-3 py-3">
+                      <td className="px-2 py-3">
                         <p
                           className="truncate font-medium text-plum"
                           title={entry.session.class.title}
@@ -182,15 +184,17 @@ export default async function AdminBookingsPage() {
                           {entry.session.class.title}
                         </p>
                       </td>
-                      <td className="px-3 py-3 text-muted">
-                        {formatSessionDateTime(entry.session.startsAt)}
+                      <td className="px-2 py-3 text-muted">
+                        <p className="leading-snug break-words">
+                          {formatSessionDateTime(entry.session.startsAt)}
+                        </p>
                       </td>
-                      <td className="px-3 py-3">
+                      <td className="px-2 py-3">
                         <p className="truncate text-foreground" title={entry.name}>
                           {entry.name}
                         </p>
                       </td>
-                      <td className="px-3 py-3">
+                      <td className="px-2 py-3">
                         <a
                           href={`mailto:${entry.email}`}
                           className="block truncate text-plum hover:text-pink hover:underline"
@@ -199,7 +203,7 @@ export default async function AdminBookingsPage() {
                           {entry.email}
                         </a>
                       </td>
-                      <td className="px-3 py-3">
+                      <td className="px-2 py-3">
                         <AdminWaitlistActions
                           entryId={entry.id}
                           currentStatus={entry.status}
