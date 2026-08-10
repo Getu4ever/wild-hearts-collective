@@ -6,9 +6,10 @@ import {
   useElements,
   useStripe,
 } from "@stripe/react-stripe-js";
-import { loadStripe, type StripeElementsOptions } from "@stripe/stripe-js";
+import { type StripeElementsOptions } from "@stripe/stripe-js";
 import { useEffect, useMemo, useState } from "react";
 import { stripeElementsAppearance } from "@/lib/stripe-appearance";
+import { loadStripeClient } from "@/lib/stripe-client";
 
 type StripePaymentFormProps = {
   mode: "setup" | "subscription";
@@ -112,7 +113,7 @@ export function StripePaymentForm({
 
   const stripePromise = useMemo(() => {
     if (!publishableKey) return null;
-    return loadStripe(publishableKey);
+    return loadStripeClient(publishableKey);
   }, [publishableKey]);
 
   useEffect(() => {

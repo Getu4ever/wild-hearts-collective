@@ -1,8 +1,8 @@
 "use client";
 
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe-js";
-import { loadStripe } from "@stripe/stripe-js";
 import { useMemo } from "react";
+import { loadStripeClient } from "@/lib/stripe-client";
 
 type BookingEmbeddedCheckoutProps = {
   clientSecret: string;
@@ -15,7 +15,7 @@ export function BookingEmbeddedCheckout({
 }: BookingEmbeddedCheckoutProps) {
   const stripePromise = useMemo(() => {
     if (!publishableKey) return null;
-    return loadStripe(publishableKey);
+    return loadStripeClient(publishableKey);
   }, [publishableKey]);
 
   if (!publishableKey || !stripePromise) {
