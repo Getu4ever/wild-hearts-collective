@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Raleway, Satisfy } from "next/font/google";
+import { CookieConsent } from "./components/cookie-consent";
 import { SiteFooter } from "./components/site-footer";
 import { SiteHeader } from "./components/site-header";
 import "./globals.css";
@@ -46,6 +47,7 @@ export default function RootLayout({
         <SiteHeader />
         <main className="flex-1">{children}</main>
         <SiteFooter />
+        <CookieConsent />
       </body>
     </html>
   );
