@@ -31,11 +31,11 @@ export function CookieConsent() {
     <div className="fixed inset-x-0 bottom-0 z-50 border-t border-gray-200 bg-white px-4 py-3 shadow-[0_-2px_10px_rgba(0,0,0,0.08)]">
       <div className="mx-auto flex max-w-7xl flex-col items-center gap-4 sm:flex-row">
         <Image
-          src="/logo/logo-header.png"
+          src="/logo/logo-header-white.png"
           alt="Wild Hearts Collective"
           width={40}
           height={36}
-          className="hidden shrink-0 sm:block"
+          className="logo-header-accent hidden shrink-0 sm:block"
         />
 
         <div className="flex-1 text-sm text-gray-700">
