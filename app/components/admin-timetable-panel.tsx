@@ -59,16 +59,18 @@ function emptyClass(): ClassDraft {
 function toPayload(days: DayDraft[]): TimetableDay[] {
   return days.map((day) => ({
     day: day.day.trim(),
-    classes: day.classes.map(
-      (item): TimetableClass => ({
-        time: item.time.trim(),
-        title: item.title.trim(),
-        ...(item.note.trim() ? { note: item.note.trim() } : {}),
-        ...(item.bookClassSlug.trim()
-          ? { bookClassSlug: item.bookClassSlug.trim() }
-          : {}),
-      }),
-    ),
+    classes: day.classes
+      .map(
+        (item): TimetableClass => ({
+          time: item.time.trim(),
+          title: item.title.trim(),
+          ...(item.note.trim() ? { note: item.note.trim() } : {}),
+          ...(item.bookClassSlug.trim()
+            ? { bookClassSlug: item.bookClassSlug.trim() }
+            : {}),
+        }),
+      )
+      .filter((item) => item.title.length > 0),
   }));
 }
 
@@ -376,8 +378,9 @@ export function AdminTimetablePanel({
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-plum/10 pt-6">
         <p className="max-w-xl text-sm text-muted">
           The first seven rows are the weekly homepage timetable. Additional promotions
-          appear below it on the homepage — use a date or label such as “1 September”.{" "}
-          Extra classes on a weekday stay on the poster (type scales down to fit). Class rows with a book link open{" "}
+          appear below it on the homepage — use a date or label such as “1 September”.
+          Each weekday needs at least one class or the homepage cards look blank. Class
+          rows with a book link open{" "}
           <code className="text-xs">/book?class=…</code>; blank uses{" "}
           <code className="text-xs">/book</code>.
         </p>

@@ -101,7 +101,20 @@ function parseTimetableDays(raw: unknown, strictSlugs: boolean): TimetableDay[] 
 
 /** Validate and normalize a timetable payload from admin save. */
 export function normalizeMarketingTimetable(raw: unknown): TimetableDay[] {
-  return parseTimetableDays(raw, true);
+  const days = parseTimetableDays(raw, true);
+  const weekly = days.slice(0, 7);
+  const emptyWeekdays = weekly.filter((day) => day.classes.length === 0);
+  if (weekly.length > 0 && emptyWeekdays.length === weekly.length) {
+    throw new Error(
+      "The weekly timetable cannot be saved with no classes. Add class rows for each day, or restore the defaults.",
+    );
+  }
+  if (emptyWeekdays.length > 0) {
+    throw new Error(
+      `Add at least one class for: ${emptyWeekdays.map((day) => day.day).join(", ")}. Empty weekdays hide the schedule on the homepage.`,
+    );
+  }
+  return days;
 }
 
 async function readStoredTimetable(): Promise<TimetableDay[] | null> {
@@ -120,17 +133,76 @@ async function readStoredTimetable(): Promise<TimetableDay[] | null> {
 }
 
 /**
+ * Cream overlay cards cover the baked-in PNG text. If a weekday was saved with
+ * no classes (or the whole weekly block is empty), fall back to site defaults
+ * so the homepage never shows blank day cards.
+ */
+function withDefaultWeeklyClasses(days: TimetableDay[]): TimetableDay[] {
+  const defaults = cloneDefaultTimetable();
+  const weeklyDefaults = defaults.slice(0, 7);
+  const weeklyStored = days.slice(0, 7);
+  const promotions = days.slice(7);
+
+  const weeklyClassCount = weeklyStored.reduce(
+    (sum, day) => sum + day.classes.length,
+    0,
+  );
+  if (weeklyStored.length === 0 || weeklyClassCount === 0) {
+    return [...weeklyDefaults, ...promotions];
+  }
+
+  const mergedWeekly = weeklyDefaults.map((fallback, index) => {
+    const stored = weeklyStored[index];
+    if (!stored) return fallback;
+    if (stored.classes.length === 0) {
+      return { day: stored.day || fallback.day, classes: fallback.classes };
+    }
+    return {
+      day: stored.day || fallback.day,
+      classes: stored.classes,
+    };
+  });
+
+  // Keep any extra stored weekdays beyond Mon–Sun, plus promotions.
+  return [...mergedWeekly, ...weeklyStored.slice(7), ...promotions];
+}
+
+/**
  * Public homepage timetable. Uses DB when present; otherwise site-data defaults.
  * Never throws — falls back so the marketing page stays available.
+ * If the stored weekly block is empty, restore defaults so cream overlays do not
+ * blank out the poster.
  */
 export async function getMarketingTimetable(): Promise<TimetableDay[]> {
   const stored = await readStoredTimetable();
-  if (stored) return stored;
-  return cloneDefaultTimetable();
+  if (!stored) return cloneDefaultTimetable();
+
+  const repaired = withDefaultWeeklyClasses(stored);
+  const wasEmpty =
+    stored.slice(0, 7).reduce((sum, day) => sum + day.classes.length, 0) === 0;
+
+  if (wasEmpty) {
+    try {
+      await db.studioSetting.upsert({
+        where: { key: MARKETING_TIMETABLE_SETTING_KEY },
+        create: {
+          key: MARKETING_TIMETABLE_SETTING_KEY,
+          value: JSON.stringify(repaired),
+        },
+        update: { value: JSON.stringify(repaired) },
+      });
+    } catch (error) {
+      console.error("[marketing-timetable] failed to repair empty timetable:", error);
+    }
+  }
+
+  return repaired;
 }
 
 /**
  * Admin load: return DB timetable, seeding from site-data defaults on first use.
+ * If the stored weekly block was saved empty, repair it from defaults so Admin
+ * and the homepage stay in sync.
  */
 export async function getOrSeedMarketingTimetable(): Promise<{
   days: TimetableDay[];
@@ -138,7 +210,24 @@ export async function getOrSeedMarketingTimetable(): Promise<{
 }> {
   const stored = await readStoredTimetable();
   if (stored) {
-    return { days: stored, source: "database" };
+    const repaired = withDefaultWeeklyClasses(stored);
+    const wasEmpty =
+      stored.slice(0, 7).reduce((sum, day) => sum + day.classes.length, 0) === 0;
+    if (wasEmpty) {
+      try {
+        await db.studioSetting.upsert({
+          where: { key: MARKETING_TIMETABLE_SETTING_KEY },
+          create: {
+            key: MARKETING_TIMETABLE_SETTING_KEY,
+            value: JSON.stringify(repaired),
+          },
+          update: { value: JSON.stringify(repaired) },
+        });
+      } catch (error) {
+        console.error("[marketing-timetable] failed to repair empty timetable:", error);
+      }
+    }
+    return { days: repaired, source: "database" };
   }
 
   const days = cloneDefaultTimetable();
