@@ -9,7 +9,7 @@ Class length
 All classes are 1 hour unless stated otherwise on the session.
 
 Cancellation & attendance
-Cancel at least 24 hours before the class start time to receive a refund as class credits (£10 = 1 credit, £5 = 0.5 credit). Late cancellations (within 24 hours) are not refunded. 4-week courses are cancelled as a whole block: if the course has already started, remaining weeks are cancelled with no refund. Cash refunds are available but must be requested by emailing hello@wildheartscollective.org and are processed manually.
+Cancel at least 24 hours before the class start time to receive a refund as class credits (£10 = 1 credit, £5 = 0.5 credit). Late cancellations (within 24 hours) are not refunded. 4-week courses are cancelled as a whole block: cancelling one week cancels all four. If you cancel before the course starts and at least 24 hours before week 1, you receive a credit refund. If the course has already started, all four weeks are still cancelled but there is no refund. Cash refunds are available but must be requested by emailing hello@wildheartscollective.org and are processed manually.
 
 Health & safety
 Participants must complete any required health forms (including PAR-Q where asked) before attending. Please tell your instructor about injuries or medical conditions. Wild Hearts Collective may refuse participation if safety cannot be assured.

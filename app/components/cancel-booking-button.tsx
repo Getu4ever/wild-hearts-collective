@@ -18,13 +18,19 @@ export function CancelBookingButton({
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  if (status === "cancelled" || new Date(sessionStartsAt) < new Date()) {
+  if (status === "cancelled") {
+    return null;
+  }
+
+  // Drop-in classes can only be cancelled before they start. A 4-week course
+  // can still be cancelled from any week so that all four bookings are removed.
+  if (!isCourse && new Date(sessionStartsAt) < new Date()) {
     return null;
   }
 
   async function cancelBooking() {
     const confirmText = isCourse
-      ? "Cancel this 4-week course? All remaining weeks will be cancelled. Credits are refunded only if the course has not started and you cancel at least 24 hours before week 1. Cash refunds can be requested by email."
+      ? "Cancel this 4-week course? All four weeks will be cancelled. You receive class credits only if the course has not started and you cancel at least 24 hours before week 1. If the course has already started, there is no refund. Cash refunds can be requested by email."
       : "Cancel this booking? Cancellations at least 24 hours before class receive class credits (£10 = 1 credit). Cash refunds can be requested by email.";
 
     if (!confirm(confirmText)) {

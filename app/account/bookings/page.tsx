@@ -54,7 +54,9 @@ export default async function AccountBookingsPage() {
       </p>
       <p className="mt-3 text-sm text-muted">
         Cancellations at least 24 hours before class receive class credits (£10 = 1 credit).
-        Cash refunds are available but must be requested by emailing{" "}
+        Cancelling a 4-week course cancels all four weeks. If the course has already
+        started, there is no refund. Cash refunds are available but must be requested by
+        emailing{" "}
         <a href={`mailto:${contact.email}`} className="font-semibold text-brand hover:underline">
           {contact.email}
         </a>

@@ -35,7 +35,7 @@ function refundMessage(options: {
   courseStarted?: boolean;
 }) {
   if (options.course && options.courseStarted) {
-    return `Your remaining course weeks have been cancelled. Because the course has already started, no refund applies. ${CASH_REFUND_NOTE}`;
+    return `Your 4-week course has been cancelled (all four weeks). Because the course has already started, no refund applies. ${CASH_REFUND_NOTE}`;
   }
 
   if (!options.onTime) {
@@ -51,7 +51,7 @@ function refundMessage(options: {
   }
 
   if (options.course) {
-    return `Your 4-week course has been cancelled. ${CASH_REFUND_NOTE}`;
+    return `Your 4-week course has been cancelled (all four weeks). ${CASH_REFUND_NOTE}`;
   }
 
   return `Your booking was cancelled. ${CASH_REFUND_NOTE}`;
@@ -106,6 +106,8 @@ async function cancelMemberCourseBooking(
   const started = courseSeriesHasStarted(series);
   const week1 = series.find((session) => session.courseWeek === 1) ?? series[0];
   const onTime = week1 ? isWithinCancellationWindow(week1.startsAt) : false;
+  // Refund only if the course has not started and they are still inside the
+  // 24-hour cancellation window before week 1.
   const refundEligible = !started && onTime;
 
   const related = await listMemberCourseBookings(
@@ -113,14 +115,19 @@ async function cancelMemberCourseBooking(
     userId,
     booking.email,
   );
-  const now = new Date();
-  const toCancel = started
-    ? related.filter((item) => item.session.startsAt.getTime() > now.getTime())
-    : related;
 
-  if (toCancel.length === 0) {
-    throw new CancellationPolicyError("There are no remaining course weeks to cancel.");
+  if (related.length === 0) {
+    throw new CancellationPolicyError("This 4-week course is already cancelled.");
   }
+
+  const now = new Date();
+  if (related.every((item) => item.session.startsAt.getTime() <= now.getTime())) {
+    throw new CancellationPolicyError("This course has already finished and cannot be cancelled online.");
+  }
+
+  // Always cancel every week in the block — not only the week they clicked,
+  // and not only weeks that have not started yet.
+  const toCancel = related;
 
   const cancellationType = refundEligible
     ? CANCELLATION_TYPE.onTime
@@ -140,7 +147,10 @@ async function cancelMemberCourseBooking(
   if (refundEligible) {
     const paidBooking =
       toCancel.find(
-        (item) => item.paidWithCredit || (item.amountPaid != null && item.amountPaid > 0),
+        (item) =>
+          item.paidWithCredit ||
+          (item.amountPaid != null && item.amountPaid > 0) ||
+          (item.giftAmountApplied != null && item.giftAmountApplied > 0),
       ) ?? toCancel[0];
     const refund = await refundIfEligible(paidBooking.id);
     creditRefunded = refund.creditRefunded;
@@ -148,11 +158,16 @@ async function cancelMemberCourseBooking(
     noAccount = refund.noAccount;
   }
 
-  for (const [index, item] of toCancel.entries()) {
+  const emailBookingId = toCancel.some((item) => item.id === booking.id)
+    ? booking.id
+    : toCancel[0].id;
+
+  for (const item of toCancel) {
     await cancelBooking(item.id, {
       cancelledBy: "member",
-      creditRefunded: index === 0 ? creditRefunded : false,
-      skipEmail: index > 0,
+      creditRefunded: item.id === emailBookingId ? creditRefunded : false,
+      skipEmail: item.id !== emailBookingId,
+      skipWaitlist: item.session.startsAt.getTime() <= now.getTime(),
     });
   }
 
@@ -188,10 +203,6 @@ export async function cancelMemberBooking(bookingId: string, userId: string) {
     throw new CancellationPolicyError("This booking is already cancelled.");
   }
 
-  if (booking.session.startsAt < new Date()) {
-    throw new CancellationPolicyError("Past sessions cannot be cancelled online.");
-  }
-
   if (isCourseSeriesSession(booking.session)) {
     return cancelMemberCourseBooking(
       {
@@ -202,6 +213,10 @@ export async function cancelMemberBooking(bookingId: string, userId: string) {
       },
       userId,
     );
+  }
+
+  if (booking.session.startsAt < new Date()) {
+    throw new CancellationPolicyError("Past sessions cannot be cancelled online.");
   }
 
   const onTime = isWithinCancellationWindow(booking.session.startsAt);

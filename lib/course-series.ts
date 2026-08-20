@@ -104,9 +104,9 @@ export async function enrolRemainingCourseWeeks(primaryBookingId: string) {
       where: {
         sessionId: session.id,
         email: primary.email,
-        status: { in: [BOOKING_STATUS.pending, BOOKING_STATUS.confirmed] },
       },
     });
+    // Do not recreate a week that was already booked or cancelled for this person.
     if (existing) continue;
 
     const booking = await db.booking.create({

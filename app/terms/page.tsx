@@ -36,8 +36,10 @@ export default function TermsPage() {
           </p>
           <p>
             4-week courses are booked as a full block. Cancelling a course
-            cancels all remaining weeks. If the course has already started,
-            there is no refund.
+            cancels all four weeks. If you cancel before the course starts, and
+            at least 24 hours before week 1, you receive a refund as class
+            credits. If the course has already started, all four weeks are still
+            cancelled but there is no refund.
           </p>
           <p>
             Cash refunds are available but must be requested by emailing{" "}
