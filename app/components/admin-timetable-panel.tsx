@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { CLASS_TYPE_OPTIONS } from "@/lib/admin-studio-config";
 import type { TimetableClass, TimetableDay } from "@/lib/site-data";
+import { AdminSavedDialog } from "@/app/components/admin-saved-dialog";
+import { maxClassesForTimetableDay } from "@/lib/marketing-timetable-limits";
 
 const inputClass =
   "w-full rounded-sm border border-plum/15 bg-white px-3 py-2.5 text-sm text-plum outline-none focus:border-pink focus:ring-2 focus:ring-pink/20";
@@ -84,6 +86,7 @@ export function AdminTimetablePanel({
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [savedOpen, setSavedOpen] = useState(false);
 
   function updateDay(dayKey: string, patch: Partial<Pick<DayDraft, "day">>) {
     setDays((current) =>
@@ -179,6 +182,7 @@ export function AdminTimetablePanel({
       setDays(toDraft(data.days));
       setSource(data.source ?? "database");
       setMessage("Marketing timetable saved. Homepage /#timetable will show the update.");
+      setSavedOpen(true);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to save timetable.");
@@ -188,6 +192,7 @@ export function AdminTimetablePanel({
   }
 
   return (
+    <>
     <form onSubmit={handleSave} className="space-y-8">
       {(message || error) && (
         <div
@@ -252,6 +257,22 @@ export function AdminTimetablePanel({
                 Remove day
               </button>
             </div>
+
+            {dayIndex < WEEKLY_DAY_COUNT && (
+              <p
+                className={`mt-3 text-xs ${
+                  day.classes.length > maxClassesForTimetableDay(dayIndex)
+                    ? "font-medium text-brand"
+                    : "text-muted"
+                }`}
+              >
+                Poster space for {day.day}: {maxClassesForTimetableDay(dayIndex)} class
+                {maxClassesForTimetableDay(dayIndex) === 1 ? "" : "es"} maximum.
+                {day.classes.length > maxClassesForTimetableDay(dayIndex)
+                  ? ` Extra rows (${day.classes.length - maxClassesForTimetableDay(dayIndex)}) will appear below the timetable image.`
+                  : ""}
+              </p>
+            )}
 
             <ul className="mt-5 space-y-4">
               {day.classes.map((item, index) => (
@@ -373,7 +394,8 @@ export function AdminTimetablePanel({
         <p className="max-w-xl text-sm text-muted">
           The first seven rows are the weekly homepage timetable. Additional promotions
           appear below it on the homepage — use a date or label such as “1 September”.{" "}
-          Class rows with a book link open{" "}
+          Weekly poster space is limited (Mon–Wed 4 classes, Thu 3, Fri–Sun 2). Extra
+          weekly rows and promotions appear beneath the image. Class rows with a book link open{" "}
           <code className="text-xs">/book?class=…</code>; blank uses{" "}
           <code className="text-xs">/book</code>.
         </p>
@@ -386,5 +408,12 @@ export function AdminTimetablePanel({
         </button>
       </div>
     </form>
+    <AdminSavedDialog
+      open={savedOpen}
+      title="Timetable saved"
+      description={<p>The homepage timetable has been updated.</p>}
+      onClose={() => setSavedOpen(false)}
+    />
+    </>
   );
 }

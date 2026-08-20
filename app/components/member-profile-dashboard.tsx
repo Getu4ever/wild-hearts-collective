@@ -6,7 +6,6 @@ import { useMemo, useState } from "react";
 import { MemberProfilePhotoField } from "@/app/components/member-profile-photo-field";
 import { MemberBillingSection } from "@/app/components/member-billing-section";
 import {
-  CANCELLATION_REASONS,
   DISCIPLINE_INTERESTS,
   EXPERIENCE_LEVELS,
   NOTIFICATION_KEYS,
@@ -108,7 +107,6 @@ export function MemberProfileDashboard({
   isGoogleAccount,
   upcomingBookings,
   pastBookings,
-  timeline,
 }: MemberProfileDashboardProps) {
   const router = useRouter();
   const [profile, setProfile] = useState(initialProfile);
@@ -133,12 +131,6 @@ export function MemberProfileDashboard({
     currentPassword: "",
     newPassword: "",
   });
-
-  const [pauseStart, setPauseStart] = useState("");
-  const [resumeAt, setResumeAt] = useState("");
-  const [cancelReason, setCancelReason] = useState<string>(CANCELLATION_REASONS[0]);
-  const [cancelImmediate, setCancelImmediate] = useState(false);
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   const initials = useMemo(
     () =>
@@ -384,137 +376,6 @@ export function MemberProfileDashboard({
                 Save health information
               </button>
             </form>
-          </ProfileCard>
-
-          <ProfileCard
-            id="membership"
-            title="Membership management"
-            description="Pause or cancel with clear billing impact. Destructive actions always require confirmation."
-          >
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div className="rounded-xl border border-plum/10 bg-white p-5">
-                <h3 className="font-semibold text-plum">Pause membership</h3>
-                <p className="mt-2 text-sm text-muted">
-                  Billing pauses and class access may be limited during the pause period.
-                </p>
-                <div className="mt-4 space-y-3">
-                  <Field label="Pause start">
-                    <input type="date" className={inputClass} value={pauseStart} onChange={(e) => setPauseStart(e.target.value)} />
-                  </Field>
-                  <Field label="Resume date" hint="Leave blank for open-ended pause.">
-                    <input type="date" className={inputClass} value={resumeAt} onChange={(e) => setResumeAt(e.target.value)} />
-                  </Field>
-                  <button
-                    type="button"
-                    disabled={loading}
-                    onClick={async () => {
-                      setLoading(true);
-                      const response = await fetch("/api/members/membership/pause", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ pauseStart, resumeAt: resumeAt || null }),
-                      });
-                      setLoading(false);
-                      if (response.ok) {
-                        setMessage("Membership paused.");
-                        router.refresh();
-                      } else {
-                        const data = await response.json();
-                        setError(data.error ?? "Unable to pause membership.");
-                      }
-                    }}
-                    className="rounded-sm border border-plum/20 px-4 py-2.5 text-sm font-semibold text-plum hover:border-brand hover:text-brand"
-                  >
-                    Pause membership
-                  </button>
-                  {profile.membership.status === "paused" && (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        await fetch("/api/members/membership/resume", { method: "POST" });
-                        router.refresh();
-                      }}
-                      className="ml-2 rounded-sm bg-sage px-4 py-2.5 text-sm font-semibold text-white"
-                    >
-                      Resume now
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-brand/20 bg-pink-soft/30 p-5">
-                <h3 className="font-semibold text-brand">Cancel membership</h3>
-                <p className="mt-2 text-sm text-muted">
-                  End-of-cycle cancellation keeps access until your renewal date. Immediate cancellation removes access now and may not include a refund.
-                </p>
-                {!showCancelConfirm ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowCancelConfirm(true)}
-                    className="mt-4 rounded-sm border border-brand bg-white px-4 py-2.5 text-sm font-semibold text-brand"
-                  >
-                    Cancel membership
-                  </button>
-                ) : (
-                  <div className="mt-4 space-y-3">
-                    <Field label="Reason">
-                      <select className={inputClass} value={cancelReason} onChange={(e) => setCancelReason(e.target.value)}>
-                        {CANCELLATION_REASONS.map((reason) => (
-                          <option key={reason} value={reason}>{reason}</option>
-                        ))}
-                      </select>
-                    </Field>
-                    <label className="flex items-center gap-2 text-sm text-plum">
-                      <input type="checkbox" checked={cancelImmediate} onChange={(e) => setCancelImmediate(e.target.checked)} />
-                      Cancel immediately (lose access now)
-                    </label>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          const response = await fetch("/api/members/membership/cancel", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ reason: cancelReason, immediate: cancelImmediate }),
-                          });
-                          const data = await response.json();
-                          if (response.ok) {
-                            setMessage(`Membership cancelled. Final access: ${formatUkDateLong(data.finalAccessDate)}`);
-                            setShowCancelConfirm(false);
-                            router.refresh();
-                          } else {
-                            setError(data.error ?? "Unable to cancel membership.");
-                          }
-                        }}
-                        className="rounded-sm bg-brand px-4 py-2.5 text-sm font-semibold text-white"
-                      >
-                        Confirm cancellation
-                      </button>
-                      <button type="button" onClick={() => setShowCancelConfirm(false)} className="text-sm font-semibold text-plum">
-                        Keep membership
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="mt-8">
-              <h3 className="font-semibold text-plum">Membership timeline</h3>
-              <ul className="mt-4 space-y-3">
-                {timeline.length === 0 ? (
-                  <li className="text-sm text-muted">No membership events yet.</li>
-                ) : (
-                  timeline.map((event) => (
-                    <li key={event.id} className="rounded-lg border border-plum/10 px-4 py-3 text-sm">
-                      <p className="font-semibold capitalize text-plum">{event.type.replace("_", " ")}</p>
-                      <p className="text-muted">{formatUkDateTimeShort(event.effectiveAt)}</p>
-                      {event.note && <p className="mt-1 text-plum">{event.note}</p>}
-                    </li>
-                  ))
-                )}
-              </ul>
-            </div>
           </ProfileCard>
 
           <ProfileCard id="credits" title="Class credits">

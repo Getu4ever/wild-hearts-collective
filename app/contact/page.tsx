@@ -7,7 +7,7 @@ import {
 } from "@/app/components/content-section";
 import { PageHero } from "@/app/components/page-hero";
 import { SectionHeading } from "@/app/components/section-heading";
-import { contact } from "@/lib/site-data";
+import { contact, socialLinks } from "@/lib/site-data";
 
 export const metadata: Metadata = {
   title: "Contact Us",
@@ -68,7 +68,32 @@ export default function ContactPage() {
                   >
                     Open in OpenStreetMap
                   </Link>
+                  <Link
+                    href={contact.what3wordsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-brand hover:underline"
+                  >
+                    what3words location
+                  </Link>
                 </span>
+              </p>
+              <p>
+                <strong>Social:</strong>
+                <br />
+                {socialLinks.map((link) => (
+                  <span key={link.label}>
+                    <Link
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-brand hover:underline"
+                    >
+                      {link.label}
+                    </Link>
+                    <br />
+                  </span>
+                ))}
               </p>
             </ProseBlock>
           </div>
@@ -111,6 +136,14 @@ export default function ContactPage() {
             className="font-semibold text-brand hover:underline"
           >
             View pin (OpenStreetMap)
+          </Link>
+          <Link
+            href={contact.what3wordsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-brand hover:underline"
+          >
+            what3words
           </Link>
         </p>
       </ContentSection>

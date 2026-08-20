@@ -272,7 +272,19 @@ export function BookingForm() {
         }
         const data = (await response.json()) as SessionOption[];
         setSessions(data);
+        const sessionFromUrl = searchParams.get("session");
         setSelectedSessionId((current) => {
+          if (
+            sessionFromUrl &&
+            data.some(
+              (session) =>
+                session.id === sessionFromUrl &&
+                !session.alreadyBooked &&
+                !session.bookingDisabledReason,
+            )
+          ) {
+            return sessionFromUrl;
+          }
           if (
             current &&
             data.some((session) => session.id === current && !session.alreadyBooked && !session.bookingDisabledReason)
@@ -293,7 +305,7 @@ export function BookingForm() {
     }
 
     loadSessions();
-  }, [classFilter]);
+  }, [classFilter, searchParams]);
 
   useEffect(() => {
     setJoinWaitlist(Boolean(selectedSession?.isFull));
@@ -954,9 +966,9 @@ export function BookingForm() {
                       />
                       <span>
                         <strong className="block">
-                          Pay with {sessionCreditLabel}
+                          Pay instantly using your class credits
                         </strong>
-                        Skip the class fee and confirm instantly using your pack balance.
+                        Use {sessionCreditLabel} from your pack balance and skip the class fee.
                       </span>
                     </label>
                   ) : (

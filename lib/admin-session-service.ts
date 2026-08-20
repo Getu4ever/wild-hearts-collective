@@ -14,7 +14,7 @@ import {
   paymentHoldCutoff,
 } from "@/lib/booking-service";
 import { parseCreditInput } from "@/lib/credit-units";
-import { refundCreditForCancellation } from "@/lib/credit-service";
+import { refundBookingAsCredits } from "@/lib/credit-service";
 import { db } from "@/lib/db";
 import { sendSessionCancelledEmail } from "@/lib/email";
 import { sessionPublicTitle } from "@/lib/session-display";
@@ -351,6 +351,10 @@ export async function getAdminSessionRoster(sessionId: string) {
   };
 }
 
+const MAX_REPEAT_WEEKS = 52;
+
+export type SessionRepeatMode = "none" | "weeks" | "until";
+
 type CreateSessionInput = {
   classSlug: string;
   date: string;
@@ -364,7 +368,53 @@ type CreateSessionInput = {
   /** Price in pounds (e.g. 15.50), or null/omit for studio default. */
   pricePounds?: number | string | null;
   creditCost?: number | string | null;
+  repeatMode?: SessionRepeatMode;
+  repeatWeeks?: number | string | null;
+  repeatUntil?: string | null;
 };
+
+function addIsoDays(isoDate: string, days: number) {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  const next = new Date(Date.UTC(year, month - 1, day + days));
+  return next.toISOString().slice(0, 10);
+}
+
+function resolveWeeklyRepeatCount(input: CreateSessionInput, isCourse: boolean) {
+  if (isCourse) return COURSE_SERIES_WEEKS;
+
+  const mode = input.repeatMode ?? "none";
+  if (mode === "none") return 1;
+
+  if (mode === "weeks") {
+    const weeks = Number(input.repeatWeeks);
+    if (!Number.isFinite(weeks) || weeks < 1) {
+      throw new Error("Enter how many weeks to repeat for.");
+    }
+    if (weeks > MAX_REPEAT_WEEKS) {
+      throw new Error(`Repeat is limited to ${MAX_REPEAT_WEEKS} weeks.`);
+    }
+    return Math.round(weeks);
+  }
+
+  const until = typeof input.repeatUntil === "string" ? input.repeatUntil.trim() : "";
+  if (!until) {
+    throw new Error("Choose a date to repeat until.");
+  }
+  if (until < input.date) {
+    throw new Error("Repeat-until date must be on or after the first class.");
+  }
+
+  let count = 0;
+  let cursor = input.date;
+  while (cursor <= until && count < MAX_REPEAT_WEEKS) {
+    count += 1;
+    cursor = addIsoDays(cursor, 7);
+  }
+  if (count < 1) {
+    throw new Error("Repeat-until date does not include any weekly sessions.");
+  }
+  return count;
+}
 
 export async function createAdminSession(input: CreateSessionInput) {
   await ensureStudioClassTypes();
@@ -416,7 +466,7 @@ export async function createAdminSession(input: CreateSessionInput) {
 
   const isCourse = isCourseClassSlug(classRecord.slug);
   const courseSeriesId = isCourse ? newCourseSeriesId() : null;
-  const weekCount = isCourse ? COURSE_SERIES_WEEKS : 1;
+  const weekCount = resolveWeeklyRepeatCount(input, isCourse);
 
   const created = [];
   for (let week = 1; week <= weekCount; week += 1) {
@@ -455,7 +505,10 @@ export async function createAdminSession(input: CreateSessionInput) {
     },
   });
 
-  return mapSessionRecord(created[0]);
+  return {
+    session: mapSessionRecord(created[0]),
+    createdCount: created.length,
+  };
 }
 
 type UpdateSessionInput = {
@@ -598,9 +651,7 @@ export async function cancelAdminSession(sessionId: string, reason?: string) {
       },
     });
 
-    if (booking.paidWithCredit && booking.userId) {
-      await refundCreditForCancellation(booking.userId, booking.id);
-    }
+    await refundBookingAsCredits(booking.id);
 
     await sendSessionCancelledEmail(
       { name: booking.name, email: booking.email },

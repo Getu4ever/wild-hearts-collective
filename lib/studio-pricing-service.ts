@@ -299,20 +299,40 @@ function mapPack(pack: {
 }
 
 export async function listAdminClassPacks() {
-  await seedClassPacks(db);
-  const packs = await db.classPack.findMany({
-    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-  });
-  return packs.map(mapPack);
+  try {
+    await seedClassPacks(db);
+  } catch (error) {
+    console.error("[studio-pricing] failed to seed class packs:", error);
+  }
+
+  try {
+    const packs = await db.classPack.findMany({
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    });
+    return packs.map(mapPack);
+  } catch (error) {
+    console.error("[studio-pricing] failed to list class packs:", error);
+    return [];
+  }
 }
 
 export async function listActiveClassPacks() {
-  await seedClassPacks(db);
-  const packs = await db.classPack.findMany({
-    where: { active: true },
-    orderBy: { sortOrder: "asc" },
-  });
-  return packs.map(mapPack);
+  try {
+    await seedClassPacks(db);
+  } catch (error) {
+    console.error("[studio-pricing] failed to seed class packs:", error);
+  }
+
+  try {
+    const packs = await db.classPack.findMany({
+      where: { active: true },
+      orderBy: { sortOrder: "asc" },
+    });
+    return packs.map(mapPack);
+  } catch (error) {
+    console.error("[studio-pricing] failed to list class packs:", error);
+    return [];
+  }
 }
 
 function validatePackInput(input: AdminClassPackInput) {

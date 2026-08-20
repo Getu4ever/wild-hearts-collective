@@ -25,6 +25,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   if (
     status !== WAITLIST_STATUS.waiting &&
     status !== WAITLIST_STATUS.notified &&
+    status !== WAITLIST_STATUS.booked &&
     status !== WAITLIST_STATUS.cancelled
   ) {
     return NextResponse.json({ error: "Invalid waitlist status." }, { status: 400 });

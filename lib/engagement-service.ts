@@ -1,11 +1,11 @@
 import {
   ENGAGEMENT_STATUS,
   ENGAGEMENT_TYPE,
-  INACTIVITY_DAYS,
 } from "@/lib/booking-advanced-config";
 import { BOOKING_STATUS } from "@/lib/booking-config";
 import { db } from "@/lib/db";
 import { sendEngagementEmail } from "@/lib/email";
+import { getRewardCampaignSettings } from "@/lib/reward-campaign-settings";
 import { createReengagementVoucher } from "@/lib/voucher-service";
 
 export async function flagNoShowEngagement(userId: string, bookingId: string) {
@@ -56,8 +56,13 @@ export async function flagNoShowEngagement(userId: string, bookingId: string) {
 }
 
 export async function runInactiveMemberEngagement(now = new Date()) {
+  const { winbackEnabled, inactivityDays } = await getRewardCampaignSettings();
+  if (!winbackEnabled) {
+    return { flagged: 0, emailed: 0, checked: 0, skipped: true as const };
+  }
+
   const cutoff = new Date(now);
-  cutoff.setDate(cutoff.getDate() - INACTIVITY_DAYS);
+  cutoff.setDate(cutoff.getDate() - inactivityDays);
 
   const users = await db.user.findMany({
     where: {
@@ -133,7 +138,7 @@ export async function runInactiveMemberEngagement(now = new Date()) {
     emailed += 1;
   }
 
-  return { flagged, emailed, checked: users.length };
+  return { flagged, emailed, checked: users.length, skipped: false as const };
 }
 
 export async function runDailyEngagementJobs() {

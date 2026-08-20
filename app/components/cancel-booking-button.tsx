@@ -7,10 +7,12 @@ export function CancelBookingButton({
   bookingId,
   sessionStartsAt,
   status,
+  isCourse = false,
 }: {
   bookingId: string;
   sessionStartsAt: string;
   status: string;
+  isCourse?: boolean;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -21,7 +23,11 @@ export function CancelBookingButton({
   }
 
   async function cancelBooking() {
-    if (!confirm("Cancel this booking? Our 24-hour cancellation policy applies to credit refunds.")) {
+    const confirmText = isCourse
+      ? "Cancel this 4-week course? All remaining weeks will be cancelled. Credits are refunded only if the course has not started and you cancel at least 24 hours before week 1. Cash refunds can be requested by email."
+      : "Cancel this booking? Cancellations at least 24 hours before class receive class credits (£10 = 1 credit). Cash refunds can be requested by email.";
+
+    if (!confirm(confirmText)) {
       return;
     }
 
@@ -51,7 +57,7 @@ export function CancelBookingButton({
         onClick={cancelBooking}
         className="text-xs font-semibold uppercase tracking-wider text-brand hover:underline disabled:opacity-60"
       >
-        {loading ? "Cancelling…" : "Cancel"}
+        {loading ? "Cancelling…" : isCourse ? "Cancel course" : "Cancel"}
       </button>
       {message && <p className="text-xs text-muted">{message}</p>}
     </div>

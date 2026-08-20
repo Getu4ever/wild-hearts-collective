@@ -36,6 +36,8 @@ export const contact = {
     "https://www.openstreetmap.org/export/embed.html?bbox=-1.195964%2C53.151865%2C-1.179964%2C53.159865&layer=mapnik&marker=53.155865%2C-1.187964",
   openStreetMapUrl:
     "https://www.openstreetmap.org/?mlat=53.155865&mlon=-1.187964#map=17/53.155865/-1.187964",
+  /** Opens the what3words map on the studio pin. Replace with the exact 3-word address when the client confirms it. */
+  what3wordsUrl: "https://map.what3words.com/53.155865,-1.187964",
 };
 
 /** Company trading / registered-office notice for footers and legal pages. */
@@ -331,7 +333,7 @@ export const classes = [
       },
     ],
     whatToWear:
-      "Fitted Shorts or Leggings and a vest or sports top work best — skin contact helps with grip. Bring water, avoid lotion on class day, and layers for warm-up and cool-down.",
+      "Comfortable clothing that allows free movement. For pole, wear shorts or fitted leggings and a vest or sports top — skin contact helps with grip. Bring water, avoid lotion on class day, and layers for warm-up and cool-down.",
     whoFor:
       "Open to adults of all shapes, sizes, and abilities. Complete beginners are warmly welcome. If you have injuries or health concerns, let your instructor know so we can adapt exercises safely.",
   },
@@ -378,7 +380,7 @@ export const classes = [
       },
     ],
     whatToWear:
-      "Fitted clothing that covers the backs of knees and torso — leggings and a close-fitting top are ideal. Remove jewellery and avoid zips that could catch on the hoop.",
+      "Comfortable clothing that allows free movement. For aerial, wear fitted leggings and a close-fitting top that covers the backs of knees and torso. Remove jewellery and avoid zips that could catch on the hoop.",
     whoFor:
       "Suitable for teens and adults of all abilities. Beginners and improvers alike will find a class level that fits. Contact us if you are unsure which session to book.",
   },
@@ -425,7 +427,7 @@ export const classes = [
       },
     ],
     whatToWear:
-      "Leggings that cover legs fully and a fitted top — avoid loose fabric that can get caught in wraps. No jewellery or lotions. Bring water and a layer for warm-up.",
+      "Comfortable clothing that allows free movement. For aerial, wear fitted leggings that cover the legs fully and a fitted top — avoid loose fabric that can get caught in wraps. No jewellery or lotions. Bring water and a layer for warm-up.",
     whoFor:
       "All levels welcome, from complete beginners to experienced aerialists. Silks require patience and persistence — perfect for anyone who enjoys a challenge in a supportive setting.",
   },
@@ -521,7 +523,7 @@ export const classes = [
       },
     ],
     whatToWear:
-      "Fitted clothing suitable for movement — shorts or leggings and a sports top. Bring water, remove jewellery, and avoid lotion on class day.",
+      "Comfortable clothing that allows free movement. For pole, wear shorts or fitted leggings; for aerial, wear fitted leggings. Bring water, remove jewellery, and avoid lotion on class day.",
     whoFor:
       "Teens looking for a creative, confidence-building class. Contact us for current age ranges and timetable options.",
   },
@@ -616,7 +618,7 @@ export const classes = [
       },
     ],
     whatToWear:
-      "Fitted aerial-friendly clothing covering the backs of knees and torso. Remove jewellery, avoid lotions, and bring water plus a warm layer.",
+      "Comfortable clothing that allows free movement. For aerial, wear fitted leggings covering the backs of knees and torso. Remove jewellery, avoid lotions, and bring water plus a warm layer.",
     whoFor:
       "Students looking to enrich their aerial journey. Check each workshop listing for level guidance, or contact us if you are unsure what to book.",
   },
@@ -663,7 +665,7 @@ export const classes = [
       },
     ],
     whatToWear:
-      "Fitted Shorts or Leggings and a vest or sports top — skin contact helps with grip. Bring water, avoid lotion on the day, and remove jewellery.",
+      "Comfortable clothing that allows free movement. For pole, wear shorts or fitted leggings and a vest or sports top — skin contact helps with grip. Bring water, avoid lotion on the day, and remove jewellery.",
     whoFor:
       "Pole students who want to deepen or diversify their practice. Review level notes on each workshop, or contact us for advice.",
   },
@@ -756,7 +758,7 @@ export const classes = [
       },
     ],
     whatToWear:
-      "Fitted clothing suitable for movement — shorts or leggings and a sports top. Remove jewellery, avoid lotion on class days, and bring water plus a warm layer.",
+      "Comfortable clothing that allows free movement. For pole, wear shorts or fitted leggings; for aerial, wear fitted leggings. Remove jewellery, avoid lotion on class days, and bring water plus a warm layer.",
     whoFor:
       "Complete beginners (and returning beginners) who want a structured four-week introduction. Check each course listing for apparatus and dates, or contact us if you need help choosing.",
   },
@@ -912,7 +914,7 @@ export const faqs = [
   {
     question: "What should I wear?",
     answer:
-      "Comfortable clothing that allows free movement. For pole and aerial, shorts or fitted leggings work well. Avoid lotion on the day of class. All jewellery must be removed, belly button piercings protected. No buckles, chains or rhinestones.",
+      "Comfortable clothing that allows free movement. For aerial, wear fitted leggings. For pole, wear shorts or fitted leggings. Avoid lotion on the day of class. All jewellery must be removed, belly button piercings protected. No buckles, chains or rhinestones.",
   },
   {
     question: "I'm a complete beginner — is that okay?",

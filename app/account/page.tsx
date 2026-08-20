@@ -2,21 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { MemberLogoutButton } from "@/app/components/member-logout-button";
 import { MemberCollapsibleSection } from "@/app/components/member-collapsible-section";
-import { MembershipSubscribeButton } from "@/app/components/membership-subscribe-button";
 import { BOOKING_URL } from "@/lib/constants";
-import { formatSessionDateTime, formatUkDateLong } from "@/lib/booking-config";
+import { formatSessionDateTime } from "@/lib/booking-config";
+import { bookingStatusClassName, bookingStatusLabel } from "@/lib/booking-status-display";
 import { expireStalePendingBookings } from "@/lib/booking-service";
 import { getCurrentMember } from "@/lib/member-auth";
 import {
   calculateProfileCompletion,
   profileSelectFields,
 } from "@/lib/member-profile-service";
-import {
-  membershipPlanLabel,
-  membershipStatusLabel,
-  MEMBERSHIP_PLAN,
-  MEMBERSHIP_STATUS,
-} from "@/lib/membership-config";
 import { db } from "@/lib/db";
 import { enrolMemberInRemainingCourseWeeks } from "@/lib/course-series";
 
@@ -25,16 +19,9 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function AccountPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ membership?: string }>;
-}) {
+export default async function AccountPage() {
   const member = await getCurrentMember();
   if (!member) return null;
-
-  const params = await searchParams;
-  const showMembershipSuccess = params.membership === "success";
 
   await expireStalePendingBookings();
   await enrolMemberInRemainingCourseWeeks(member.id);
@@ -70,19 +57,8 @@ export default async function AccountPage({
     ? calculateProfileCompletion(profileRecord)
     : { percent: 0, missingSteps: [] as string[] };
 
-  const isMonthlyActive =
-    member.membershipPlan === MEMBERSHIP_PLAN.monthly &&
-    member.membershipStatus === MEMBERSHIP_STATUS.active;
-
   return (
     <div className="mx-auto max-w-5xl px-6 py-10">
-      {showMembershipSuccess && (
-        <div className="mb-8 rounded-sm border border-sage/30 bg-sage-light px-4 py-3 text-sm text-plum">
-          Welcome to Monthly Membership! Your subscription is being activated — it may take a
-          moment to appear below.
-        </div>
-      )}
-
       {profileCompletion.percent < 100 && (
         <div className="mb-8 rounded-sm border border-pink/30 bg-pink-soft/40 px-5 py-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -139,8 +115,12 @@ export default async function AccountPage({
                   <p className="mt-1 text-sm text-muted">
                     {formatSessionDateTime(booking.session.startsAt)}
                   </p>
-                  <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-brand">
-                    {booking.status}
+                  <p className="mt-2">
+                    <span
+                      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wider ${bookingStatusClassName(booking.status)}`}
+                    >
+                      {bookingStatusLabel(booking.status)}
+                    </span>
                   </p>
                 </li>
               ))}
@@ -149,38 +129,6 @@ export default async function AccountPage({
         </section>
 
         <aside className="space-y-6">
-          <section className="rounded-sm border border-plum/10 bg-surface p-6">
-            <h2 className="font-display text-2xl text-plum">Membership</h2>
-            <dl className="mt-4 space-y-3 text-sm">
-              <div>
-                <dt className="text-muted">Plan</dt>
-                <dd className="font-semibold text-plum">
-                  {membershipPlanLabel(member.membershipPlan)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted">Status</dt>
-                <dd className="font-semibold text-plum">
-                  {membershipStatusLabel(member.membershipStatus)}
-                </dd>
-              </div>
-              {member.membershipRenewsAt && (
-                <div>
-                  <dt className="text-muted">Renews</dt>
-                  <dd className="font-semibold text-plum">
-                    {formatUkDateLong(member.membershipRenewsAt)}
-                  </dd>
-                </div>
-              )}
-            </dl>
-
-            {!isMonthlyActive && (
-              <div className="mt-6">
-                <MembershipSubscribeButton />
-              </div>
-            )}
-          </section>
-
           <section className="rounded-sm border border-plum/10 bg-surface p-6">
             <h2 className="font-display text-2xl text-plum">Class credits</h2>
             <p className="mt-2 text-sm text-muted">
@@ -250,8 +198,10 @@ export default async function AccountPage({
                       {formatSessionDateTime(booking.session.startsAt)}
                     </p>
                   </div>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-brand">
-                    {booking.status}
+                  <span
+                    className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wider ${bookingStatusClassName(booking.status)}`}
+                  >
+                    {bookingStatusLabel(booking.status)}
                   </span>
                 </div>
               </li>

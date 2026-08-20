@@ -9,6 +9,7 @@ export type BookingStatus = (typeof BOOKING_STATUS)[keyof typeof BOOKING_STATUS]
 export const WAITLIST_STATUS = {
   waiting: "waiting",
   notified: "notified",
+  booked: "booked",
   cancelled: "cancelled",
 } as const;
 

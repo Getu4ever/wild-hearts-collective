@@ -46,9 +46,12 @@ function createPrismaClient() {
   const rawUrl = process.env.DATABASE_URL;
 
   if (isNeonDatabaseUrl(rawUrl)) {
-    // Local networks often block Postgres TCP (5432); HTTPS fetch still works.
+    // Prefer HTTPS fetch so serverless does not open a WebSocket. Bundling `ws`
+    // on Vercel crashes with "b.mask is not a function" and drops the connection.
     neonConfig.poolQueryViaFetch = true;
-    neonConfig.webSocketConstructor = ws;
+    if (!process.env.VERCEL) {
+      neonConfig.webSocketConstructor = ws;
+    }
     const adapter = new PrismaNeon({ connectionString: rawUrl! });
     return new PrismaClient({
       adapter,

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AdminSavedDialog } from "@/app/components/admin-saved-dialog";
 import { formatMoneyFromPence } from "@/lib/booking-config";
 import type {
   AdminClassPack,
@@ -75,6 +76,7 @@ export function AdminPricingPanel({
   const [creating, setCreating] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [savedOpen, setSavedOpen] = useState(false);
 
   const dropInPreview = useMemo(() => {
     const parsed = Number.parseFloat(dropInPounds);
@@ -124,6 +126,7 @@ export function AdminPricingPanel({
       }
       setSettings(payload.settings);
       setMessage("Studio pricing saved.");
+      setSavedOpen(true);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to save studio pricing.");
@@ -202,6 +205,7 @@ export function AdminPricingPanel({
         [packId]: toDraft(payload.pack),
       }));
       setMessage(`Saved “${payload.pack.name}”.`);
+      setSavedOpen(true);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to save class pack.");
@@ -243,6 +247,7 @@ export function AdminPricingPanel({
       setNewPack(emptyNewPack);
       setShowNewPack(false);
       setMessage(`Created “${payload.pack.name}”.`);
+      setSavedOpen(true);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to create class pack.");
@@ -512,6 +517,12 @@ export function AdminPricingPanel({
           })}
         </div>
       </section>
+      <AdminSavedDialog
+        open={savedOpen}
+        title="Saved"
+        description={<p>{message || "Your changes have been saved."}</p>}
+        onClose={() => setSavedOpen(false)}
+      />
     </div>
   );
 }

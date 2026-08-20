@@ -2,10 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { AdminSavedDialog } from "@/app/components/admin-saved-dialog";
 import {
   CLASS_TYPE_OPTIONS,
   getMaxCapacityForClassSlug,
 } from "@/lib/admin-studio-config";
+import { isCourseClassSlug } from "@/lib/gift-redeem-scope";
 
 type Tutor = { id: string; name: string };
 type ClassRecord = {
@@ -58,8 +60,14 @@ export function AdminSessionForm({ mode, sessionId, initial }: AdminSessionFormP
   const [creditCost, setCreditCost] = useState(
     initial?.creditCost != null ? String(initial.creditCost) : "",
   );
+  const [repeatMode, setRepeatMode] = useState<"none" | "weeks" | "until">("none");
+  const [repeatWeeks, setRepeatWeeks] = useState("12");
+  const [repeatUntil, setRepeatUntil] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [savedOpen, setSavedOpen] = useState(false);
+  const [savedMessage, setSavedMessage] = useState("");
+  const [savedHref, setSavedHref] = useState("");
 
   useEffect(() => {
     Promise.all([
@@ -125,14 +133,31 @@ export function AdminSessionForm({ mode, sessionId, initial }: AdminSessionFormP
           publicDescription: publicDescription || null,
           pricePounds: pricePounds.trim() === "" ? null : pricePounds,
           creditCost: creditCost.trim() === "" ? null : creditCost,
+          ...(mode === "create"
+            ? {
+                repeatMode,
+                repeatWeeks: repeatMode === "weeks" ? repeatWeeks : undefined,
+                repeatUntil: repeatMode === "until" ? repeatUntil : undefined,
+              }
+            : {}),
         }),
       });
 
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to save session.");
 
-      router.push(`/admin/sessions/${data.session.id}`);
-      router.refresh();
+      const createdCount =
+        typeof data.createdCount === "number" ? data.createdCount : 1;
+      const nextHref = `/admin/sessions/${data.session.id}`;
+      setSavedHref(nextHref);
+      setSavedMessage(
+        mode === "create"
+          ? createdCount > 1
+            ? `${createdCount} weekly sessions have been scheduled.`
+            : "The class has been scheduled."
+          : "Your changes have been saved.",
+      );
+      setSavedOpen(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to save session.");
     } finally {
@@ -142,8 +167,18 @@ export function AdminSessionForm({ mode, sessionId, initial }: AdminSessionFormP
 
   const maxCapacity = getMaxCapacityForClassSlug(classSlug);
   const selectedClass = classes.find((item) => item.slug === classSlug);
+  const isCourse = isCourseClassSlug(classSlug);
+
+  function closeSavedDialog() {
+    setSavedOpen(false);
+    if (savedHref) {
+      router.push(savedHref);
+      router.refresh();
+    }
+  }
 
   return (
+    <>
     <form onSubmit={handleSubmit} className="space-y-5 rounded-lg border border-plum/10 bg-surface p-6 shadow-sm">
       <div className="grid gap-5 sm:grid-cols-2">
         <Field label="Class type">
@@ -262,6 +297,82 @@ export function AdminSessionForm({ mode, sessionId, initial }: AdminSessionFormP
         </Field>
       </div>
 
+      {mode === "create" && !isCourse && (
+        <fieldset className="rounded-lg border border-plum/10 bg-white px-4 py-4">
+          <legend className="px-1 text-sm font-semibold text-plum">Repeat this class</legend>
+          <p className="mt-1 text-xs text-muted">
+            Schedule the same day and time every week — for example hoop at 6pm every Wednesday
+            for the next 12 weeks.
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <label className="flex items-center gap-2 text-sm text-plum">
+              <input
+                type="radio"
+                name="repeatMode"
+                checked={repeatMode === "none"}
+                onChange={() => setRepeatMode("none")}
+              />
+              One date only
+            </label>
+            <label className="flex items-center gap-2 text-sm text-plum">
+              <input
+                type="radio"
+                name="repeatMode"
+                checked={repeatMode === "weeks"}
+                onChange={() => setRepeatMode("weeks")}
+              />
+              Repeat for weeks
+            </label>
+            <label className="flex items-center gap-2 text-sm text-plum">
+              <input
+                type="radio"
+                name="repeatMode"
+                checked={repeatMode === "until"}
+                onChange={() => setRepeatMode("until")}
+              />
+              Repeat until date
+            </label>
+          </div>
+          {repeatMode === "weeks" && (
+            <div className="mt-4 max-w-xs">
+              <label className="block text-sm font-semibold text-plum" htmlFor="repeatWeeks">
+                Number of weeks
+              </label>
+              <input
+                id="repeatWeeks"
+                type="number"
+                min={1}
+                max={52}
+                required
+                value={repeatWeeks}
+                onChange={(event) => setRepeatWeeks(event.target.value)}
+                className="mt-2 w-full rounded-sm border border-plum/15 px-3 py-2 text-sm"
+              />
+              <p className="mt-1 text-xs text-muted">Includes the first class. Maximum 52 weeks.</p>
+            </div>
+          )}
+          {repeatMode === "until" && (
+            <div className="mt-4 max-w-xs">
+              <label className="block text-sm font-semibold text-plum" htmlFor="repeatUntil">
+                Repeat until
+              </label>
+              <input
+                id="repeatUntil"
+                type="date"
+                required
+                min={date || undefined}
+                value={repeatUntil}
+                onChange={(event) => setRepeatUntil(event.target.value)}
+                className="mt-2 w-full rounded-sm border border-plum/15 px-3 py-2 text-sm"
+              />
+              <p className="mt-1 text-xs text-muted">
+                Weekly sessions continue through this date (same weekday).
+              </p>
+            </div>
+          )}
+        </fieldset>
+      )}
+
       <Field label="Public title">
         <input
           type="text"
@@ -320,6 +431,14 @@ export function AdminSessionForm({ mode, sessionId, initial }: AdminSessionFormP
         {loading ? "Saving…" : mode === "create" ? "Schedule class" : "Save changes"}
       </button>
     </form>
+    <AdminSavedDialog
+      open={savedOpen}
+      title="Saved"
+      description={<p>{savedMessage}</p>}
+      confirmLabel={mode === "create" ? "View class" : "OK"}
+      onClose={closeSavedDialog}
+    />
+    </>
   );
 }
 

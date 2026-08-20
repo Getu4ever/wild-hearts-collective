@@ -3,7 +3,11 @@ import {
   CLASS_PACK_STATUS,
   CREDIT_REASON,
 } from "@/lib/booking-advanced-config";
-import { DEFAULT_CREDIT_COST, hasEnoughCredits } from "@/lib/credit-units";
+import {
+  DEFAULT_CREDIT_COST,
+  hasEnoughCredits,
+  penceToCredits,
+} from "@/lib/credit-units";
 import { db } from "@/lib/db";
 import { sendClassPackPurchaseEmails } from "@/lib/email";
 
@@ -316,5 +320,116 @@ export async function refundCreditForCancellation(
     });
 
     return { refunded: true as const, balance: user.creditsRemaining, creditsRefunded: cost };
+  });
+}
+
+async function resolveRefundUserId(
+  tx: TransactionClient,
+  booking: { userId: string | null; email: string },
+) {
+  if (booking.userId) return booking.userId;
+
+  const user = await tx.user.findFirst({
+    where: { email: { equals: booking.email, mode: "insensitive" } },
+    select: { id: true },
+  });
+  return user?.id ?? null;
+}
+
+/**
+ * Refund a cancelled booking as class credits.
+ * Credit-paid bookings return the credits charged; card/gift payments convert
+ * at £10 = 1 credit (£5 = 0.5).
+ */
+export async function refundBookingAsCredits(bookingId: string) {
+  return db.$transaction(async (tx) => {
+    const booking = await tx.booking.findUnique({
+      where: { id: bookingId },
+      select: {
+        userId: true,
+        email: true,
+        paidWithCredit: true,
+        packPurchaseId: true,
+        creditsCharged: true,
+        amountPaid: true,
+        giftAmountApplied: true,
+      },
+    });
+
+    if (!booking) {
+      return { refunded: false as const, creditsRefunded: 0 };
+    }
+
+    const existing = await tx.creditTransaction.findFirst({
+      where: { bookingId, reason: CREDIT_REASON.cancellationRefund },
+    });
+    if (existing) {
+      return {
+        refunded: true as const,
+        creditsRefunded: existing.amount,
+        already: true as const,
+      };
+    }
+
+    const userId = await resolveRefundUserId(tx, booking);
+    if (!userId) {
+      return { refunded: false as const, creditsRefunded: 0, noAccount: true as const };
+    }
+
+    let cost = 0;
+    if (booking.paidWithCredit) {
+      cost =
+        booking.creditsCharged != null && booking.creditsCharged > 0
+          ? booking.creditsCharged
+          : DEFAULT_CREDIT_COST;
+    } else {
+      const pence = (booking.amountPaid ?? 0) + (booking.giftAmountApplied ?? 0);
+      cost = penceToCredits(pence);
+    }
+
+    if (cost <= 0) {
+      return { refunded: false as const, creditsRefunded: 0 };
+    }
+
+    const user = await tx.user.update({
+      where: { id: userId },
+      data: { creditsRemaining: { increment: cost } },
+      select: { creditsRemaining: true },
+    });
+
+    if (booking.paidWithCredit && booking.packPurchaseId) {
+      const purchase = await tx.classPackPurchase.findUnique({
+        where: { id: booking.packPurchaseId },
+      });
+
+      if (purchase) {
+        const nextRemaining =
+          Math.round((purchase.creditsRemaining + cost) * 100) / 100;
+        await tx.classPackPurchase.update({
+          where: { id: purchase.id },
+          data: {
+            creditsRemaining: nextRemaining,
+            status: CLASS_PACK_STATUS.active,
+          },
+        });
+      }
+    }
+
+    await tx.creditTransaction.create({
+      data: {
+        userId,
+        bookingId,
+        purchaseId: booking.paidWithCredit ? booking.packPurchaseId : null,
+        amount: cost,
+        balanceAfter: user.creditsRemaining,
+        reason: CREDIT_REASON.cancellationRefund,
+      },
+    });
+
+    return {
+      refunded: true as const,
+      balance: user.creditsRemaining,
+      creditsRefunded: cost,
+    };
   });
 }

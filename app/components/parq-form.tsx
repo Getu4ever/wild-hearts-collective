@@ -167,8 +167,27 @@ export function ParQForm({
         }),
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Unable to save form.");
+      const raw = await response.text();
+      let data: { error?: string } = {};
+      if (raw) {
+        try {
+          data = JSON.parse(raw) as { error?: string };
+        } catch {
+          throw new Error(
+            "The connection dropped while saving. Please try again in a moment.",
+          );
+        }
+      }
+
+      if (!response.ok) {
+        const message = data.error || "Unable to save form.";
+        if (/terminat|connect/i.test(message)) {
+          throw new Error(
+            "The connection dropped while saving. Please try again in a moment.",
+          );
+        }
+        throw new Error(message);
+      }
 
       setSuccess(true);
       setEditing(false);

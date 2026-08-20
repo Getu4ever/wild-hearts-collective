@@ -81,6 +81,16 @@ export async function POST(request: Request) {
         : body.creditCost !== undefined
           ? body.creditCost
           : undefined;
+    const repeatMode =
+      body.repeatMode === "weeks" || body.repeatMode === "until"
+        ? body.repeatMode
+        : "none";
+    const repeatWeeks =
+      body.repeatWeeks === null || body.repeatWeeks === ""
+        ? null
+        : body.repeatWeeks;
+    const repeatUntil =
+      typeof body.repeatUntil === "string" ? body.repeatUntil : null;
 
     if (!classSlug || !date || !startTime || !Number.isFinite(capacity)) {
       return NextResponse.json(
@@ -89,7 +99,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const session = await createAdminSession({
+    const created = await createAdminSession({
       classSlug,
       date,
       startTime,
@@ -101,9 +111,12 @@ export async function POST(request: Request) {
       publicDescription,
       pricePounds,
       creditCost,
+      repeatMode,
+      repeatWeeks,
+      repeatUntil,
     });
 
-    return NextResponse.json({ session }, { status: 201 });
+    return NextResponse.json(created, { status: 201 });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to create session.";

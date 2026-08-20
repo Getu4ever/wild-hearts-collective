@@ -6,6 +6,10 @@ import {
   type TimetableClass,
   type TimetableDay,
 } from "@/lib/site-data";
+import {
+  maxClassesForTimetableDay,
+  WEEKLY_TIMETABLE_DAY_COUNT,
+} from "@/lib/marketing-timetable-limits";
 
 /** Poster pixel size of public/Timetable.png — keep overlays in sync with this. */
 const POSTER_W = 941;
@@ -56,10 +60,13 @@ function bookHref(item: TimetableClass) {
 function DayOverlay({
   day,
   region,
+  maxItems,
 }: {
   day: TimetableDay;
   region: (typeof DAY_REGIONS)[number];
+  maxItems: number;
 }) {
+  const visible = day.classes.slice(0, maxItems);
   return (
     <div
       className="absolute overflow-hidden rounded-[2.2cqw] border border-[#d7d0c4]/90"
@@ -88,7 +95,7 @@ function DayOverlay({
           aria-hidden
         />
         <ul className="flex min-h-0 min-w-0 flex-1 flex-col justify-center gap-[0.35cqw] overflow-hidden">
-          {day.classes.map((item, index) => {
+          {visible.map((item, index) => {
             const href = bookHref(item);
             const hasTime = Boolean(item.time?.trim());
             return (
@@ -109,13 +116,13 @@ function DayOverlay({
                         {item.time}
                       </span>
                     ) : null}
-                    <span className="min-w-0 flex-1 text-[2.55cqw] leading-snug group-hover:underline">
+                    <span className="min-w-0 flex-1 truncate text-[2.55cqw] leading-snug group-hover:underline">
                       {item.title}
                     </span>
                   </div>
                   {item.note ? (
                     <p
-                      className="px-[0.4cqw] pb-[0.35cqw] text-[1.9cqw] italic leading-snug opacity-80"
+                      className="truncate px-[0.4cqw] pb-[0.35cqw] text-[1.9cqw] italic leading-snug opacity-80"
                       style={{
                         color: INK,
                         fontFamily: "Georgia, 'Times New Roman', serif",
@@ -145,7 +152,15 @@ export function Timetable({
   days?: TimetableDay[];
 }) {
   const overlayDays = days.slice(0, DAY_REGIONS.length);
-  const promotionalRows = days.slice(DAY_REGIONS.length);
+  const overflowFromPoster = overlayDays.flatMap((day, index) => {
+    const extra = day.classes.slice(maxClassesForTimetableDay(index));
+    if (extra.length === 0) return [];
+    return [{ day: `${day.day} (continued)`, classes: extra }];
+  });
+  const promotionalRows = [
+    ...overflowFromPoster,
+    ...days.slice(WEEKLY_TIMETABLE_DAY_COUNT),
+  ];
 
   return (
     <div className="mx-auto w-full max-w-xl">
@@ -175,6 +190,7 @@ export function Timetable({
             key={`${day.day}-${index}`}
             day={day}
             region={DAY_REGIONS[index]!}
+            maxItems={maxClassesForTimetableDay(index)}
           />
         ))}
       </div>

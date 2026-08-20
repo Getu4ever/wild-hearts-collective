@@ -1,16 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CancelBookingButton } from "@/app/components/cancel-booking-button";
-import { formatSessionDateTime, formatUkDateTimeShort } from "@/lib/booking-config";
-import { getCurrentMember } from "@/lib/member-auth";
+import {
+  formatSessionDateTime,
+  WAITLIST_STATUS,
+} from "@/lib/booking-config";
+import { bookingStatusClassName, bookingStatusLabel } from "@/lib/booking-status-display";
+import { enrolMemberInRemainingCourseWeeks, isCourseSeriesSession } from "@/lib/course-series";
 import { db } from "@/lib/db";
-import { enrolMemberInRemainingCourseWeeks } from "@/lib/course-series";
+import { getCurrentMember } from "@/lib/member-auth";
+import { contact } from "@/lib/site-data";
 
 export const metadata: Metadata = {
   title: "My bookings",
   robots: { index: false, follow: false },
 };
-
 
 export default async function AccountBookingsPage() {
   const member = await getCurrentMember();
@@ -28,7 +32,10 @@ export default async function AccountBookingsPage() {
       },
     }),
     db.waitlistEntry.findMany({
-      where: { userId: member.id },
+      where: {
+        userId: member.id,
+        status: { in: [WAITLIST_STATUS.waiting, WAITLIST_STATUS.notified] },
+      },
       orderBy: { createdAt: "desc" },
       include: {
         session: { include: { class: true } },
@@ -45,52 +52,54 @@ export default async function AccountBookingsPage() {
           Book another class
         </Link>
       </p>
+      <p className="mt-3 text-sm text-muted">
+        Cancellations at least 24 hours before class receive class credits (£10 = 1 credit).
+        Cash refunds are available but must be requested by emailing{" "}
+        <a href={`mailto:${contact.email}`} className="font-semibold text-brand hover:underline">
+          {contact.email}
+        </a>
+        .
+      </p>
 
       <section className="mt-10">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-brand">Class bookings</h3>
         {bookings.length === 0 ? (
           <p className="mt-4 text-sm text-muted">No bookings yet.</p>
         ) : (
-          <div className="mt-4 overflow-x-auto rounded-sm border border-plum/10 bg-surface">
-            <table className="min-w-full text-left text-sm">
-              <thead className="border-b border-plum/10 bg-cream/50 text-xs uppercase tracking-wider text-muted">
-                <tr>
-                  <th className="px-4 py-3 font-semibold">Class</th>
-                  <th className="px-4 py-3 font-semibold">Session</th>
-                  <th className="px-4 py-3 font-semibold">Status</th>
-                  <th className="px-4 py-3 font-semibold">Booked</th>
-                  <th className="px-4 py-3 font-semibold">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-plum/10">
-                {bookings.map((booking) => (
-                  <tr key={booking.id}>
-                    <td className="px-4 py-3 font-medium text-plum">
-                      {booking.session.class.title}
-                    </td>
-                    <td className="px-4 py-3 text-muted">
+          <ul className="mt-4 divide-y divide-plum/10 overflow-hidden rounded-sm border border-plum/10 bg-surface">
+            {bookings.map((booking) => {
+              const isCourse = isCourseSeriesSession(booking.session);
+              return (
+                <li
+                  key={booking.id}
+                  className="grid gap-3 px-4 py-4 sm:grid-cols-[1fr_auto_auto] sm:items-center"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium text-plum">{booking.session.class.title}</p>
+                    <p className="mt-1 text-sm text-muted">
                       {formatSessionDateTime(booking.session.startsAt)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-brand">
-                        {booking.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-muted">
-                      {formatUkDateTimeShort(booking.createdAt)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <CancelBookingButton
-                        bookingId={booking.id}
-                        sessionStartsAt={booking.session.startsAt.toISOString()}
-                        status={booking.status}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      {isCourse && booking.session.courseWeek
+                        ? ` · Week ${booking.session.courseWeek} of 4`
+                        : ""}
+                    </p>
+                  </div>
+                  <span
+                    className={`inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wider ${bookingStatusClassName(booking.status)}`}
+                  >
+                    {bookingStatusLabel(booking.status)}
+                  </span>
+                  <div className="sm:text-right">
+                    <CancelBookingButton
+                      bookingId={booking.id}
+                      sessionStartsAt={booking.session.startsAt.toISOString()}
+                      status={booking.status}
+                      isCourse={isCourse}
+                    />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </section>
 
@@ -99,34 +108,26 @@ export default async function AccountBookingsPage() {
         {waitlist.length === 0 ? (
           <p className="mt-4 text-sm text-muted">You&apos;re not on any waitlists.</p>
         ) : (
-          <div className="mt-4 overflow-x-auto rounded-sm border border-plum/10 bg-surface">
-            <table className="min-w-full text-left text-sm">
-              <thead className="border-b border-plum/10 bg-cream/50 text-xs uppercase tracking-wider text-muted">
-                <tr>
-                  <th className="px-4 py-3 font-semibold">Class</th>
-                  <th className="px-4 py-3 font-semibold">Session</th>
-                  <th className="px-4 py-3 font-semibold">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-plum/10">
-                {waitlist.map((entry) => (
-                  <tr key={entry.id}>
-                    <td className="px-4 py-3 font-medium text-plum">
-                      {entry.session.class.title}
-                    </td>
-                    <td className="px-4 py-3 text-muted">
-                      {formatSessionDateTime(entry.session.startsAt)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-brand">
-                        {entry.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ul className="mt-4 divide-y divide-plum/10 overflow-hidden rounded-sm border border-plum/10 bg-surface">
+            {waitlist.map((entry) => (
+              <li
+                key={entry.id}
+                className="grid gap-3 px-4 py-4 sm:grid-cols-[1fr_auto] sm:items-center"
+              >
+                <div>
+                  <p className="font-medium text-plum">{entry.session.class.title}</p>
+                  <p className="mt-1 text-sm text-muted">
+                    {formatSessionDateTime(entry.session.startsAt)}
+                  </p>
+                </div>
+                <span
+                  className={`inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wider ${bookingStatusClassName(entry.status)}`}
+                >
+                  {bookingStatusLabel(entry.status)}
+                </span>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
     </div>

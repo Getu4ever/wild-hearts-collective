@@ -3,6 +3,14 @@
     {
       "path": "/api/cron/expire-pending-bookings",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/birthday-vouchers",
+      "schedule": "15 7 * * *"
+    },
+    {
+      "path": "/api/cron/engagement",
+      "schedule": "30 8 * * *"
     }
   ]
 }

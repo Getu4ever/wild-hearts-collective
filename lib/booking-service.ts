@@ -322,7 +322,32 @@ export async function confirmBooking(
     paymentSummary,
   );
 
+  await markWaitlistConverted({
+    sessionId: booking.sessionId,
+    email: booking.email,
+    userId: booking.userId,
+  });
+
   return booking;
+}
+
+export async function markWaitlistConverted(input: {
+  sessionId: string;
+  email: string;
+  userId?: string | null;
+}) {
+  const email = input.email.trim().toLowerCase();
+  await db.waitlistEntry.updateMany({
+    where: {
+      sessionId: input.sessionId,
+      status: { in: [WAITLIST_STATUS.waiting, WAITLIST_STATUS.notified] },
+      OR: [
+        { email: { equals: email, mode: "insensitive" } },
+        ...(input.userId ? [{ userId: input.userId }] : []),
+      ],
+    },
+    data: { status: WAITLIST_STATUS.booked },
+  });
 }
 
 export async function cancelBooking(
@@ -330,6 +355,8 @@ export async function cancelBooking(
   options?: {
     cancelledBy?: "member" | "admin" | "system";
     creditRefunded?: boolean;
+    skipEmail?: boolean;
+    skipWaitlist?: boolean;
   },
 ) {
   const booking = await db.booking.update({
@@ -340,20 +367,24 @@ export async function cancelBooking(
     },
   });
 
-  await sendBookingCancelledEmails(
-    { name: booking.name, email: booking.email },
-    {
-      classTitle: sessionPublicTitle(booking.session),
-      startsAt: booking.session.startsAt,
-    },
-    {
-      cancelledBy: options?.cancelledBy ?? "member",
-      cancellationType: booking.cancellationType,
-      creditRefunded: options?.creditRefunded,
-    },
-  );
+  if (!options?.skipEmail) {
+    await sendBookingCancelledEmails(
+      { name: booking.name, email: booking.email },
+      {
+        classTitle: sessionPublicTitle(booking.session),
+        startsAt: booking.session.startsAt,
+      },
+      {
+        cancelledBy: options?.cancelledBy ?? "member",
+        cancellationType: booking.cancellationType,
+        creditRefunded: options?.creditRefunded,
+      },
+    );
+  }
 
-  await notifyNextWaitlistEntry(booking.sessionId);
+  if (!options?.skipWaitlist) {
+    await notifyNextWaitlistEntry(booking.sessionId);
+  }
 
   return booking;
 }
@@ -384,7 +415,7 @@ export async function notifyNextWaitlistEntry(sessionId: string) {
     data: { status: WAITLIST_STATUS.notified },
   });
 
-  const bookUrl = `${getAppBaseUrl()}/book?class=${session.class.slug}`;
+  const bookUrl = `${getAppBaseUrl()}/book?class=${session.class.slug}&session=${session.id}`;
 
   await sendWaitlistSpotAvailableEmail(
     { name: updated.name, email: updated.email },

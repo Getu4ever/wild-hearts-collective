@@ -2,7 +2,7 @@ import { logAdminAction } from "@/lib/admin-audit";
 import { countConfirmedBookings } from "@/lib/booking-service";
 import { BOOKING_STATUS } from "@/lib/booking-config";
 import { CANCELLATION_TYPE } from "@/lib/booking-advanced-config";
-import { refundCreditForCancellation } from "@/lib/credit-service";
+import { refundBookingAsCredits } from "@/lib/credit-service";
 import { db } from "@/lib/db";
 import {
   sendBookingCancelledEmails,
@@ -44,8 +44,8 @@ export async function removeBookingAsAdmin(
 
   let creditRefunded = false;
 
-  if (options.refundCredit && booking.paidWithCredit && booking.userId) {
-    const result = await refundCreditForCancellation(booking.userId, bookingId);
+  if (options.refundCredit && booking.userId) {
+    const result = await refundBookingAsCredits(bookingId);
     creditRefunded = result.refunded;
   }
 
@@ -96,8 +96,8 @@ export async function deleteBookingAsAdmin(
   const wasConfirmed = booking.status === BOOKING_STATUS.confirmed;
   let creditRefunded = false;
 
-  if (options?.refundCredit && booking.paidWithCredit && booking.userId) {
-    const result = await refundCreditForCancellation(booking.userId, bookingId);
+  if (options?.refundCredit) {
+    const result = await refundBookingAsCredits(bookingId);
     creditRefunded = result.refunded;
   }
 

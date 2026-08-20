@@ -57,26 +57,26 @@ export async function submitParQ(userId: string, data: ParQFormData) {
     emergencyContactPhone: data.emergencyContactPhone.trim(),
   };
 
-  return db.$transaction(async (tx) => {
-    await tx.parQResponse.upsert({
-      where: { userId },
-      create: { userId, data: payload },
-      update: { data: payload },
-    });
+  // Sequential writes — avoid interactive transactions on Neon serverless
+  // (those often fail with "connection terminated").
+  await db.parQResponse.upsert({
+    where: { userId },
+    create: { userId, data: payload },
+    update: { data: payload, submittedAt: now },
+  });
 
-    return tx.user.update({
-      where: { id: userId },
-      data: {
-        parQCompletedAt: now,
-        parQData: payload,
-        emergencyContactName: payload.emergencyContactName,
-        emergencyContactPhone: payload.emergencyContactPhone,
-      },
-      select: {
-        id: true,
-        parQCompletedAt: true,
-      },
-    });
+  return db.user.update({
+    where: { id: userId },
+    data: {
+      parQCompletedAt: now,
+      parQData: payload,
+      emergencyContactName: payload.emergencyContactName,
+      emergencyContactPhone: payload.emergencyContactPhone,
+    },
+    select: {
+      id: true,
+      parQCompletedAt: true,
+    },
   });
 }
 

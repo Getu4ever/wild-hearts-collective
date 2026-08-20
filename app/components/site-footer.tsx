@@ -91,6 +91,32 @@ export function ContactBlock() {
             {contact.email}
           </a>
         </li>
+        <li>
+          <span className="font-bold text-plum">what3words</span>
+          <br />
+          <a
+            href={contact.what3wordsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline-offset-2 hover:text-brand hover:underline"
+          >
+            Find us on what3words
+          </a>
+        </li>
+        {socialLinks.map((link) => (
+          <li key={link.label}>
+            <span className="font-bold text-plum">{link.label}</span>
+            <br />
+            <a
+              href={link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline-offset-2 hover:text-brand hover:underline"
+            >
+              {link.cta}
+            </a>
+          </li>
+        ))}
       </ul>
     </div>
   );

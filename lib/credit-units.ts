@@ -2,6 +2,14 @@
 
 export const DEFAULT_CREDIT_COST = 1;
 
+/** Studio refund rate: £10 = 1 credit, £5 = 0.5 credit. */
+export const PENCE_PER_CREDIT = 1000;
+
+export function penceToCredits(pence: number) {
+  if (!Number.isFinite(pence) || pence <= 0) return 0;
+  return Math.round((pence / PENCE_PER_CREDIT) * 100) / 100;
+}
+
 export function formatCredits(amount: number) {
   const value = Number(amount);
   if (!Number.isFinite(value)) return "0";

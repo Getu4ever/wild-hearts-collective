@@ -25,8 +25,26 @@ export default function TermsPage() {
         <ProseBlock>
           <p>
             All classes must be booked in advance through this website. The full
-            class fee is paid online when you book. Cancellation policies will be
-            confirmed at the time of booking.
+            class fee is paid online when you book (unless you pay with class
+            credits or an eligible gift voucher).
+          </p>
+          <p>
+            Cancel at least 24 hours before the class start time to receive a
+            refund as class credits — £10 equals 1 credit, £5 equals 0.5 credit,
+            and so on. Late cancellations within 24 hours of the class are not
+            refunded.
+          </p>
+          <p>
+            4-week courses are booked as a full block. Cancelling a course
+            cancels all remaining weeks. If the course has already started,
+            there is no refund.
+          </p>
+          <p>
+            Cash refunds are available but must be requested by emailing{" "}
+            <a href="mailto:hello@wildheartscollective.org">
+              hello@wildheartscollective.org
+            </a>{" "}
+            and are processed manually by the studio.
           </p>
         </ProseBlock>
       </ContentSection>

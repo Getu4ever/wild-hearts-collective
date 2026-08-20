@@ -22,7 +22,6 @@ export function MemberBillingSection() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [showAddPayment, setShowAddPayment] = useState(false);
-  const [showSubscribe, setShowSubscribe] = useState(false);
   const [paymentFormKey, setPaymentFormKey] = useState(0);
 
   const loadBilling = useCallback(async () => {
@@ -99,7 +98,6 @@ export function MemberBillingSection() {
     setMessage(successMessage);
     setError("");
     setShowAddPayment(false);
-    setShowSubscribe(false);
     setPaymentFormKey((current) => current + 1);
     loadBilling();
     router.refresh();
@@ -186,7 +184,6 @@ export function MemberBillingSection() {
               type="button"
               onClick={() => {
                 setShowAddPayment(true);
-                setShowSubscribe(false);
                 setError("");
                 setMessage("");
               }}
@@ -218,54 +215,6 @@ export function MemberBillingSection() {
           )}
         </div>
       </section>
-
-      {billing.canSubscribe && (
-        <section className="rounded-sm border border-pink/20 bg-pink-soft/20 p-5">
-          <h3 className="font-display text-xl text-plum">Monthly membership</h3>
-          <p className="mt-1 text-sm text-muted">
-            Subscribe for {billing.membershipPriceLabel}/month. Pay securely here without leaving
-            the site — cards, Apple Pay, Google Pay, and other methods appear automatically.
-          </p>
-
-          {!showSubscribe ? (
-            <button
-              type="button"
-              onClick={() => {
-                setShowSubscribe(true);
-                setShowAddPayment(false);
-                setError("");
-                setMessage("");
-              }}
-              className="mt-4 rounded-sm bg-sage px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white hover:bg-sage-hover"
-            >
-              Subscribe with secure checkout
-            </button>
-          ) : (
-            <div className="mt-4 rounded-sm border border-plum/10 bg-white p-4">
-              <div className="mb-4 flex items-center justify-between gap-4">
-                <p className="text-sm font-semibold text-plum">
-                  Complete your {billing.membershipPriceLabel}/month membership
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setShowSubscribe(false)}
-                  className="text-sm font-semibold text-brand hover:underline"
-                >
-                  Cancel
-                </button>
-              </div>
-              <StripePaymentForm
-                key={`subscribe-${paymentFormKey}`}
-                mode="subscription"
-                publishableKey={billing.publishableKey}
-                submitLabel={`Subscribe for ${billing.membershipPriceLabel}/month`}
-                onSuccess={() => handlePaymentSuccess("Membership payment completed.")}
-                onError={setError}
-              />
-            </div>
-          )}
-        </section>
-      )}
 
       <section>
         <h3 className="font-display text-xl text-plum">Billing history</h3>

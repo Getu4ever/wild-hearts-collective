@@ -91,7 +91,7 @@ export function AdminBookingActions({
             </p>
             {refundCredit && (
               <p className="mt-3 font-medium text-plum">
-                A class credit will be refunded to the member if one was used.
+                A class credit equivalent will be refunded to the member (£10 = 1 credit).
               </p>
             )}
           </>
@@ -150,7 +150,7 @@ export function AdminBookingActions({
           checked={refundCredit}
           onChange={(event) => setRefundCredit(event.target.checked)}
         />
-        Refund credit if deleted
+        Refund as class credits if deleted
       </label>
 
       <button

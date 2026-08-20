@@ -8,9 +8,10 @@ import {
   parseMilestonesAwarded,
   type VoucherType,
 } from "@/lib/booking-advanced-config";
-import { getAppBaseUrl } from "@/lib/booking-config";
+import { getAppBaseUrl, UK_TIMEZONE } from "@/lib/booking-config";
 import { db } from "@/lib/db";
 import { sendVoucherEmail } from "@/lib/email";
+import { getRewardCampaignSettings } from "@/lib/reward-campaign-settings";
 
 function generateVoucherCode(prefix: string) {
   return `${prefix}-${randomBytes(4).toString("hex").toUpperCase()}`;
@@ -73,10 +74,36 @@ export async function createVoucherForUser(
   return voucher;
 }
 
+function ukCalendarYear(date: Date) {
+  return Number(
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: UK_TIMEZONE,
+      year: "numeric",
+    }).format(date),
+  );
+}
+
+function ukMonthAndDay(date: Date) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: UK_TIMEZONE,
+    month: "numeric",
+    day: "numeric",
+  }).formatToParts(date);
+  return {
+    month: Number(parts.find((part) => part.type === "month")?.value),
+    day: Number(parts.find((part) => part.type === "day")?.value),
+  };
+}
+
 export async function issueBirthdayVouchersForToday(today = new Date()) {
-  const month = today.getUTCMonth() + 1;
-  const day = today.getUTCDate();
-  const yearStart = new Date(Date.UTC(today.getUTCFullYear(), 0, 1));
+  const { birthdayEnabled } = await getRewardCampaignSettings();
+  if (!birthdayEnabled) {
+    return { issued: 0, checked: 0, skipped: true as const };
+  }
+
+  const todayUk = ukMonthAndDay(today);
+  const year = ukCalendarYear(today);
+  const yearStart = new Date(Date.UTC(year, 0, 1));
 
   const users = await db.user.findMany({
     where: {
@@ -92,10 +119,8 @@ export async function issueBirthdayVouchersForToday(today = new Date()) {
 
   const birthdayUsers = users.filter((user) => {
     if (!user.dateOfBirth) return false;
-    return (
-      user.dateOfBirth.getUTCMonth() + 1 === month &&
-      user.dateOfBirth.getUTCDate() === day
-    );
+    const born = ukMonthAndDay(user.dateOfBirth);
+    return born.month === todayUk.month && born.day === todayUk.day;
   });
 
   let issued = 0;
@@ -112,7 +137,7 @@ export async function issueBirthdayVouchersForToday(today = new Date()) {
     if (existing) continue;
 
     await createVoucherForUser(user.id, VOUCHER_TYPE.birthday, {
-      metadata: { year: today.getUTCFullYear() },
+      metadata: { year },
     });
     issued += 1;
   }
@@ -124,6 +149,8 @@ export async function recordAttendanceAndAwardMilestones(
   userId: string,
   bookingId: string,
 ) {
+  const { milestoneEnabled } = await getRewardCampaignSettings();
+
   return db.$transaction(async (tx) => {
     const existing = await tx.booking.findUnique({
       where: { id: bookingId },
@@ -168,6 +195,7 @@ export async function recordAttendanceAndAwardMilestones(
     const newlyAwarded: number[] = [];
 
     for (const threshold of MILESTONE_THRESHOLDS) {
+      if (!milestoneEnabled) break;
       if (user.totalClassesAttended < threshold) continue;
       if (alreadyAwarded.includes(threshold)) continue;
 
@@ -283,5 +311,6 @@ export async function createReengagementVoucher(userId: string) {
     discountPercent: 20,
     validDays: REENGAGEMENT_VOUCHER_VALID_DAYS,
     metadata: { incentive: "we_missed_you" },
+    sendEmail: false,
   });
 }
