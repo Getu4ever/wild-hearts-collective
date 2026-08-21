@@ -9,16 +9,42 @@ const SETTING_KEYS = {
   winback: "winback_emails_active",
   birthday: "birthday_emails_active",
   milestone: "milestone_emails_active",
+  /** Legacy single-value keys — read only for migration into steps. */
+  inactivityDays: "winback_inactivity_days",
+  discountPercent: "winback_discount_percent",
+  steps: "winback_steps",
 } as const;
+
+/** Default discount when migrating a single legacy day setting with no %. */
+export const DEFAULT_WINBACK_DISCOUNT_PERCENT = 20;
+
+const MIN_INACTIVITY_DAYS = 1;
+const MAX_INACTIVITY_DAYS = 365;
+const MIN_DISCOUNT_PERCENT = 1;
+const MAX_DISCOUNT_PERCENT = 100;
+const MAX_WINBACK_STEPS = 10;
+
+export type WinbackStep = {
+  days: number;
+  discountPercent: number;
+};
 
 export type RewardCampaignSettings = {
   winbackEnabled: boolean;
   birthdayEnabled: boolean;
   milestoneEnabled: boolean;
-  inactivityDays: number;
+  /** Ordered by days ascending. */
+  winbackSteps: WinbackStep[];
   birthdayValidDays: number;
   milestoneThresholds: readonly number[];
 };
+
+/** Default ladder if nothing is saved yet. */
+export const DEFAULT_WINBACK_STEPS: WinbackStep[] = [
+  { days: 30, discountPercent: 20 },
+  { days: 60, discountPercent: 25 },
+  { days: 90, discountPercent: 30 },
+];
 
 function parseBooleanSetting(value: string | null | undefined, defaultValue: boolean) {
   if (value == null || value === "") return defaultValue;
@@ -26,6 +52,18 @@ function parseBooleanSetting(value: string | null | undefined, defaultValue: boo
   if (normalized === "true" || normalized === "1") return true;
   if (normalized === "false" || normalized === "0") return false;
   return defaultValue;
+}
+
+function parsePositiveInt(
+  value: string | null | undefined,
+  defaultValue: number,
+  min: number,
+  max: number,
+) {
+  if (value == null || value === "") return defaultValue;
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed < min || parsed > max) return defaultValue;
+  return parsed;
 }
 
 async function readFlag(key: string, defaultValue: boolean) {
@@ -38,18 +76,134 @@ async function readFlag(key: string, defaultValue: boolean) {
   }
 }
 
-export async function getRewardCampaignSettings(): Promise<RewardCampaignSettings> {
-  const [winbackEnabled, birthdayEnabled, milestoneEnabled] = await Promise.all([
-    readFlag(SETTING_KEYS.winback, true),
-    readFlag(SETTING_KEYS.birthday, true),
-    readFlag(SETTING_KEYS.milestone, true),
+async function readRawSetting(key: string) {
+  try {
+    const row = await db.studioSetting.findUnique({ where: { key } });
+    return row?.value ?? null;
+  } catch (error) {
+    console.error(`[rewards] failed to read ${key}:`, error);
+    return null;
+  }
+}
+
+export function validateWinbackInactivityDays(value: unknown): number {
+  const parsed =
+    typeof value === "number" ? value : Number.parseInt(String(value ?? ""), 10);
+  if (
+    !Number.isFinite(parsed) ||
+    !Number.isInteger(parsed) ||
+    parsed < MIN_INACTIVITY_DAYS ||
+    parsed > MAX_INACTIVITY_DAYS
+  ) {
+    throw new Error(
+      `Inactivity days must be a whole number between ${MIN_INACTIVITY_DAYS} and ${MAX_INACTIVITY_DAYS}.`,
+    );
+  }
+  return parsed;
+}
+
+export function validateWinbackDiscountPercent(value: unknown): number {
+  const parsed =
+    typeof value === "number" ? value : Number.parseInt(String(value ?? ""), 10);
+  if (
+    !Number.isFinite(parsed) ||
+    !Number.isInteger(parsed) ||
+    parsed < MIN_DISCOUNT_PERCENT ||
+    parsed > MAX_DISCOUNT_PERCENT
+  ) {
+    throw new Error(
+      `Discount percent must be a whole number between ${MIN_DISCOUNT_PERCENT} and ${MAX_DISCOUNT_PERCENT}.`,
+    );
+  }
+  return parsed;
+}
+
+export function normalizeWinbackSteps(input: unknown): WinbackStep[] {
+  if (!Array.isArray(input) || input.length === 0) {
+    throw new Error("Add at least one win-back step (days + discount %).");
+  }
+  if (input.length > MAX_WINBACK_STEPS) {
+    throw new Error(`You can have at most ${MAX_WINBACK_STEPS} win-back steps.`);
+  }
+
+  const steps = input.map((raw, index) => {
+    if (!raw || typeof raw !== "object") {
+      throw new Error(`Win-back step ${index + 1} is invalid.`);
+    }
+    const row = raw as { days?: unknown; discountPercent?: unknown };
+    return {
+      days: validateWinbackInactivityDays(row.days),
+      discountPercent: validateWinbackDiscountPercent(row.discountPercent),
+    };
+  });
+
+  const daysSeen = new Set<number>();
+  for (const step of steps) {
+    if (daysSeen.has(step.days)) {
+      throw new Error(
+        `Two steps use ${step.days} days. Each step needs a different day count.`,
+      );
+    }
+    daysSeen.add(step.days);
+  }
+
+  return [...steps].sort((a, b) => a.days - b.days);
+}
+
+function parseWinbackStepsJson(value: string | null): WinbackStep[] | null {
+  if (value == null || value === "") return null;
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return normalizeWinbackSteps(parsed);
+  } catch {
+    return null;
+  }
+}
+
+async function loadWinbackSteps(): Promise<WinbackStep[]> {
+  const stepsJson = await readRawSetting(SETTING_KEYS.steps);
+  const fromJson = parseWinbackStepsJson(stepsJson);
+  if (fromJson) return fromJson;
+
+  // Migrate legacy single day/% settings into one step, else use the default ladder.
+  const [legacyDaysRaw, legacyPercentRaw] = await Promise.all([
+    readRawSetting(SETTING_KEYS.inactivityDays),
+    readRawSetting(SETTING_KEYS.discountPercent),
   ]);
+
+  if (legacyDaysRaw != null || legacyPercentRaw != null) {
+    const days = parsePositiveInt(
+      legacyDaysRaw,
+      INACTIVITY_DAYS,
+      MIN_INACTIVITY_DAYS,
+      MAX_INACTIVITY_DAYS,
+    );
+    const discountPercent = parsePositiveInt(
+      legacyPercentRaw,
+      DEFAULT_WINBACK_DISCOUNT_PERCENT,
+      MIN_DISCOUNT_PERCENT,
+      MAX_DISCOUNT_PERCENT,
+    );
+    return [{ days, discountPercent }];
+  }
+
+  return [...DEFAULT_WINBACK_STEPS];
+}
+
+export async function getRewardCampaignSettings(): Promise<RewardCampaignSettings> {
+  const [winbackEnabled, birthdayEnabled, milestoneEnabled, winbackSteps] =
+    await Promise.all([
+      readFlag(SETTING_KEYS.winback, true),
+      readFlag(SETTING_KEYS.birthday, true),
+      readFlag(SETTING_KEYS.milestone, true),
+      loadWinbackSteps(),
+    ]);
 
   return {
     winbackEnabled,
     birthdayEnabled,
     milestoneEnabled,
-    inactivityDays: INACTIVITY_DAYS,
+    winbackSteps,
     birthdayValidDays: BIRTHDAY_VOUCHER_VALID_DAYS,
     milestoneThresholds: MILESTONE_THRESHOLDS,
   };
@@ -59,24 +213,40 @@ export async function updateRewardCampaignSettings(input: {
   winbackEnabled?: boolean;
   birthdayEnabled?: boolean;
   milestoneEnabled?: boolean;
+  winbackSteps?: WinbackStep[];
 }) {
-  const updates: Array<{ key: string; value: boolean }> = [];
+  const updates: Array<{ key: string; value: string }> = [];
+
   if (typeof input.winbackEnabled === "boolean") {
-    updates.push({ key: SETTING_KEYS.winback, value: input.winbackEnabled });
+    updates.push({ key: SETTING_KEYS.winback, value: String(input.winbackEnabled) });
   }
   if (typeof input.birthdayEnabled === "boolean") {
-    updates.push({ key: SETTING_KEYS.birthday, value: input.birthdayEnabled });
+    updates.push({ key: SETTING_KEYS.birthday, value: String(input.birthdayEnabled) });
   }
   if (typeof input.milestoneEnabled === "boolean") {
-    updates.push({ key: SETTING_KEYS.milestone, value: input.milestoneEnabled });
+    updates.push({
+      key: SETTING_KEYS.milestone,
+      value: String(input.milestoneEnabled),
+    });
+  }
+  if (input.winbackSteps !== undefined) {
+    const normalized = normalizeWinbackSteps(input.winbackSteps);
+    updates.push({
+      key: SETTING_KEYS.steps,
+      value: JSON.stringify(normalized),
+    });
+  }
+
+  if (updates.length === 0) {
+    throw new Error("No reward campaign settings to update.");
   }
 
   await Promise.all(
     updates.map((item) =>
       db.studioSetting.upsert({
         where: { key: item.key },
-        create: { key: item.key, value: String(item.value) },
-        update: { value: String(item.value) },
+        create: { key: item.key, value: item.value },
+        update: { value: item.value },
       }),
     ),
   );

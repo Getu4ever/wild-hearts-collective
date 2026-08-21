@@ -306,9 +306,12 @@ export async function redeemVoucherForBooking(
   });
 }
 
-export async function createReengagementVoucher(userId: string) {
+export async function createReengagementVoucher(
+  userId: string,
+  options?: { discountPercent?: number },
+) {
   return createVoucherForUser(userId, VOUCHER_TYPE.reengagement, {
-    discountPercent: 20,
+    discountPercent: options?.discountPercent ?? 20,
     validDays: REENGAGEMENT_VOUCHER_VALID_DAYS,
     metadata: { incentive: "we_missed_you" },
     sendEmail: false,

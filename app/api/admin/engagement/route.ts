@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-api";
 import {
   getRewardCampaignSettings,
+  normalizeWinbackSteps,
   updateRewardCampaignSettings,
 } from "@/lib/reward-campaign-settings";
 
@@ -38,15 +39,21 @@ export async function PATCH(request: Request) {
     const milestoneEnabled =
       typeof body.milestoneEnabled === "boolean" ? body.milestoneEnabled : undefined;
 
+    const winbackSteps =
+      body.winbackSteps !== undefined
+        ? normalizeWinbackSteps(body.winbackSteps)
+        : undefined;
+
     if (
       winbackEnabled === undefined &&
       birthdayEnabled === undefined &&
-      milestoneEnabled === undefined
+      milestoneEnabled === undefined &&
+      winbackSteps === undefined
     ) {
       return NextResponse.json(
         {
           error:
-            "Provide winbackEnabled, birthdayEnabled, or milestoneEnabled as true or false.",
+            "Provide winbackEnabled, birthdayEnabled, milestoneEnabled, or winbackSteps.",
         },
         { status: 400 },
       );
@@ -56,6 +63,7 @@ export async function PATCH(request: Request) {
       winbackEnabled,
       birthdayEnabled,
       milestoneEnabled,
+      winbackSteps,
     });
     return NextResponse.json({ settings });
   } catch (error) {

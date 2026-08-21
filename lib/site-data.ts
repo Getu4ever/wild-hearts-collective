@@ -43,11 +43,8 @@ export const contact = {
     "https://maps.apple.com/?ll=53.15668,-1.1879&q=Wild%20Hearts%20Collective",
   wazeUrl:
     "https://waze.com/ul?ll=53.15668%2C-1.1879&navigate=yes",
-  /**
-   * Opens the what3words map on the studio pin.
-   * Replace with https://what3words.com/word.word.word once the client confirms the exact address.
-   */
-  what3wordsUrl: "https://map.what3words.com/53.15668,-1.1879",
+  /** Client-confirmed studio what3words (estate approach): ///books.shops.flats */
+  what3wordsUrl: "https://what3words.com/books.shops.flats",
 };
 
 /** Company trading / registered-office notice for footers and legal pages. */

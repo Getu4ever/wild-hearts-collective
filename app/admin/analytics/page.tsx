@@ -23,8 +23,8 @@ export default async function AdminAnalyticsPage() {
           <h1 className="font-display text-4xl text-plum sm:text-5xl">Analytics</h1>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
             Studio performance for the founders — occupancy, class popularity, peak hours,
-            retention, and engagement activity over the last 30 days. Use the toggles
-            below to turn win-back, birthday, and class-milestone emails on or off.
+            retention, and engagement activity over the last 30 days. Below you can turn
+            reward emails on or off and edit the win-back offer sequence.
           </p>
           <AdminNav active="analytics" />
         </div>

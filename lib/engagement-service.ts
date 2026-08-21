@@ -5,8 +5,56 @@ import {
 import { BOOKING_STATUS } from "@/lib/booking-config";
 import { db } from "@/lib/db";
 import { sendEngagementEmail } from "@/lib/email";
-import { getRewardCampaignSettings } from "@/lib/reward-campaign-settings";
+import {
+  getRewardCampaignSettings,
+  type WinbackStep,
+} from "@/lib/reward-campaign-settings";
 import { createReengagementVoucher } from "@/lib/voucher-service";
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function daysBetween(earlier: Date, later: Date) {
+  return Math.floor((later.getTime() - earlier.getTime()) / MS_PER_DAY);
+}
+
+function stepDaysFromMetadata(metadata: unknown): number | null {
+  if (!metadata || typeof metadata !== "object") return null;
+  const raw = (metadata as { stepDays?: unknown }).stepDays;
+  if (typeof raw === "number" && Number.isFinite(raw)) return raw;
+  if (typeof raw === "string" && raw.trim() !== "") {
+    const parsed = Number.parseInt(raw, 10);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+/** Steps already emailed in this inactivity period (since lastActivity). */
+function stepsAlreadySent(
+  logs: Array<{ metadata: unknown; createdAt: Date }>,
+  lastActivity: Date | null,
+): Set<number> {
+  const sent = new Set<number>();
+  for (const log of logs) {
+    if (lastActivity && log.createdAt < lastActivity) continue;
+    const stepDays = stepDaysFromMetadata(log.metadata);
+    // Legacy single-campaign logs had no stepDays — treat as the first historic step (30).
+    sent.add(stepDays ?? 30);
+  }
+  return sent;
+}
+
+function nextDueStep(
+  steps: WinbackStep[],
+  daysInactive: number,
+  alreadySent: Set<number>,
+): WinbackStep | null {
+  for (const step of steps) {
+    if (daysInactive < step.days) continue;
+    if (alreadySent.has(step.days)) continue;
+    return step;
+  }
+  return null;
+}
 
 export async function flagNoShowEngagement(userId: string, bookingId: string) {
   const weekAgo = new Date();
@@ -56,13 +104,14 @@ export async function flagNoShowEngagement(userId: string, bookingId: string) {
 }
 
 export async function runInactiveMemberEngagement(now = new Date()) {
-  const { winbackEnabled, inactivityDays } = await getRewardCampaignSettings();
-  if (!winbackEnabled) {
+  const { winbackEnabled, winbackSteps } = await getRewardCampaignSettings();
+  if (!winbackEnabled || winbackSteps.length === 0) {
     return { flagged: 0, emailed: 0, checked: 0, skipped: true as const };
   }
 
+  const earliestStepDays = winbackSteps[0]!.days;
   const cutoff = new Date(now);
-  cutoff.setDate(cutoff.getDate() - inactivityDays);
+  cutoff.setDate(cutoff.getDate() - earliestStepDays);
 
   const users = await db.user.findMany({
     where: {
@@ -74,6 +123,7 @@ export async function runInactiveMemberEngagement(now = new Date()) {
       name: true,
       email: true,
       lastClassAttendedAt: true,
+      createdAt: true,
       bookings: {
         where: { status: BOOKING_STATUS.confirmed },
         orderBy: { createdAt: "desc" },
@@ -97,35 +147,48 @@ export async function runInactiveMemberEngagement(now = new Date()) {
       continue;
     }
 
-    const recentLog = await db.engagementLog.findFirst({
+    const inactiveSince = lastActivity ?? user.createdAt;
+    const daysInactive = daysBetween(inactiveSince, now);
+    if (daysInactive < earliestStepDays) continue;
+
+    const priorLogs = await db.engagementLog.findMany({
       where: {
         userId: user.id,
         type: ENGAGEMENT_TYPE.inactive30Days,
-        createdAt: { gte: cutoff },
       },
+      select: { metadata: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+      take: 50,
     });
 
-    if (recentLog) continue;
+    const alreadySent = stepsAlreadySent(priorLogs, lastActivity);
+    const step = nextDueStep(winbackSteps, daysInactive, alreadySent);
+    if (!step) continue;
 
     const log = await db.engagementLog.create({
       data: {
         userId: user.id,
         type: ENGAGEMENT_TYPE.inactive30Days,
         status: ENGAGEMENT_STATUS.pending,
-        metadata: { lastActivity: lastActivity?.toISOString() ?? null },
+        metadata: {
+          lastActivity: lastActivity?.toISOString() ?? null,
+          stepDays: step.days,
+          discountPercent: step.discountPercent,
+        },
       },
     });
 
     flagged += 1;
 
-    const voucher = await createReengagementVoucher(user.id);
+    const voucher = await createReengagementVoucher(user.id, {
+      discountPercent: step.discountPercent,
+    });
 
     await sendEngagementEmail(
       { name: user.name, email: user.email },
       {
         type: ENGAGEMENT_TYPE.inactive30Days,
-        message:
-          "We have missed you at Wild Hearts Collective! Here is a little incentive to come back and move with us again.",
+        message: `We have missed you at Wild Hearts Collective! As a thank-you for coming back, here is ${step.discountPercent}% off your next class.`,
         voucherCode: voucher.code,
       },
     );
