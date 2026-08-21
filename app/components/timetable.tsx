@@ -20,10 +20,10 @@ const DAY_REGIONS = [
   { top: 25.7, height: 14.4 }, // Monday
   { top: 40.0, height: 12.7 }, // Tuesday
   { top: 52.6, height: 12.6 }, // Wednesday
-  { top: 65.1, height: 10.6 }, // Thursday
-  { top: 75.6, height: 8.8 }, // Friday
-  { top: 84.3, height: 6.1 }, // Saturday
-  { top: 90.3, height: 4.2 }, // Sunday — leave space above the bottom heart motif
+  { top: 65.1, height: 10.0 }, // Thursday
+  { top: 75.0, height: 10.0 }, // Friday — room for two classes + note
+  { top: 85.0, height: 5.5 }, // Saturday
+  { top: 90.5, height: 4.0 }, // Sunday — leave space above the bottom heart motif
 ] as const;
 
 const CARD_LEFT = 10.1;
@@ -73,7 +73,7 @@ function DayOverlay({
     >
       <div
         className={`flex h-full min-h-0 items-stretch gap-[2cqw] px-[2.4cqw] ${
-          region.height <= 5 ? "py-[0.45cqw]" : "py-[1.6cqw]"
+          region.height <= 5.5 ? "py-[0.45cqw]" : region.height <= 10.5 ? "py-[0.9cqw]" : "py-[1.6cqw]"
         }`}
       >
         <p
@@ -87,10 +87,11 @@ function DayOverlay({
           style={{ backgroundColor: INK }}
           aria-hidden
         />
-        <ul className="flex min-h-0 min-w-0 flex-1 flex-col justify-center gap-[0.35cqw] overflow-hidden">
+        <ul className="flex min-h-0 min-w-0 flex-1 flex-col justify-center gap-[0.25cqw] overflow-visible">
           {day.classes.map((item, index) => {
             const href = bookHref(item);
             const hasTime = Boolean(item.time?.trim());
+            const compact = day.classes.length > 1 || Boolean(item.note);
             return (
               <li key={`${day.day}-${index}-${item.title}`} className="min-w-0">
                 <Link
@@ -98,24 +99,32 @@ function DayOverlay({
                   className="group block rounded-[0.6cqw] outline-none transition hover:bg-[#efe8dc]/80 focus-visible:ring-2 focus-visible:ring-sage/35"
                 >
                   <div
-                    className="flex min-w-0 items-baseline gap-[1.4cqw] px-[0.4cqw] py-[0.25cqw]"
+                    className="flex min-w-0 items-baseline gap-[1.4cqw] px-[0.4cqw] py-[0.15cqw]"
                     style={{
                       color: INK,
                       fontFamily: "Georgia, 'Times New Roman', serif",
                     }}
                   >
                     {hasTime ? (
-                      <span className="w-[22cqw] shrink-0 text-[2.45cqw] tabular-nums leading-snug tracking-wide">
+                      <span
+                        className={`w-[22cqw] shrink-0 tabular-nums leading-snug tracking-wide ${
+                          compact ? "text-[2.15cqw]" : "text-[2.45cqw]"
+                        }`}
+                      >
                         {item.time}
                       </span>
                     ) : null}
-                    <span className="min-w-0 flex-1 text-[2.55cqw] leading-snug group-hover:underline">
+                    <span
+                      className={`min-w-0 flex-1 leading-snug group-hover:underline ${
+                        compact ? "text-[2.2cqw]" : "text-[2.55cqw]"
+                      }`}
+                    >
                       {item.title}
                     </span>
                   </div>
                   {item.note ? (
                     <p
-                      className="px-[0.4cqw] pb-[0.35cqw] text-[1.9cqw] italic leading-snug opacity-80"
+                      className="px-[0.4cqw] pb-[0.2cqw] text-[1.65cqw] italic leading-tight opacity-80"
                       style={{
                         color: INK,
                         fontFamily: "Georgia, 'Times New Roman', serif",

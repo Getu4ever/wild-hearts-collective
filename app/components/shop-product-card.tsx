@@ -4,21 +4,23 @@ import Image from "next/image";
 import { useRef, useState } from "react";
 import { useShopCart } from "@/app/components/shop-cart-context";
 import { formatMoneyFromPence } from "@/lib/booking-config";
-import type { ShopProduct } from "@/lib/shop-data";
-import { SHOP_CATEGORIES } from "@/lib/shop-data";
+import type { ShopCategory, ShopProduct } from "@/lib/shop-data";
 
 type ShopProductCardProps = {
   product: ShopProduct;
+  categories: ShopCategory[];
 };
 
-export function ShopProductCard({ product }: ShopProductCardProps) {
+export function ShopProductCard({ product, categories }: ShopProductCardProps) {
   const { addToBasket } = useShopCart();
   const imageRef = useRef<HTMLDivElement>(null);
   const [justAdded, setJustAdded] = useState(false);
   const [size, setSize] = useState(product.variants?.sizes?.[0] ?? "");
   const [colour, setColour] = useState(product.variants?.colours?.[0] ?? "");
 
-  const categoryLabel = SHOP_CATEGORIES[product.category].shortLabel;
+  const categoryLabel =
+    categories.find((item) => item.id === product.category)?.shortLabel ??
+    product.category;
   const priceLabel = formatMoneyFromPence(product.pricePence);
   const outOfStock = product.trackStock && product.stockQuantity <= 0;
   const canPurchase = product.isAvailable && !outOfStock;

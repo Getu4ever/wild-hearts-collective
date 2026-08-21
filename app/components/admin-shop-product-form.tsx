@@ -7,8 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { formatMoneyFromPence } from "@/lib/booking-config";
 import { slugifyProductName } from "@/lib/shop-data";
 import {
-  SHOP_CATEGORIES,
-  shopCategoryList,
+  type ShopCategory,
   type ShopCategoryId,
 } from "@/lib/shop-data";
 
@@ -46,17 +45,21 @@ export type AdminShopProductFormValues = {
 type AdminShopProductFormProps = {
   mode: "create" | "edit";
   initial?: AdminShopProductFormValues;
+  categories: ShopCategory[];
 };
 
-export function AdminShopProductForm({ mode, initial }: AdminShopProductFormProps) {
+export function AdminShopProductForm({
+  mode,
+  initial,
+  categories,
+}: AdminShopProductFormProps) {
   const router = useRouter();
+  const defaultCategory = initial?.category ?? categories[0]?.id ?? "gift-vouchers";
   const [name, setName] = useState(initial?.name ?? "");
   const [slug, setSlug] = useState(initial?.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(mode === "edit");
   const [description, setDescription] = useState(initial?.description ?? "");
-  const [category, setCategory] = useState<ShopCategoryId>(
-    initial?.category ?? "gift-vouchers",
-  );
+  const [category, setCategory] = useState<ShopCategoryId>(defaultCategory);
   const [pricePounds, setPricePounds] = useState(
     initial ? (initial.pricePence / 100).toFixed(2) : "",
   );
@@ -232,7 +235,7 @@ export function AdminShopProductForm({ mode, initial }: AdminShopProductFormProp
                 onChange={(event) => setCategory(event.target.value as ShopCategoryId)}
                 className="mt-1.5 w-full rounded-sm border border-plum/15 bg-white px-3 py-2.5 text-sm text-plum outline-none focus:border-pink focus:ring-2 focus:ring-pink/20"
               >
-                {shopCategoryList.map((item) => (
+                {categories.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.label}
                   </option>
@@ -442,7 +445,7 @@ export function AdminShopProductForm({ mode, initial }: AdminShopProductFormProp
           </div>
           <div className="p-5">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted">
-              {SHOP_CATEGORIES[category].shortLabel}
+              {categories.find((item) => item.id === category)?.shortLabel ?? category}
             </p>
             <h3 className="mt-1 font-display text-2xl text-plum">
               {name.trim() || "Product name"}

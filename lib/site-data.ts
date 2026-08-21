@@ -180,7 +180,7 @@ export const footerLegalLinks = [
 export const homeStats = [
   {
     value: "3",
-    label: "Qualified co-founder instructors",
+    label: "co-founders",
   },
   {
     value: "4",
@@ -188,7 +188,7 @@ export const homeStats = [
   },
   {
     value: "5",
-    label: "Instructors",
+    label: "qualified instructors",
   },
   {
     value: "36+",
@@ -205,7 +205,7 @@ export const homeStats = [
 ];
 
 export const whyChooseUs = {
-  title: "Why You Choose Us",
+  title: "Why Choose Us",
   intro:
     "Wild Hearts Collective is more than a studio — it is a place to feel seen, supported, and inspired. Here is what makes us different.",
   reasons: [
@@ -217,7 +217,7 @@ export const whyChooseUs = {
     {
       title: "Qualified and experienced instructors",
       description:
-        "Rosie, Jacqui, and Sarah are certified aerial teachers with DBS checks and first aid training — passionate about safe, supportive teaching.",
+        "All instructors are certified aerial instructors with DBS checks and first aid training — passionate about safe, supportive teaching.",
     },
     {
       title: "Progress at your pace",
@@ -441,12 +441,11 @@ export const classes = [
   {
     slug: "family",
     title: "Family Classes",
-    shortDescription:
-      "Fun, inclusive sessions for families to move, play, and connect together with our DBS-checked team.",
+    shortDescription: "Fun For All The Family",
     intro:
-      "Family classes at Wild Hearts Collective bring parents, carers, and children together for shared movement, creativity, and quality time in a safe, supportive studio.",
+      "Family classes at Wild Hearts Collective bring parents, carers, and children together for shared movement, creativity, and quality time.",
     description:
-      "We offer teens, children’s and family classes creating fun, inclusive experiences that encourage confidence, fitness, creativity and quality time together in a safe and supportive environment. Led by our fully qualified, experienced, and DBS-checked instructors, sessions are designed so everyone can join in at their own pace — celebrating every small win together.",
+      "Our family classes create fun, inclusive experiences that encourage confidence, fitness, creativity and quality time together in a safe and supportive environment. Led by our fully qualified, experienced, and DBS-checked instructors, sessions are designed so everyone can join in at their own pace — celebrating every small win together.",
     levels: "Families welcome",
     href: "/classes/family",
     gradient: "from-pink-soft via-background to-pink-light",
@@ -490,11 +489,15 @@ export const classes = [
     slug: "teens",
     title: "Teen Classes",
     shortDescription:
-      "Confidence-building pole and aerial classes for teens in a safe, encouraging space.",
+      "Confidence-building aerial classes for teens in a safe, encouraging space.",
     intro:
-      "Teen classes offer a supportive introduction to pole and aerial arts — building strength, self-belief, and creativity with friends in a safe, inclusive studio.",
-    description:
-      "We offer teens, children’s and family classes creating fun, inclusive experiences that encourage confidence, fitness, creativity and quality time together in a safe and supportive environment. Led by our fully qualified, experienced, and DBS-checked instructors, sessions balance technique with encouragement so every teen feels capable and celebrated.",
+      "Our Teen Aerial Classes are designed for young people who want to challenge themselves, build confidence, and discover what they’re capable of in a welcoming and supportive environment.",
+    description: [
+      "Whether you’re completely new to aerial or already have experience, our classes help you develop strength, flexibility, coordination, and technique while learning exciting skills on a variety of aerial equipment, including aerial hoop, silks, trapeze and sling.",
+      "We believe every teenager deserves a space where they can be themselves. Our instructors encourage each student to progress at their own pace, celebrating every achievement—big or small. Classes focus not only on physical skills but also on resilience, creativity, teamwork, and self-belief.",
+      "Expect plenty of laughs, new friendships, and the opportunity to express yourself through movement in a safe, inclusive community where everyone belongs.",
+      "Whether the goal is to improve fitness, learn impressive aerial tricks, perform, or simply have fun trying something different, our Teen Aerial Classes are the perfect place to spread your wings and fly.",
+    ],
     levels: "Teens",
     href: "/classes/teens",
     gradient: "from-background via-pink-soft to-pink-light",
@@ -532,7 +535,7 @@ export const classes = [
     whatToWear:
       "Comfortable clothing that allows free movement. For pole, wear shorts or fitted leggings; for aerial, wear fitted leggings. Bring water, remove jewellery, and avoid lotion on class day.",
     whoFor:
-      "Teens looking for a creative, confidence-building class. Contact us for current age ranges and timetable options.",
+      "Suitable for ages 11–17. Beginners and experienced aerialists are welcome.",
   },
   {
     slug: "children",
@@ -540,9 +543,12 @@ export const classes = [
     shortDescription:
       "Playful, confidence-building aerial experiences for children with our DBS-checked instructors.",
     intro:
-      "Children's classes introduce young movers to aerial play, coordination, and creativity in a safe, nurturing environment.",
-    description:
-      "We offer teens, children’s and family classes creating fun, inclusive experiences that encourage confidence, fitness, creativity and quality time together in a safe and supportive environment. Led by our fully qualified, experienced, and DBS-checked instructors, sessions are playful and structured — helping children discover what their bodies can do while feeling supported every step of the way.",
+      "Our Junior Aerial Classes are the perfect introduction to the exciting world of aerial arts for children. Through fun, engaging sessions, young aerialists will build confidence, develop strength, improve coordination, and learn new skills in a safe and encouraging environment.",
+    description: [
+      "Children will have the opportunity to explore a variety of aerial equipment, including aerial hoop, silks, trapeze, sling, and more. Every class is carefully planned to be age-appropriate, allowing each child to learn at their own pace while celebrating every achievement along the way.",
+      "At Wild Hearts Collective, we believe movement should be fun, inspiring, and inclusive. Our classes encourage creativity, resilience, teamwork, and self-expression while helping children develop body awareness and a love of being active.",
+      "Most importantly, our Junior Aerial Classes are about making friends, trying new things, and discovering just how much is possible when you believe in yourself. Whether your child dreams of soaring through the air or simply wants to have fun and build confidence, they’ll be welcomed into our supportive Wild Hearts community.",
+    ],
     levels: "Children",
     href: "/classes/children",
     gradient: "from-pink-light via-pink-soft to-background",
@@ -580,7 +586,7 @@ export const classes = [
     whatToWear:
       "Comfortable, fitted clothes children can move freely in. Soft shoes for arrival; classes are often barefoot. Bring water and leave jewellery at home.",
     whoFor:
-      "Children ready to try movement and aerial play in a supportive setting. Contact us for age guidance and upcoming session times.",
+      "Suitable for children aged 5–10. No previous experience is needed—just a sense of adventure and a willingness to have fun!",
   },
   {
     slug: "aerial-workshops",
@@ -882,10 +888,15 @@ export const timetable: TimetableDay[] = [
     day: "Friday",
     classes: [
       {
+        time: "5:30 – 6:30",
+        title: "Open Training",
+        bookClassSlug: "pole",
+      },
+      {
         time: "6:30 – 8:00",
         title: "Themed Flow Friday",
         bookClassSlug: "pole",
-        note: "Equipment and theme will change on a weekly basis — please check our booking system.",
+        note: "Equipment and theme change weekly — check our booking system.",
       },
     ],
   },

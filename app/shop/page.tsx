@@ -4,6 +4,7 @@ import { PageHero } from "@/app/components/page-hero";
 import { SectionHeading } from "@/app/components/section-heading";
 import { ShopStorefront } from "@/app/components/shop-storefront";
 import { listStorefrontShopProducts } from "@/lib/shop-catalog-service";
+import { getShopCategories } from "@/lib/shop-categories-service";
 
 export const metadata: Metadata = {
   title: "Shop",
@@ -17,7 +18,10 @@ type ShopPageProps = {
 
 export default async function ShopPage({ searchParams }: ShopPageProps) {
   const { cancelled } = await searchParams;
-  const products = await listStorefrontShopProducts();
+  const [products, categories] = await Promise.all([
+    listStorefrontShopProducts(),
+    getShopCategories(),
+  ]);
 
   return (
     <>
@@ -36,6 +40,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
         <div className="mt-10">
           <ShopStorefront
             products={products}
+            categories={categories}
             cancelled={cancelled === "1"}
           />
         </div>

@@ -8,7 +8,7 @@ import {
   updateAdminShopProduct,
 } from "@/lib/shop-catalog-service";
 import type { ShopCategoryId } from "@/lib/shop-data";
-import { SHOP_CATEGORIES } from "@/lib/shop-data";
+import { assertValidShopCategory } from "@/lib/shop-categories-service";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -64,7 +64,9 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (typeof body.slug === "string") payload.slug = body.slug;
     if (typeof body.description === "string") payload.description = body.description;
     if (typeof body.category === "string") {
-      if (!(body.category in SHOP_CATEGORIES)) {
+      try {
+        await assertValidShopCategory(body.category);
+      } catch {
         return NextResponse.json({ error: "Choose a valid category." }, { status: 400 });
       }
       payload.category = body.category as ShopCategoryId;

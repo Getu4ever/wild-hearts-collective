@@ -2,9 +2,24 @@
  * Shop catalog — product data for the storefront.
  * Set `isAvailable: true` to go live. Digital gift vouchers use `digitalDelivery: true`
  * (email codes). Physical catalog items use `digitalDelivery: false` (UK shipping).
+ *
+ * Categories are editable in Admin → Shop → Categories (StudioSetting). These defaults
+ * seed the DB on first load and remain as a fallback.
  */
 
-export const SHOP_CATEGORIES = {
+export type ShopCategory = {
+  id: string;
+  label: string;
+  shortLabel: string;
+  description: string;
+};
+
+/** Category ids are free-form slugs managed in admin. */
+export type ShopCategoryId = string;
+
+export type ShopCategoryRecord = Record<string, ShopCategory>;
+
+export const DEFAULT_SHOP_CATEGORIES: ShopCategoryRecord = {
   "gift-vouchers": {
     id: "gift-vouchers",
     label: "Gift Vouchers",
@@ -41,11 +56,25 @@ export const SHOP_CATEGORIES = {
     shortLabel: "Snacks",
     description: "Energy bars, shakes, and healthy refreshments.",
   },
-} as const;
+};
 
-export type ShopCategoryId = keyof typeof SHOP_CATEGORIES;
+/** @deprecated Prefer getShopCategories() — kept for seed/fallback sync imports. */
+export const SHOP_CATEGORIES = DEFAULT_SHOP_CATEGORIES;
 
-export const shopCategoryList = Object.values(SHOP_CATEGORIES);
+export function shopCategoryListFromRecord(record: ShopCategoryRecord) {
+  return Object.values(record);
+}
+
+export const shopCategoryList = shopCategoryListFromRecord(DEFAULT_SHOP_CATEGORIES);
+
+export function slugifyCategoryId(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+}
 
 export type ShopProduct = {
   id: string;

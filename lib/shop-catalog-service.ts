@@ -8,9 +8,9 @@ import {
   type GiftRedeemScope,
 } from "@/lib/gift-redeem-scope";
 import { notifyAdminOfLowStockIfNeeded } from "@/lib/shop-stock-notifications";
+import { assertValidShopCategory } from "@/lib/shop-categories-service";
 import {
   productsData,
-  SHOP_CATEGORIES,
   slugifyProductName,
   type ShopCategoryId,
   type ShopProduct,
@@ -199,10 +199,10 @@ async function ensureUniqueSlug(baseSlug: string, excludeId?: string) {
   }
 }
 
-function validateProductInput(input: AdminShopProductInput) {
+async function validateProductInput(input: AdminShopProductInput) {
   if (!input.name.trim()) throw new Error("Product name is required.");
   if (!input.description.trim()) throw new Error("Description is required.");
-  if (!(input.category in SHOP_CATEGORIES)) throw new Error("Choose a valid category.");
+  await assertValidShopCategory(input.category);
   if (!Number.isFinite(input.pricePence) || input.pricePence < 0) {
     throw new Error("Price must be zero or greater.");
   }
@@ -402,7 +402,7 @@ export async function decrementProductStock(
 }
 
 export async function createAdminShopProduct(input: AdminShopProductInput) {
-  validateProductInput(input);
+  await validateProductInput(input);
   const baseSlug = slugifyProductName(input.slug?.trim() || input.name);
   const slug = await ensureUniqueSlug(baseSlug);
   const maxSort = await shopProductClient().aggregate({ _max: { sortOrder: true } });
@@ -487,7 +487,7 @@ export async function updateAdminShopProduct(
 
   const previousStock = existing.stockQuantity;
 
-  validateProductInput({
+  await validateProductInput({
     name: nextName,
     description: input.description ?? existing.description,
     category: nextCategory,

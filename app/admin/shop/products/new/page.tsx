@@ -5,6 +5,7 @@ import { AdminNav } from "@/app/components/admin-nav";
 import { AdminShopNav } from "@/app/components/admin-shop-nav";
 import { AdminShopProductForm } from "@/app/components/admin-shop-product-form";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { getShopCategories } from "@/lib/shop-categories-service";
 
 export const metadata: Metadata = {
   title: "Add Shop Product",
@@ -14,6 +15,8 @@ export const metadata: Metadata = {
 export default async function AdminShopProductNewPage() {
   const authed = await isAdminAuthenticated();
   if (!authed) redirect("/admin/login");
+
+  const categories = await getShopCategories();
 
   return (
     <div className="mx-auto min-w-0 max-w-6xl overflow-x-hidden px-6 py-16 lg:px-8 lg:py-20">
@@ -31,7 +34,7 @@ export default async function AdminShopProductNewPage() {
       </div>
 
       <div className="mt-10">
-        <AdminShopProductForm mode="create" />
+        <AdminShopProductForm mode="create" categories={categories} />
       </div>
     </div>
   );

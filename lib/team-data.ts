@@ -9,9 +9,9 @@ export type TeamMember = {
   keyFacts: { label: string; value: string }[];
   imageSrc: string;
   imagePosition?: string;
-  /** Optional personal Instagram — falls back to studio socialLinks when unset */
+  /** Optional personal Instagram — directors only; omit for instructors without a profile. */
   instagram?: string;
-  /** Optional personal Facebook — falls back to studio socialLinks when unset */
+  /** Optional personal Facebook — unused on instructor pages (Instagram only for directors). */
   facebook?: string;
 };
 
@@ -71,6 +71,7 @@ export const teamMembers: TeamMember[] = [
       { label: "Most likely to say", value: "“Mate”" },
     ],
     imageSrc: "/team/rosie.jpeg",
+    instagram: "https://www.instagram.com/rosie.wildhearts",
   },
   {
     slug: "jacqui",
@@ -103,6 +104,7 @@ export const teamMembers: TeamMember[] = [
       { label: "Most likely to say", value: "“Breathe!”" },
     ],
     imageSrc: "/team/jacqui.jpeg",
+    instagram: "https://www.instagram.com/jacqui.wildhearts",
   },
   {
     slug: "sarah",
@@ -129,6 +131,7 @@ export const teamMembers: TeamMember[] = [
       { label: "Most likely to say", value: "“Look at you go!”" },
     ],
     imageSrc: "/team/sarah.jpeg",
+    instagram: "https://www.instagram.com/sarah.wildhearts",
   },
   {
     slug: "jane",

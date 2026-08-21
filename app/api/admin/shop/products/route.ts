@@ -4,8 +4,8 @@ import {
   createAdminShopProduct,
   listAdminShopProducts,
 } from "@/lib/shop-catalog-service";
+import { assertValidShopCategory } from "@/lib/shop-categories-service";
 import type { ShopCategoryId } from "@/lib/shop-data";
-import { SHOP_CATEGORIES } from "@/lib/shop-data";
 
 function parseVariants(body: Record<string, unknown>) {
   const sizes =
@@ -50,7 +50,9 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const category = typeof body.category === "string" ? body.category : "";
-    if (!(category in SHOP_CATEGORIES)) {
+    try {
+      await assertValidShopCategory(category);
+    } catch {
       return NextResponse.json({ error: "Choose a valid category." }, { status: 400 });
     }
 

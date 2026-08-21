@@ -7,7 +7,7 @@ import { ShopFloatingBasket } from "@/app/components/shop-floating-basket";
 import { ShopProductCard } from "@/app/components/shop-product-card";
 import {
   filterAndSortProducts,
-  shopCategoryList,
+  type ShopCategory,
   type ShopCategoryId,
   type ShopProduct,
   type ShopSortOption,
@@ -15,6 +15,7 @@ import {
 
 type ShopStorefrontProps = {
   products: ShopProduct[];
+  categories: ShopCategory[];
   cancelled?: boolean;
 };
 
@@ -24,10 +25,18 @@ const SORT_OPTIONS: { value: ShopSortOption; label: string }[] = [
   { value: "price-desc", label: "Price: High to Low" },
 ];
 
-export function ShopStorefront({ products, cancelled = false }: ShopStorefrontProps) {
+export function ShopStorefront({
+  products,
+  categories,
+  cancelled = false,
+}: ShopStorefrontProps) {
   return (
     <ShopCartProvider products={products}>
-      <ShopStorefrontInner products={products} cancelled={cancelled} />
+      <ShopStorefrontInner
+        products={products}
+        categories={categories}
+        cancelled={cancelled}
+      />
       <ShopFlyToBasket />
       <ShopFloatingBasket />
     </ShopCartProvider>
@@ -36,9 +45,12 @@ export function ShopStorefront({ products, cancelled = false }: ShopStorefrontPr
 
 function ShopStorefrontInner({
   products,
+  categories,
   cancelled = false,
 }: ShopStorefrontProps) {
-  const [category, setCategory] = useState<ShopCategoryId | "all">("gift-vouchers");
+  const [category, setCategory] = useState<ShopCategoryId | "all">(
+    categories[0]?.id ?? "all",
+  );
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<ShopSortOption>("newest");
 
@@ -79,7 +91,7 @@ function ShopStorefrontInner({
         >
           All
         </button>
-        {shopCategoryList.map((item) => (
+        {categories.map((item) => (
           <button
             key={item.id}
             type="button"
@@ -138,7 +150,7 @@ function ShopStorefrontInner({
             {" "}
             in{" "}
             <span className="font-semibold text-foreground">
-              {shopCategoryList.find((item) => item.id === category)?.label}
+              {categories.find((item) => item.id === category)?.label}
             </span>
           </>
         )}
@@ -147,7 +159,11 @@ function ShopStorefrontInner({
       {filtered.length > 0 ? (
         <div className="mt-8 grid grid-cols-2 gap-4 pb-24 md:gap-6 lg:grid-cols-4">
           {filtered.map((product) => (
-            <ShopProductCard key={product.id} product={product} />
+            <ShopProductCard
+              key={product.id}
+              product={product}
+              categories={categories}
+            />
           ))}
         </div>
       ) : (

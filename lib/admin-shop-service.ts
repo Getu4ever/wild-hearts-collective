@@ -1,7 +1,8 @@
 import { formatMoneyFromPence } from "@/lib/booking-config";
 import { db } from "@/lib/db";
 import { giftRedeemScopeLabel } from "@/lib/gift-redeem-scope";
-import { SHOP_CATEGORIES, type ShopCategoryId } from "@/lib/shop-data";
+import { getShopCategoryRecord } from "@/lib/shop-categories-service";
+import type { ShopCategoryRecord } from "@/lib/shop-data";
 
 export type GiftCardStatus = "active" | "partial" | "redeemed" | "expired";
 
@@ -45,12 +46,12 @@ export function redemptionReasonLabel(reason: string) {
   }
 }
 
-function categoryLabel(category: string | null | undefined) {
+function categoryLabel(
+  record: ShopCategoryRecord,
+  category: string | null | undefined,
+) {
   if (!category) return "Shop";
-  if (category in SHOP_CATEGORIES) {
-    return SHOP_CATEGORIES[category as ShopCategoryId].label;
-  }
-  return category;
+  return record[category]?.label ?? category;
 }
 
 function fulfillmentLabel(type: string) {
@@ -98,6 +99,7 @@ export async function getAdminShopOverview() {
     recentRedemptions,
     shopOrders,
     redeemedSpendLast30Days,
+    categoryRecord,
   ] = await Promise.all([
     db.giftCard.findMany({
       orderBy: { createdAt: "desc" },
@@ -137,6 +139,7 @@ export async function getAdminShopOverview() {
       },
       _sum: { amountPence: true },
     }),
+    getShopCategoryRecord(),
   ]);
 
   const orderSessionIds = new Set(
@@ -233,7 +236,7 @@ export async function getAdminShopOverview() {
       items: order.items.map((item) => ({
         id: item.id,
         productName: item.productName,
-        categoryLabel: categoryLabel(item.category),
+        categoryLabel: categoryLabel(categoryRecord, item.category),
         quantity: item.quantity,
         unitPriceLabel: formatMoneyFromPence(item.unitPricePence),
         lineTotalLabel: formatMoneyFromPence(item.lineTotalPence),
@@ -263,7 +266,7 @@ export async function getAdminShopOverview() {
       items: sale.items.map((item, index) => ({
         id: `${sale.id}-${index}`,
         productName: item.productName,
-        categoryLabel: categoryLabel(item.category),
+        categoryLabel: categoryLabel(categoryRecord, item.category),
         quantity: item.quantity,
         unitPriceLabel: formatMoneyFromPence(item.unitPricePence),
         lineTotalLabel: formatMoneyFromPence(item.lineTotalPence),

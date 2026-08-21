@@ -14,7 +14,7 @@ export type ClassDetailData = {
   slug: string;
   title: string;
   shortDescription: string;
-  description: string;
+  description: string | string[];
   intro: string;
   levels: string;
   href: string;
@@ -28,6 +28,13 @@ export type ClassDetailData = {
   videoTitle?: string;
 };
 
+function overviewParagraphs(classItem: ClassDetailData) {
+  const extra = Array.isArray(classItem.description)
+    ? classItem.description
+    : [classItem.description];
+  return [classItem.intro, ...extra].filter((paragraph) => paragraph.trim());
+}
+
 export function ClassDetailContent({ classItem }: { classItem: ClassDetailData }) {
   const poster = heroImages[classItem.imageKey];
 
@@ -38,8 +45,9 @@ export function ClassDetailContent({ classItem }: { classItem: ClassDetailData }
           <div>
             <SectionHeading title="Overview" subtitle={classItem.levels} />
             <ProseBlock>
-              <p>{classItem.intro}</p>
-              <p>{classItem.description}</p>
+              {overviewParagraphs(classItem).map((paragraph) => (
+                <p key={paragraph.slice(0, 48)}>{paragraph}</p>
+              ))}
             </ProseBlock>
             <div className="mt-8">
               <BookButton>Book this class</BookButton>

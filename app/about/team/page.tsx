@@ -17,7 +17,7 @@ export default function AboutTeamPage() {
       <PageHero
         title="Our Team"
         subtitle="Qualified and experienced instructors — patient, knowledgeable, and dedicated to your progress."
-        image="about"
+        image="team"
       />
 
       <AboutTabs active="team" />

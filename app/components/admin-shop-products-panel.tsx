@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { formatMoneyFromPence, formatUkDateShort } from "@/lib/booking-config";
-import { SHOP_CATEGORIES, type ShopCategoryId } from "@/lib/shop-data";
+import type { ShopCategory, ShopCategoryId } from "@/lib/shop-data";
 
 export type AdminCatalogProduct = {
   id: string;
@@ -60,10 +60,16 @@ function statusTone(status: ReturnType<typeof productStatus>) {
   }
 }
 
+function categoryShortLabel(categories: ShopCategory[], categoryId: string) {
+  return categories.find((item) => item.id === categoryId)?.shortLabel ?? categoryId;
+}
+
 export function AdminShopProductsPanel({
   initialProducts,
+  categories,
 }: {
   initialProducts: AdminCatalogProduct[];
+  categories: ShopCategory[];
 }) {
   const router = useRouter();
   const [products, setProducts] = useState(initialProducts);
@@ -238,7 +244,7 @@ export function AdminShopProductsPanel({
             className="mt-1.5 w-full rounded-sm border border-plum/15 bg-white px-3 py-2.5 text-sm text-plum outline-none focus:border-pink focus:ring-2 focus:ring-pink/20"
           >
             <option value="all">All categories</option>
-            {Object.values(SHOP_CATEGORIES).map((category) => (
+            {categories.map((category) => (
               <option key={category.id} value={category.id}>
                 {category.label}
               </option>
@@ -319,7 +325,7 @@ export function AdminShopProductsPanel({
                         </div>
                       </td>
                       <td className="px-3 py-3 text-muted">
-                        {SHOP_CATEGORIES[product.category].shortLabel}
+                        {categoryShortLabel(categories, product.category)}
                         <p className="mt-1 text-xs">
                           {product.digitalDelivery ? "Digital" : "Physical"}
                         </p>

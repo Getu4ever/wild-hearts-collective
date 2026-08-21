@@ -7,6 +7,7 @@ import { AdminShopNav } from "@/app/components/admin-shop-nav";
 import { AdminShopProductsPanel } from "@/app/components/admin-shop-products-panel";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 import { listAdminShopProducts } from "@/lib/shop-catalog-service";
+import { getShopCategories } from "@/lib/shop-categories-service";
 
 export const metadata: Metadata = {
   title: "Admin Shop Products",
@@ -17,7 +18,10 @@ export default async function AdminShopProductsPage() {
   const authed = await isAdminAuthenticated();
   if (!authed) redirect("/admin/login");
 
-  const products = await listAdminShopProducts({ includeArchived: true });
+  const [products, categories] = await Promise.all([
+    listAdminShopProducts({ includeArchived: true }),
+    getShopCategories(),
+  ]);
 
   return (
     <div className="mx-auto min-w-0 max-w-6xl overflow-x-hidden px-6 py-16 lg:px-8 lg:py-20">
@@ -44,7 +48,7 @@ export default async function AdminShopProductsPage() {
       </div>
 
       <div className="mt-10">
-        <AdminShopProductsPanel initialProducts={products} />
+        <AdminShopProductsPanel initialProducts={products} categories={categories} />
       </div>
     </div>
   );

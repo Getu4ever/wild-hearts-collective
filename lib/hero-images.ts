@@ -1,6 +1,7 @@
 export type HeroImageKey =
   | "home"
   | "about"
+  | "team"
   | "classes"
   | "pole"
   | "aerial-hoop"
@@ -21,7 +22,8 @@ export type HeroImageKey =
 
 export const heroImages: Record<HeroImageKey, string> = {
   home: "/hero/hero-home.jpg",
-  about: "/hero/hero-about-team.jpg",
+  about: "/hero/hero-about02.jpg",
+  team: "/hero/hero-about-team02.jpg",
   classes: "/hero/hero-classes.jpg",
   pole: "/hero/hero-pole.jpg",
   "aerial-hoop": "/hero/hero-aerial-hoop.jpg",

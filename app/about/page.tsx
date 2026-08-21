@@ -103,10 +103,10 @@ export default function AboutPage() {
           <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg shadow-lg ring-1 ring-plum/10 sm:aspect-[3/2]">
             <Image
               src={heroImages.about}
-              alt="Five women standing together in the Wild Hearts Collective aerial studio"
+              alt="Wild Hearts Collective instructors in the studio"
               fill
               sizes="(max-width: 1024px) 100vw, 50vw"
-              className="object-cover"
+              className="object-cover object-center"
             />
             <div
               aria-hidden="true"

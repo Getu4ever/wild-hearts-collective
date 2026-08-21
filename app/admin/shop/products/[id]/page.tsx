@@ -5,6 +5,7 @@ import { AdminNav } from "@/app/components/admin-nav";
 import { AdminShopNav } from "@/app/components/admin-shop-nav";
 import { AdminShopProductForm } from "@/app/components/admin-shop-product-form";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { getShopCategories } from "@/lib/shop-categories-service";
 import { getShopProductById } from "@/lib/shop-catalog-service";
 
 export const metadata: Metadata = {
@@ -21,7 +22,10 @@ export default async function AdminShopProductEditPage({ params }: PageProps) {
   if (!authed) redirect("/admin/login");
 
   const { id } = await params;
-  const product = await getShopProductById(id);
+  const [product, categories] = await Promise.all([
+    getShopProductById(id),
+    getShopCategories(),
+  ]);
   if (!product) notFound();
 
   return (
@@ -42,6 +46,7 @@ export default async function AdminShopProductEditPage({ params }: PageProps) {
       <div className="mt-10">
         <AdminShopProductForm
           mode="edit"
+          categories={categories}
           initial={{
             id: product.id,
             name: product.name,

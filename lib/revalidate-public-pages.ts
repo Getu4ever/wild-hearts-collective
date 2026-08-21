@@ -11,3 +11,8 @@ export function revalidateMembershipPricingPages() {
 export function revalidateMarketingTimetablePages() {
   revalidatePath("/");
 }
+
+/** Bust shop storefront after category or catalog changes. */
+export function revalidateShopCatalogPages() {
+  revalidatePath("/shop");
+}

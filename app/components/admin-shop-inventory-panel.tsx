@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { SHOP_CATEGORIES, type ShopCategoryId } from "@/lib/shop-data";
+import type { ShopCategory, ShopCategoryId } from "@/lib/shop-data";
 import type { AdminCatalogProduct } from "@/app/components/admin-shop-products-panel";
 
 type InventoryOverview = {
@@ -30,7 +30,21 @@ function stockTone(status: AdminCatalogProduct["stockStatus"]) {
   }
 }
 
-export function AdminShopInventoryPanel({ data }: { data: InventoryOverview }) {
+function categoryLabel(categories: ShopCategory[], categoryId: ShopCategoryId) {
+  return categories.find((item) => item.id === categoryId)?.label ?? categoryId;
+}
+
+function categoryShortLabel(categories: ShopCategory[], categoryId: ShopCategoryId) {
+  return categories.find((item) => item.id === categoryId)?.shortLabel ?? categoryId;
+}
+
+export function AdminShopInventoryPanel({
+  data,
+  categories,
+}: {
+  data: InventoryOverview;
+  categories: ShopCategory[];
+}) {
   const router = useRouter();
   const [products, setProducts] = useState(data.products);
   const [query, setQuery] = useState("");
@@ -41,12 +55,12 @@ export function AdminShopInventoryPanel({ data }: { data: InventoryOverview }) {
     const needle = query.trim().toLowerCase();
     if (!needle) return products;
     return products.filter((product) =>
-      [product.name, product.slug, SHOP_CATEGORIES[product.category].label]
+      [product.name, product.slug, categoryLabel(categories, product.category)]
         .join(" ")
         .toLowerCase()
         .includes(needle),
     );
-  }, [products, query]);
+  }, [products, query, categories]);
 
   async function updateStock(product: AdminCatalogProduct, stockQuantity: number) {
     setBusyId(product.id);
@@ -138,6 +152,7 @@ export function AdminShopInventoryPanel({ data }: { data: InventoryOverview }) {
                 <InventoryRow
                   key={product.id}
                   product={product}
+                  categories={categories}
                   busy={busyId === product.id}
                   onUpdateStock={updateStock}
                 />
@@ -152,10 +167,12 @@ export function AdminShopInventoryPanel({ data }: { data: InventoryOverview }) {
 
 function InventoryRow({
   product,
+  categories,
   busy,
   onUpdateStock,
 }: {
   product: AdminCatalogProduct;
+  categories: ShopCategory[];
   busy: boolean;
   onUpdateStock: (product: AdminCatalogProduct, stockQuantity: number) => void;
 }) {
@@ -176,7 +193,7 @@ function InventoryRow({
         ) : null}
       </td>
       <td className="px-3 py-3 text-muted">
-        {SHOP_CATEGORIES[product.category as ShopCategoryId].shortLabel}
+        {categoryShortLabel(categories, product.category as ShopCategoryId)}
       </td>
       <td className="px-3 py-3 font-display text-2xl text-plum">
         {product.trackStock ? product.stockQuantity : "∞"}
