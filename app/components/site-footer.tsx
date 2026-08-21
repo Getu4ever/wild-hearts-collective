@@ -262,12 +262,12 @@ export function SiteFooter() {
             <p className="text-left">
               Website by –{" "}
               <a
-                href="https://www.karoldigital.co.uk/"
+                href="https://www.1stcalluk.website/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="transition hover:text-brand hover:underline"
               >
-                Karol Digital
+                1st Call Uk Website
               </a>
             </p>
             <p className="text-center">
