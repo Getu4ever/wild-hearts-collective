@@ -30,19 +30,25 @@ export const contact = {
   /**
    * Studio pin — Unit 25, Block 7 Hallam Way (north of Farmway).
    * Previous pin (53.155865, -1.187964) landed on Block 17 across the estate.
+   * Do not use the bare business name in Apple/Google queries — Apple’s POI
+   * listing is still wrong (Block 6) and steals the pin.
    */
   latitude: 53.15668,
   longitude: -1.1879,
-  /** Google Maps directions / pin (coordinate-based so geocoding cannot send people to Block 17). */
+  /** Google Maps directions / pin (coords + Block 7 address label). */
   mapsUrl:
-    "https://www.google.com/maps/search/?api=1&query=53.15668%2C-1.1879",
-  /** Google Maps embed — no API key required. */
+    "https://www.google.com/maps?q=53.15668,-1.1879+(Wild%20Hearts%20Collective%2C%20Unit%2025%20Block%207%20Hallam%20Way)&ll=53.15668,-1.1879&z=18",
+  /** Google Maps embed — coordinate pin so geocoding cannot drift. */
   mapsEmbedUrl:
-    "https://www.google.com/maps?q=53.15668,-1.1879&z=18&output=embed",
+    "https://www.google.com/maps?q=53.15668,-1.1879+(Wild%20Hearts%20Collective%2C%20Unit%2025%20Block%207%20Hallam%20Way)&z=18&output=embed",
+  /**
+   * Apple Maps — query the Block 7 address (not the business name alone).
+   * `q=Wild Hearts Collective` resolves to Apple’s outdated Block 6 listing.
+   */
   appleMapsUrl:
-    "https://maps.apple.com/?ll=53.15668,-1.1879&q=Wild%20Hearts%20Collective",
+    "https://maps.apple.com/?ll=53.15668,-1.1879&q=Unit%2025%2C%20Block%207%20Hallam%20Way%2C%20Old%20Mill%20Lane%20Industrial%20Estate%2C%20Mansfield%20NG19%209BG",
   wazeUrl:
-    "https://waze.com/ul?ll=53.15668%2C-1.1879&navigate=yes",
+    "https://waze.com/ul?ll=53.15668%2C-1.1879&navigate=yes&q=Wild%20Hearts%20Collective%20Unit%2025%20Block%207",
   /** Client-confirmed studio what3words (estate approach): ///books.shops.flats */
   what3wordsUrl: "https://what3words.com/books.shops.flats",
 };
