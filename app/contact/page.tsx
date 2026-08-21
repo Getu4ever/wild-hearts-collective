@@ -114,6 +114,11 @@ export default function ContactPage() {
         <p className="mt-4 text-center text-sm text-muted">
           {contact.address}
         </p>
+        <p className="mx-auto mt-2 max-w-2xl text-center text-xs leading-relaxed text-muted">
+          Follow the pin for Unit 25, Block 7 Hallam Way. Apple Maps may still
+          list nearby industrial-estate units under “Block 6” in its Details
+          panel — that is Apple’s shared estate listing, not our studio address.
+        </p>
         <p className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-center text-sm">
           {mapLinks.map((link) => (
             <Link

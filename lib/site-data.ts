@@ -42,11 +42,13 @@ export const contact = {
   mapsEmbedUrl:
     "https://www.google.com/maps?q=53.15668,-1.1879+(Wild%20Hearts%20Collective%2C%20Unit%2025%20Block%207%20Hallam%20Way)&z=18&output=embed",
   /**
-   * Apple Maps — query the Block 7 address (not the business name alone).
-   * `q=Wild Hearts Collective` resolves to Apple’s outdated Block 6 listing.
+   * Apple Maps — pin by coordinates with an explicit Block 7 label.
+   * Searching the full estate address (or the business name alone) makes Apple
+   * rewrite the place to its outdated “Block 6, Old Mill Lane Industrial Estate”
+   * record, so Details still shows Block 6 even when the title says Block 7.
    */
   appleMapsUrl:
-    "https://maps.apple.com/?ll=53.15668,-1.1879&q=Unit%2025%2C%20Block%207%20Hallam%20Way%2C%20Old%20Mill%20Lane%20Industrial%20Estate%2C%20Mansfield%20NG19%209BG",
+    "https://maps.apple.com/place?coordinate=53.15668%2C-1.1879&name=Wild%20Hearts%20Collective%20%E2%80%94%20Unit%2025%2C%20Block%207%20Hallam%20Way",
   wazeUrl:
     "https://waze.com/ul?ll=53.15668%2C-1.1879&navigate=yes&q=Wild%20Hearts%20Collective%20Unit%2025%20Block%207",
   /** Client-confirmed studio what3words (estate approach): ///books.shops.flats */
