@@ -17,6 +17,13 @@ export const metadata: Metadata = {
 
 const phoneHref = `tel:${contact.phone.replace(/\s/g, "")}`;
 
+const mapLinks = [
+  { href: contact.mapsUrl, label: "Google Maps" },
+  { href: contact.appleMapsUrl, label: "Apple Maps" },
+  { href: contact.wazeUrl, label: "Waze" },
+  { href: contact.what3wordsUrl, label: "what3words" },
+] as const;
+
 export default function ContactPage() {
   return (
     <>
@@ -52,30 +59,17 @@ export default function ContactPage() {
                   </span>
                 ))}
                 <span className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-                  <Link
-                    href={contact.mapsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-semibold text-brand hover:underline"
-                  >
-                    Open in Google Maps
-                  </Link>
-                  <Link
-                    href={contact.openStreetMapUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-semibold text-brand hover:underline"
-                  >
-                    Open in OpenStreetMap
-                  </Link>
-                  <Link
-                    href={contact.what3wordsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-semibold text-brand hover:underline"
-                  >
-                    what3words location
-                  </Link>
+                  {mapLinks.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-brand hover:underline"
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
                 </span>
               </p>
               <p>
@@ -105,7 +99,7 @@ export default function ContactPage() {
       <ContentSection className="bg-white">
         <SectionHeading
           title="Find us"
-          subtitle="Visit our studio at Old Mill Lane Industrial Estate, Mansfield — pinned below."
+          subtitle="Unit 25, Block 7 Hallam Way — Old Mill Lane Industrial Estate, Mansfield. Open in Google Maps, Apple Maps, or Waze for directions."
         />
         <div className="mt-8 overflow-hidden rounded-2xl border border-plum/10 bg-surface shadow-sm">
           <iframe
@@ -121,30 +115,19 @@ export default function ContactPage() {
           {contact.address}
         </p>
         <p className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-center text-sm">
-          <Link
-            href={contact.mapsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-semibold text-brand hover:underline"
-          >
-            Get directions (Google)
-          </Link>
-          <Link
-            href={contact.openStreetMapUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-semibold text-brand hover:underline"
-          >
-            View pin (OpenStreetMap)
-          </Link>
-          <Link
-            href={contact.what3wordsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-semibold text-brand hover:underline"
-          >
-            what3words
-          </Link>
+          {mapLinks.map((link) => (
+            <Link
+              key={`find-${link.href}`}
+              href={link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-brand hover:underline"
+            >
+              {link.label === "what3words"
+                ? "what3words"
+                : `Open in ${link.label}`}
+            </Link>
+          ))}
         </p>
       </ContentSection>
     </>

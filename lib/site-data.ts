@@ -27,17 +27,27 @@ export const contact = {
     "Unit 25, Block 7 Hallam Way, Old Mill Lane Industrial Estate, Mansfield, NG19 9BG",
   mapsQuery:
     "Unit 25, Block 7 Hallam Way, Old Mill Lane Industrial Estate, Mansfield NG19 9BG",
-  /** Studio pin — NG19 9BG / Old Mill Lane Industrial Estate. */
-  latitude: 53.155865,
-  longitude: -1.187964,
+  /**
+   * Studio pin — Unit 25, Block 7 Hallam Way (north of Farmway).
+   * Previous pin (53.155865, -1.187964) landed on Block 17 across the estate.
+   */
+  latitude: 53.15668,
+  longitude: -1.1879,
+  /** Google Maps directions / pin (coordinate-based so geocoding cannot send people to Block 17). */
   mapsUrl:
-    "https://www.google.com/maps/search/?api=1&query=53.155865%2C-1.187964",
+    "https://www.google.com/maps/search/?api=1&query=53.15668%2C-1.1879",
+  /** Google Maps embed — no API key required. */
   mapsEmbedUrl:
-    "https://www.openstreetmap.org/export/embed.html?bbox=-1.195964%2C53.151865%2C-1.179964%2C53.159865&layer=mapnik&marker=53.155865%2C-1.187964",
-  openStreetMapUrl:
-    "https://www.openstreetmap.org/?mlat=53.155865&mlon=-1.187964#map=17/53.155865/-1.187964",
-  /** Opens the what3words map on the studio pin. Replace with the exact 3-word address when the client confirms it. */
-  what3wordsUrl: "https://map.what3words.com/53.155865,-1.187964",
+    "https://www.google.com/maps?q=53.15668,-1.1879&z=18&output=embed",
+  appleMapsUrl:
+    "https://maps.apple.com/?ll=53.15668,-1.1879&q=Wild%20Hearts%20Collective",
+  wazeUrl:
+    "https://waze.com/ul?ll=53.15668%2C-1.1879&navigate=yes",
+  /**
+   * Opens the what3words map on the studio pin.
+   * Replace with https://what3words.com/word.word.word once the client confirms the exact address.
+   */
+  what3wordsUrl: "https://map.what3words.com/53.15668,-1.1879",
 };
 
 /** Company trading / registered-office notice for footers and legal pages. */
