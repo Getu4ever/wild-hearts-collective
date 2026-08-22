@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-api";
 import {
   getRewardCampaignSettings,
+  normalizeMilestoneSteps,
   normalizeWinbackSteps,
   updateRewardCampaignSettings,
+  validateRewardValidDays,
+  validateWinbackDiscountPercent,
 } from "@/lib/reward-campaign-settings";
 
 export async function GET() {
@@ -44,16 +47,34 @@ export async function PATCH(request: Request) {
         ? normalizeWinbackSteps(body.winbackSteps)
         : undefined;
 
+    const birthdayDiscountPercent =
+      body.birthdayDiscountPercent !== undefined
+        ? validateWinbackDiscountPercent(body.birthdayDiscountPercent)
+        : undefined;
+
+    const birthdayValidDays =
+      body.birthdayValidDays !== undefined
+        ? validateRewardValidDays(body.birthdayValidDays)
+        : undefined;
+
+    const milestoneSteps =
+      body.milestoneSteps !== undefined
+        ? normalizeMilestoneSteps(body.milestoneSteps)
+        : undefined;
+
     if (
       winbackEnabled === undefined &&
       birthdayEnabled === undefined &&
       milestoneEnabled === undefined &&
-      winbackSteps === undefined
+      winbackSteps === undefined &&
+      birthdayDiscountPercent === undefined &&
+      birthdayValidDays === undefined &&
+      milestoneSteps === undefined
     ) {
       return NextResponse.json(
         {
           error:
-            "Provide winbackEnabled, birthdayEnabled, milestoneEnabled, or winbackSteps.",
+            "Provide winbackEnabled, birthdayEnabled, milestoneEnabled, winbackSteps, birthdayDiscountPercent, birthdayValidDays, or milestoneSteps.",
         },
         { status: 400 },
       );
@@ -64,6 +85,9 @@ export async function PATCH(request: Request) {
       birthdayEnabled,
       milestoneEnabled,
       winbackSteps,
+      birthdayDiscountPercent,
+      birthdayValidDays,
+      milestoneSteps,
     });
     return NextResponse.json({ settings });
   } catch (error) {

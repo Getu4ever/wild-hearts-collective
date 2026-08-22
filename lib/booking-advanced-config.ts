@@ -79,3 +79,10 @@ export function parseMilestonesAwarded(value: unknown): number[] {
   if (!Array.isArray(value)) return [];
   return value.filter((item): item is number => typeof item === "number");
 }
+
+export function milestoneVoucherType(threshold: number): VoucherType {
+  if (threshold === 50) return VOUCHER_TYPE.milestone50;
+  if (threshold === 100) return VOUCHER_TYPE.milestone100;
+  if (threshold === 150) return VOUCHER_TYPE.milestone150;
+  return `milestone_${threshold}` as VoucherType;
+}

@@ -7,13 +7,20 @@ type WinbackStep = {
   discountPercent: number;
 };
 
+type MilestoneStep = {
+  classes: number;
+  discountPercent: number;
+  validDays: number;
+};
+
 type RewardCampaignSettings = {
   winbackEnabled: boolean;
   birthdayEnabled: boolean;
   milestoneEnabled: boolean;
   winbackSteps: WinbackStep[];
+  birthdayDiscountPercent: number;
   birthdayValidDays: number;
-  milestoneThresholds: number[];
+  milestoneSteps: MilestoneStep[];
 };
 
 type StepRow = {
@@ -21,10 +28,24 @@ type StepRow = {
   discountPercent: string;
 };
 
+type MilestoneRow = {
+  classes: string;
+  discountPercent: string;
+  validDays: string;
+};
+
 function stepsToRows(steps: WinbackStep[]): StepRow[] {
   return steps.map((step) => ({
     days: String(step.days),
     discountPercent: String(step.discountPercent),
+  }));
+}
+
+function milestonesToRows(steps: MilestoneStep[]): MilestoneRow[] {
+  return steps.map((step) => ({
+    classes: String(step.classes),
+    discountPercent: String(step.discountPercent),
+    validDays: String(step.validDays),
   }));
 }
 
@@ -72,9 +93,22 @@ function formatStepsSummary(steps: WinbackStep[]) {
     .join(" · ");
 }
 
+function formatMilestoneSummary(steps: MilestoneStep[]) {
+  if (steps.length === 0) return "no milestones configured";
+  return steps
+    .map(
+      (step) =>
+        `${step.discountPercent}% at ${step.classes} classes (${step.validDays} days)`,
+    )
+    .join(" · ");
+}
+
 export function AdminWinbackPanel() {
   const [settings, setSettings] = useState<RewardCampaignSettings | null>(null);
   const [stepRows, setStepRows] = useState<StepRow[]>([]);
+  const [milestoneRows, setMilestoneRows] = useState<MilestoneRow[]>([]);
+  const [birthdayDiscountPercent, setBirthdayDiscountPercent] = useState("100");
+  const [birthdayValidDays, setBirthdayValidDays] = useState("14");
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -89,6 +123,9 @@ export function AdminWinbackPanel() {
         const next = payload.settings as RewardCampaignSettings;
         setSettings(next);
         setStepRows(stepsToRows(next.winbackSteps));
+        setMilestoneRows(milestonesToRows(next.milestoneSteps));
+        setBirthdayDiscountPercent(String(next.birthdayDiscountPercent));
+        setBirthdayValidDays(String(next.birthdayValidDays));
       })
       .catch((err) =>
         setError(err instanceof Error ? err.message : "Unable to load reward settings."),
@@ -96,12 +133,7 @@ export function AdminWinbackPanel() {
   }, []);
 
   async function patchSettings(
-    next: Partial<
-      Pick<
-        RewardCampaignSettings,
-        "winbackEnabled" | "birthdayEnabled" | "milestoneEnabled" | "winbackSteps"
-      >
-    >,
+    next: Partial<RewardCampaignSettings>,
     successMessage: string,
   ) {
     setLoading(Object.keys(next)[0] ?? "saving");
@@ -121,10 +153,15 @@ export function AdminWinbackPanel() {
       const updated = payload.settings as RewardCampaignSettings;
       setSettings(updated);
       setStepRows(stepsToRows(updated.winbackSteps));
+      setMilestoneRows(milestonesToRows(updated.milestoneSteps));
+      setBirthdayDiscountPercent(String(updated.birthdayDiscountPercent));
+      setBirthdayValidDays(String(updated.birthdayValidDays));
       setMessage(
         next.winbackSteps
           ? `Win-back sequence saved: ${formatStepsSummary(updated.winbackSteps)}.`
-          : successMessage,
+          : next.milestoneSteps
+            ? `Milestone rewards saved: ${formatMilestoneSummary(updated.milestoneSteps)}.`
+            : successMessage,
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to update reward emails.");
@@ -150,6 +187,26 @@ export function AdminWinbackPanel() {
     setMessage("");
   }
 
+  function updateMilestoneRow(index: number, patch: Partial<MilestoneRow>) {
+    setMilestoneRows((current) =>
+      current.map((row, i) => (i === index ? { ...row, ...patch } : row)),
+    );
+    setMessage("");
+  }
+
+  function addMilestoneRow() {
+    setMilestoneRows((current) => [
+      ...current,
+      { classes: "", discountPercent: "", validDays: "" },
+    ]);
+    setMessage("");
+  }
+
+  function removeMilestoneRow(index: number) {
+    setMilestoneRows((current) => current.filter((_, i) => i !== index));
+    setMessage("");
+  }
+
   async function saveWinbackSteps(event: React.FormEvent) {
     event.preventDefault();
     if (!settings) return;
@@ -162,6 +219,32 @@ export function AdminWinbackPanel() {
     await patchSettings({ winbackSteps }, "Win-back sequence saved.");
   }
 
+  async function saveBirthdaySettings(event: React.FormEvent) {
+    event.preventDefault();
+    if (!settings) return;
+
+    await patchSettings(
+      {
+        birthdayDiscountPercent: Number.parseInt(birthdayDiscountPercent, 10),
+        birthdayValidDays: Number.parseInt(birthdayValidDays, 10),
+      },
+      `Birthday reward saved: ${birthdayDiscountPercent}% off, valid ${birthdayValidDays} days.`,
+    );
+  }
+
+  async function saveMilestoneSteps(event: React.FormEvent) {
+    event.preventDefault();
+    if (!settings) return;
+
+    const milestoneSteps = milestoneRows.map((row) => ({
+      classes: Number.parseInt(row.classes, 10),
+      discountPercent: Number.parseInt(row.discountPercent, 10),
+      validDays: Number.parseInt(row.validDays, 10),
+    }));
+
+    await patchSettings({ milestoneSteps }, "Milestone rewards saved.");
+  }
+
   if (error && !settings) {
     return <p className="text-sm text-brand">{error}</p>;
   }
@@ -170,16 +253,21 @@ export function AdminWinbackPanel() {
     return <p className="text-sm text-muted">Loading reward settings…</p>;
   }
 
-  const milestoneLabel = settings.milestoneThresholds.join(" / ");
   const stepsDirty =
     JSON.stringify(stepRows) !== JSON.stringify(stepsToRows(settings.winbackSteps));
+  const milestonesDirty =
+    JSON.stringify(milestoneRows) !== JSON.stringify(milestonesToRows(settings.milestoneSteps));
+  const birthdayDirty =
+    birthdayDiscountPercent !== String(settings.birthdayDiscountPercent) ||
+    birthdayValidDays !== String(settings.birthdayValidDays);
 
   return (
     <section className="rounded-sm border border-plum/10 bg-surface p-6">
       <h2 className="font-display text-2xl text-plum">Reward emails</h2>
       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-        Turn each automated reward on or off. Attendance is still recorded when milestone
-        emails are off — the free-class voucher is just held until you switch them back on.
+        Turn each automated reward on or off and configure the offer — discount %, class
+        counts, and how long codes stay valid. Attendance is still recorded when milestone
+        emails are off; vouchers are just held until you switch them back on.
       </p>
 
       <div className="mt-6 divide-y divide-plum/10">
@@ -189,8 +277,8 @@ export function AdminWinbackPanel() {
               <h3 className="text-sm font-semibold text-plum">Win-back emails</h3>
               <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted">
                 Inactive members move through a sequence of offers. One email is sent per
-                step (for example 30 → 60 → 90 days) if they still have not returned.
-                Currently: {formatStepsSummary(settings.winbackSteps)}.
+                step if they still have not returned. Currently:{" "}
+                {formatStepsSummary(settings.winbackSteps)}.
               </p>
             </div>
             <CampaignSwitch
@@ -201,7 +289,7 @@ export function AdminWinbackPanel() {
                 void patchSettings(
                   { winbackEnabled: !settings.winbackEnabled },
                   settings.winbackEnabled
-                    ? "Win-back emails are off. No further inactive-member emails will be sent until you turn this back on."
+                    ? "Win-back emails are off."
                     : `Win-back emails are on (${formatStepsSummary(settings.winbackSteps)}).`,
                 )
               }
@@ -281,59 +369,190 @@ export function AdminWinbackPanel() {
                 {loading === "winbackSteps" ? "Saving…" : "Save sequence"}
               </button>
             </div>
-            <p className="text-xs leading-relaxed text-muted">
-              Each step needs a different day count. Members only get the next offer once
-              they pass that day threshold and have not already received that step.
-            </p>
           </form>
         </div>
 
-        <div className="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h3 className="text-sm font-semibold text-plum">Birthday rewards</h3>
-            <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted">
-              On a member&apos;s birthday they get a 100% off class code, valid for{" "}
-              {settings.birthdayValidDays} days. Date of birth must be saved on their
-              profile (Members → edit, or they can add it themselves).
-            </p>
+        <div className="space-y-4 py-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-plum">Birthday rewards</h3>
+              <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted">
+                On a member&apos;s birthday they receive a class discount code. Currently:{" "}
+                {settings.birthdayDiscountPercent}% off, valid for {settings.birthdayValidDays}{" "}
+                days. Date of birth must be saved on their profile.
+              </p>
+            </div>
+            <CampaignSwitch
+              label="Birthday rewards"
+              checked={settings.birthdayEnabled}
+              disabled={loading !== null}
+              onToggle={() =>
+                void patchSettings(
+                  { birthdayEnabled: !settings.birthdayEnabled },
+                  settings.birthdayEnabled
+                    ? "Birthday rewards are off."
+                    : "Birthday rewards are on.",
+                )
+              }
+            />
           </div>
-          <CampaignSwitch
-            label="Birthday rewards"
-            checked={settings.birthdayEnabled}
-            disabled={loading !== null}
-            onToggle={() =>
-              void patchSettings(
-                { birthdayEnabled: !settings.birthdayEnabled },
-                settings.birthdayEnabled
-                  ? "Birthday rewards are off. No birthday emails will be sent until you turn this back on."
-                  : "Birthday rewards are on. Members with a date of birth on file will receive a free-class code on their birthday.",
-              )
-            }
-          />
+
+          <form
+            onSubmit={(event) => void saveBirthdaySettings(event)}
+            className="grid gap-4 rounded-sm border border-plum/10 bg-canvas/40 p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+          >
+            <label className="block text-sm text-plum">
+              <span className="font-semibold">Discount %</span>
+              <input
+                type="number"
+                min={1}
+                max={100}
+                step={1}
+                required
+                value={birthdayDiscountPercent}
+                disabled={loading !== null}
+                onChange={(event) => setBirthdayDiscountPercent(event.target.value)}
+                className="mt-1.5 w-full rounded-sm border border-plum/15 bg-surface px-3 py-2 text-plum outline-none focus:border-sage"
+              />
+            </label>
+            <label className="block text-sm text-plum">
+              <span className="font-semibold">Valid days</span>
+              <input
+                type="number"
+                min={1}
+                max={365}
+                step={1}
+                required
+                value={birthdayValidDays}
+                disabled={loading !== null}
+                onChange={(event) => setBirthdayValidDays(event.target.value)}
+                className="mt-1.5 w-full rounded-sm border border-plum/15 bg-surface px-3 py-2 text-plum outline-none focus:border-sage"
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={loading !== null || !birthdayDirty}
+              className="rounded-sm bg-plum px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-plum/90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {loading === "birthdayDiscountPercent" ? "Saving…" : "Save birthday offer"}
+            </button>
+          </form>
         </div>
 
-        <div className="flex flex-col gap-4 py-4 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h3 className="text-sm font-semibold text-plum">Class milestones</h3>
-            <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted">
-              When attendance is marked as attended, members reaching {milestoneLabel}{" "}
-              classes receive a 100% off code (valid 60 days). 50 and 100 are included;
-              150 is also awarded if they keep coming.
-            </p>
+        <div className="space-y-4 py-4 last:pb-0">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-plum">Class milestones</h3>
+              <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted">
+                When attendance is marked, members reaching each class count receive a
+                voucher. Currently: {formatMilestoneSummary(settings.milestoneSteps)}.
+              </p>
+            </div>
+            <CampaignSwitch
+              label="Class milestone rewards"
+              checked={settings.milestoneEnabled}
+              disabled={loading !== null}
+              onToggle={() =>
+                void patchSettings(
+                  { milestoneEnabled: !settings.milestoneEnabled },
+                  settings.milestoneEnabled
+                    ? "Milestone rewards are off."
+                    : `Milestone rewards are on (${formatMilestoneSummary(settings.milestoneSteps)}).`,
+                )
+              }
+            />
           </div>
-          <CampaignSwitch
-            label="Class milestone rewards"
-            checked={settings.milestoneEnabled}
-            disabled={loading !== null}
-            onToggle={() =>
-              void patchSettings(
-                { milestoneEnabled: !settings.milestoneEnabled },
-                settings.milestoneEnabled
-                  ? "Milestone rewards are off. Class counts still increase, but no 50/100/150 vouchers will be emailed until you turn this back on."
-                  : `Milestone rewards are on. Members will be emailed a free-class code at ${milestoneLabel} attended classes.`,
-              )
-            }
-          />
+
+          <form
+            onSubmit={(event) => void saveMilestoneSteps(event)}
+            className="space-y-4 rounded-sm border border-plum/10 bg-canvas/40 p-4"
+          >
+            <div className="space-y-3">
+              {milestoneRows.map((row, index) => (
+                <div
+                  key={index}
+                  className="grid gap-3 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end"
+                >
+                  <label className="block text-sm text-plum">
+                    <span className="font-semibold">Classes attended</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={9999}
+                      step={1}
+                      required
+                      value={row.classes}
+                      disabled={loading !== null}
+                      onChange={(event) =>
+                        updateMilestoneRow(index, { classes: event.target.value })
+                      }
+                      className="mt-1.5 w-full rounded-sm border border-plum/15 bg-surface px-3 py-2 text-plum outline-none focus:border-sage"
+                    />
+                  </label>
+                  <label className="block text-sm text-plum">
+                    <span className="font-semibold">Discount %</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={100}
+                      step={1}
+                      required
+                      value={row.discountPercent}
+                      disabled={loading !== null}
+                      onChange={(event) =>
+                        updateMilestoneRow(index, {
+                          discountPercent: event.target.value,
+                        })
+                      }
+                      className="mt-1.5 w-full rounded-sm border border-plum/15 bg-surface px-3 py-2 text-plum outline-none focus:border-sage"
+                    />
+                  </label>
+                  <label className="block text-sm text-plum">
+                    <span className="font-semibold">Valid days</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={365}
+                      step={1}
+                      required
+                      value={row.validDays}
+                      disabled={loading !== null}
+                      onChange={(event) =>
+                        updateMilestoneRow(index, { validDays: event.target.value })
+                      }
+                      className="mt-1.5 w-full rounded-sm border border-plum/15 bg-surface px-3 py-2 text-plum outline-none focus:border-sage"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    disabled={loading !== null || milestoneRows.length <= 1}
+                    onClick={() => removeMilestoneRow(index)}
+                    className="rounded-sm border border-plum/20 px-3 py-2.5 text-sm font-semibold text-plum transition hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                disabled={loading !== null || milestoneRows.length >= 10}
+                onClick={addMilestoneRow}
+                className="rounded-sm border border-plum/20 px-4 py-2.5 text-sm font-semibold text-plum transition hover:border-sage disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Add milestone
+              </button>
+              <button
+                type="submit"
+                disabled={loading !== null || !milestonesDirty}
+                className="rounded-sm bg-plum px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-plum/90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {loading === "milestoneSteps" ? "Saving…" : "Save milestones"}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
 

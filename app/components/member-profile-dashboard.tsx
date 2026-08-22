@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { MemberCollapsibleSection } from "@/app/components/member-collapsible-section";
 import { MemberProfilePhotoField } from "@/app/components/member-profile-photo-field";
 import { MemberBillingSection } from "@/app/components/member-billing-section";
 import {
@@ -64,19 +65,42 @@ function ProfileCard({
   title,
   description,
   children,
+  collapsible = false,
+  defaultOpen = true,
 }: {
   id: string;
   title: string;
   description?: string;
   children: React.ReactNode;
+  collapsible?: boolean;
+  defaultOpen?: boolean;
 }) {
+  const [open, setOpen] = useState(defaultOpen);
+
   return (
     <section id={id} className="scroll-mt-28 rounded-2xl border border-plum/10 bg-surface p-6 shadow-sm">
       <div className="mb-6 border-b border-plum/10 pb-4">
-        <h2 className="font-display text-3xl text-plum">{title}</h2>
-        {description && <p className="mt-2 text-sm leading-relaxed text-muted">{description}</p>}
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="font-display text-3xl text-plum">{title}</h2>
+            {description && <p className="mt-2 text-sm leading-relaxed text-muted">{description}</p>}
+          </div>
+          {collapsible && (
+            <button
+              type="button"
+              onClick={() => setOpen((current) => !current)}
+              aria-expanded={open}
+              className="text-sm font-semibold uppercase tracking-wider text-brand hover:underline"
+            >
+              {open ? "Hide" : "Show"}
+            </button>
+          )}
+        </div>
       </div>
-      {children}
+      {(!collapsible || open) && children}
+      {collapsible && !open && (
+        <p className="text-sm text-muted">Hidden to keep your profile tidy. Tap show to expand.</p>
+      )}
     </section>
   );
 }
@@ -235,7 +259,7 @@ export function MemberProfileDashboard({
         </nav>
 
         <div className="space-y-8">
-          <ProfileCard id="overview" title="Profile overview">
+          <ProfileCard id="overview" title="Profile overview" collapsible defaultOpen={false}>
             <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
               <MemberProfilePhotoField
                 image={profile.image}
@@ -291,6 +315,8 @@ export function MemberProfileDashboard({
             id="personal"
             title="Personal information"
             description="We only collect essentials now. You can add more details whenever you're ready."
+            collapsible
+            defaultOpen={false}
           >
             <form
               className="space-y-4"
@@ -430,8 +456,12 @@ export function MemberProfileDashboard({
                 </ul>
               </div>
             </div>
-            <div className="mt-6">
-              <h3 className="font-semibold text-plum">Past attendance</h3>
+            <MemberCollapsibleSection
+              title="Past attendance"
+              className="mt-6 rounded-lg border border-plum/10 bg-white/60 p-4"
+              headingClassName="font-semibold text-plum"
+              collapsedHint="Past classes are hidden. Show to view your attendance history."
+            >
               <ul className="mt-3 divide-y divide-plum/10">
                 {pastBookings.slice(0, 6).map((booking) => (
                   <li key={booking.id} className="flex items-center justify-between py-3 text-sm">
@@ -445,13 +475,15 @@ export function MemberProfileDashboard({
                   </li>
                 ))}
               </ul>
-            </div>
+            </MemberCollapsibleSection>
           </ProfileCard>
 
           <ProfileCard
             id="skills"
             title="Skills & interests"
             description="Select each discipline you practise and set your level for that one — for example advanced pole and beginner hoop."
+            collapsible
+            defaultOpen={false}
           >
             <form
               className="space-y-4"
@@ -522,11 +554,17 @@ export function MemberProfileDashboard({
             </form>
           </ProfileCard>
 
-          <ProfileCard id="billing" title="Payments & billing" description="Pay, manage cards, and download invoices securely on-site with Stripe. We never store raw payment data.">
+          <ProfileCard
+            id="billing"
+            title="Payments & billing"
+            description="Pay, manage cards, and download invoices securely on-site with Stripe. We never store raw payment data."
+            collapsible
+            defaultOpen={false}
+          >
             <MemberBillingSection />
           </ProfileCard>
 
-          <ProfileCard id="preferences" title="Preferences & notifications">
+          <ProfileCard id="preferences" title="Preferences & notifications" collapsible defaultOpen={false}>
             <form
               className="space-y-3"
               onSubmit={(event) => {
@@ -558,7 +596,7 @@ export function MemberProfileDashboard({
             </form>
           </ProfileCard>
 
-          <ProfileCard id="security" title="Account & security">
+          <ProfileCard id="security" title="Account & security" collapsible defaultOpen={false}>
             <form
               className="space-y-4"
               onSubmit={(event) => {

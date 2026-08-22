@@ -28,19 +28,20 @@ export const contact = {
   mapsQuery:
     "Unit 25, Block 7 Hallam Way, Old Mill Lane Industrial Estate, Mansfield NG19 9BG",
   /**
-   * Studio pin — Unit 25, Block 7 Hallam Way (north of Farmway).
-   * Previous pin (53.155865, -1.187964) landed on Block 17 across the estate.
-   * Do not use the bare business name in Apple/Google queries — Apple’s POI
-   * listing is still wrong (Block 6) and steals the pin.
+   * Studio pin — Unit 25, Block 7 Hallam Way (west side of Farmway, Hallam Way row).
+   * NG19 9BG centroid ≈ 53.15634, -1.18827; prior pin (53.15668, -1.1879) sat on the
+   * Farmway junction. Client markers + ///books.shops.flats confirm this building.
+   * Do not use the bare business name in Apple/Google queries — Apple’s POI listing
+   * is still wrong (Block 6) and steals the pin.
    */
-  latitude: 53.15668,
-  longitude: -1.1879,
+  latitude: 53.15648,
+  longitude: -1.18832,
   /** Google Maps directions / pin (coords + Block 7 address label). */
   mapsUrl:
-    "https://www.google.com/maps?q=53.15668,-1.1879+(Wild%20Hearts%20Collective%2C%20Unit%2025%20Block%207%20Hallam%20Way)&ll=53.15668,-1.1879&z=18",
+    "https://www.google.com/maps?q=53.15648,-1.18832+(Wild%20Hearts%20Collective%2C%20Unit%2025%20Block%207%20Hallam%20Way)&ll=53.15648,-1.18832&z=18",
   /** Google Maps embed — coordinate pin so geocoding cannot drift. */
   mapsEmbedUrl:
-    "https://www.google.com/maps?q=53.15668,-1.1879+(Wild%20Hearts%20Collective%2C%20Unit%2025%20Block%207%20Hallam%20Way)&z=18&output=embed",
+    "https://www.google.com/maps?q=53.15648,-1.18832+(Wild%20Hearts%20Collective%2C%20Unit%2025%20Block%207%20Hallam%20Way)&z=18&output=embed",
   /**
    * Apple Maps — pin by coordinates with an explicit Block 7 label.
    * Searching the full estate address (or the business name alone) makes Apple
@@ -48,9 +49,9 @@ export const contact = {
    * record, so Details still shows Block 6 even when the title says Block 7.
    */
   appleMapsUrl:
-    "https://maps.apple.com/place?coordinate=53.15668%2C-1.1879&name=Wild%20Hearts%20Collective%20%E2%80%94%20Unit%2025%2C%20Block%207%20Hallam%20Way",
+    "https://maps.apple.com/place?coordinate=53.15648%2C-1.18832&name=Wild%20Hearts%20Collective%20%E2%80%94%20Unit%2025%2C%20Block%207%20Hallam%20Way",
   wazeUrl:
-    "https://waze.com/ul?ll=53.15668%2C-1.1879&navigate=yes&q=Wild%20Hearts%20Collective%20Unit%2025%20Block%207",
+    "https://waze.com/ul?ll=53.15648%2C-1.18832&navigate=yes&q=Wild%20Hearts%20Collective%20Unit%2025%20Block%207",
   /** Client-confirmed studio what3words (estate approach): ///books.shops.flats */
   what3wordsUrl: "https://what3words.com/books.shops.flats",
 };
@@ -188,7 +189,7 @@ export const footerLegalLinks = [
 export const homeStats = [
   {
     value: "3",
-    label: "co-founders",
+    label: "Co-founders",
   },
   {
     value: "4",
@@ -196,7 +197,7 @@ export const homeStats = [
   },
   {
     value: "5",
-    label: "qualified instructors",
+    label: "Qualified instructors",
   },
   {
     value: "36+",
@@ -252,16 +253,15 @@ export const whyChooseUs = {
 
 /**
  * Social and review destinations.
- * Replace placeholder `#` hrefs when the client provides final URLs.
  */
 export const socialLinks = [
   {
-    href: "#", // TODO: Instagram profile URL from client
+    href: "https://www.instagram.com/wildheartscollective_mansfield?utm_source=q",
     label: "Instagram",
     cta: "Follow us on Instagram",
   },
   {
-    href: "#", // TODO: Facebook page URL from client
+    href: "https://www.facebook.com/share/1GyS3vvdXn/?mibextid=wwXIfr",
     label: "Facebook",
     cta: "Find us on Facebook",
   },

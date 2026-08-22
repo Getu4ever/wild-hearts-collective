@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BookingEmbeddedCheckout } from "@/app/components/booking-embedded-checkout";
+import { MemberCollapsibleSection } from "@/app/components/member-collapsible-section";
 import { BOOKING_URL } from "@/lib/constants";
 import type { MemberCreditsOverview } from "@/lib/member-credits-service";
 
@@ -220,8 +221,11 @@ export function MemberCreditsDashboard({
       </section>
 
       <div className="grid gap-8 lg:grid-cols-2">
-        <section className="rounded-2xl border border-plum/10 bg-surface p-6 shadow-sm">
-          <h2 className="font-display text-2xl text-plum">Active class packs</h2>
+        <MemberCollapsibleSection
+          title="Active class packs"
+          className="rounded-2xl border border-plum/10 bg-surface p-6 shadow-sm"
+          collapsedHint="Your active packs are hidden. Show to view expiry dates and remaining credits."
+        >
           <p className="mt-2 text-sm text-muted">
             Credits from each pack must be used before it expires.
           </p>
@@ -252,10 +256,13 @@ export function MemberCreditsDashboard({
               ))}
             </ul>
           )}
-        </section>
+        </MemberCollapsibleSection>
 
-        <section className="rounded-2xl border border-plum/10 bg-surface p-6 shadow-sm">
-          <h2 className="font-display text-2xl text-plum">Recent activity</h2>
+        <MemberCollapsibleSection
+          title="Recent activity"
+          className="rounded-2xl border border-plum/10 bg-surface p-6 shadow-sm"
+          collapsedHint="Credit purchases, bookings, and refunds are hidden. Show to view your full activity history."
+        >
           <p className="mt-2 text-sm text-muted">
             Purchases, bookings paid with credits, and refunds appear here.
           </p>
@@ -287,7 +294,7 @@ export function MemberCreditsDashboard({
               ))}
             </ul>
           )}
-        </section>
+        </MemberCollapsibleSection>
       </div>
 
       <section className="rounded-2xl border border-plum/10 bg-surface p-6 shadow-sm">
@@ -355,9 +362,12 @@ export function MemberCreditsDashboard({
       </section>
 
       {overview.purchases.length > 0 && (
-        <section className="rounded-2xl border border-plum/10 bg-surface p-6 shadow-sm">
-          <h2 className="font-display text-2xl text-plum">Purchase history</h2>
-          <ul className="mt-6 divide-y divide-plum/10">
+        <MemberCollapsibleSection
+          title="Purchase history"
+          className="rounded-2xl border border-plum/10 bg-surface p-6 shadow-sm"
+          collapsedHint="Past pack purchases are hidden. Show to view your full purchase history."
+        >
+          <ul className="mt-2 divide-y divide-plum/10">
             {overview.purchases.map((purchase) => (
               <li
                 key={purchase.id}
@@ -375,7 +385,7 @@ export function MemberCreditsDashboard({
               </li>
             ))}
           </ul>
-        </section>
+        </MemberCollapsibleSection>
       )}
     </div>
   );

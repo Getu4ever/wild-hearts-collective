@@ -5,16 +5,24 @@ import { useState } from "react";
 export function MemberCollapsibleSection({
   title,
   children,
+  defaultOpen = false,
+  collapsedHint = "Hidden to keep your dashboard lighter. Tap show to expand.",
+  className = "mt-10 rounded-sm border border-plum/10 bg-surface p-6",
+  headingClassName = "font-display text-2xl text-plum",
 }: {
   title: string;
   children: React.ReactNode;
+  defaultOpen?: boolean;
+  collapsedHint?: string;
+  className?: string;
+  headingClassName?: string;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <section className="mt-10 rounded-sm border border-plum/10 bg-surface p-6">
+    <section className={className}>
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h2 className="font-display text-2xl text-plum">{title}</h2>
+        <h2 className={headingClassName}>{title}</h2>
         <button
           type="button"
           onClick={() => setOpen((current) => !current)}
@@ -27,9 +35,7 @@ export function MemberCollapsibleSection({
       {open ? (
         children
       ) : (
-        <p className="mt-3 text-sm text-muted">
-          Hidden to keep your dashboard lighter.
-        </p>
+        <p className="mt-3 text-sm text-muted">{collapsedHint}</p>
       )}
     </section>
   );

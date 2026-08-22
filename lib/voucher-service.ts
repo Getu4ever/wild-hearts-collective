@@ -2,9 +2,9 @@ import type { Prisma } from "@prisma/client";
 import { randomBytes } from "crypto";
 import {
   BIRTHDAY_VOUCHER_VALID_DAYS,
-  MILESTONE_THRESHOLDS,
   REENGAGEMENT_VOUCHER_VALID_DAYS,
   VOUCHER_TYPE,
+  milestoneVoucherType,
   parseMilestonesAwarded,
   type VoucherType,
 } from "@/lib/booking-advanced-config";
@@ -96,7 +96,8 @@ function ukMonthAndDay(date: Date) {
 }
 
 export async function issueBirthdayVouchersForToday(today = new Date()) {
-  const { birthdayEnabled } = await getRewardCampaignSettings();
+  const { birthdayEnabled, birthdayDiscountPercent, birthdayValidDays } =
+    await getRewardCampaignSettings();
   if (!birthdayEnabled) {
     return { issued: 0, checked: 0, skipped: true as const };
   }
@@ -137,6 +138,8 @@ export async function issueBirthdayVouchersForToday(today = new Date()) {
     if (existing) continue;
 
     await createVoucherForUser(user.id, VOUCHER_TYPE.birthday, {
+      discountPercent: birthdayDiscountPercent,
+      validDays: birthdayValidDays,
       metadata: { year },
     });
     issued += 1;
@@ -149,7 +152,7 @@ export async function recordAttendanceAndAwardMilestones(
   userId: string,
   bookingId: string,
 ) {
-  const { milestoneEnabled } = await getRewardCampaignSettings();
+  const { milestoneEnabled, milestoneSteps } = await getRewardCampaignSettings();
 
   return db.$transaction(async (tx) => {
     const existing = await tx.booking.findUnique({
@@ -194,26 +197,21 @@ export async function recordAttendanceAndAwardMilestones(
     const alreadyAwarded = parseMilestonesAwarded(user.milestonesAwarded);
     const newlyAwarded: number[] = [];
 
-    for (const threshold of MILESTONE_THRESHOLDS) {
+    for (const step of milestoneSteps) {
+      const threshold = step.classes;
       if (!milestoneEnabled) break;
       if (user.totalClassesAttended < threshold) continue;
       if (alreadyAwarded.includes(threshold)) continue;
 
-      const type =
-        threshold === 50
-          ? VOUCHER_TYPE.milestone50
-          : threshold === 100
-            ? VOUCHER_TYPE.milestone100
-            : VOUCHER_TYPE.milestone150;
-
+      const type = milestoneVoucherType(threshold);
       const code = generateVoucherCode(`M${threshold}`);
       await tx.voucher.create({
         data: {
           code,
           userId: user.id,
           type,
-          discountPercent: 100,
-          expiresAt: voucherExpiry(60),
+          discountPercent: step.discountPercent,
+          expiresAt: voucherExpiry(step.validDays),
           metadata: { milestone: threshold },
         },
       });
@@ -233,12 +231,7 @@ export async function recordAttendanceAndAwardMilestones(
         const voucher = await tx.voucher.findFirst({
           where: {
             userId: user.id,
-            type:
-              milestone === 50
-                ? VOUCHER_TYPE.milestone50
-                : milestone === 100
-                  ? VOUCHER_TYPE.milestone100
-                  : VOUCHER_TYPE.milestone150,
+            type: milestoneVoucherType(milestone),
           },
           orderBy: { createdAt: "desc" },
         });
