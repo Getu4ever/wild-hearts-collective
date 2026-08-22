@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { isStripeConfigured } from "@/lib/booking-config";
 import { isEmailConfigured } from "@/lib/email";
 import {
