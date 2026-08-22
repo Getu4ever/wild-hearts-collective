@@ -4,17 +4,22 @@ import {
   formatSessionDateTime,
   getAppBaseUrl,
 } from "@/lib/booking-config";
+import {
+  getStripeSecretKey,
+  getStripeWebhookSecret,
+} from "@/lib/stripe-env";
 import { resolveClassPaymentAmountPence } from "@/lib/studio-pricing-service";
 
 let stripeClient: Stripe | null = null;
 
 export function getStripeClient() {
-  if (!process.env.STRIPE_SECRET_KEY) {
+  const secretKey = getStripeSecretKey();
+  if (!secretKey) {
     throw new Error("STRIPE_SECRET_KEY is not configured.");
   }
 
   if (!stripeClient) {
-    stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY);
+    stripeClient = new Stripe(secretKey);
   }
 
   return stripeClient;
@@ -32,7 +37,7 @@ export async function createBookingCheckoutSession(
   booking: CheckoutBooking,
   options?: { amountPence?: number; giftCardId?: string; giftAmountApplied?: number },
 ) {
-  if (!process.env.STRIPE_SECRET_KEY) {
+  if (!getStripeSecretKey()) {
     throw new Error("Stripe is not configured.");
   }
 
@@ -76,16 +81,13 @@ export async function createBookingCheckoutSession(
 }
 
 export function verifyStripeWebhook(payload: string, signature: string) {
-  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+  const webhookSecret = getStripeWebhookSecret();
+  if (!webhookSecret) {
     throw new Error("STRIPE_WEBHOOK_SECRET is not configured.");
   }
 
   const stripe = getStripeClient();
-  return stripe.webhooks.constructEvent(
-    payload,
-    signature,
-    process.env.STRIPE_WEBHOOK_SECRET,
-  );
+  return stripe.webhooks.constructEvent(payload, signature, webhookSecret);
 }
 
 export async function classPaymentLabel() {
@@ -112,7 +114,7 @@ export async function createClassPackCheckoutSession(
   pack: ClassPackCheckout,
   options?: { amountPence?: number; giftCardId?: string; giftAmountApplied?: number },
 ) {
-  if (!process.env.STRIPE_SECRET_KEY) {
+  if (!getStripeSecretKey()) {
     throw new Error("Stripe is not configured.");
   }
 
@@ -187,7 +189,7 @@ export async function createShopCheckoutSession(
   items: ShopCheckoutItem[],
   options: ShopCheckoutOptions = {},
 ) {
-  if (!process.env.STRIPE_SECRET_KEY) {
+  if (!getStripeSecretKey()) {
     throw new Error("Stripe is not configured.");
   }
 

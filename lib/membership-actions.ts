@@ -7,6 +7,7 @@ import {
 } from "@/lib/member-notifications";
 import { db } from "@/lib/db";
 import { getStripeClient } from "@/lib/stripe";
+import { isStripeSecretConfigured } from "@/lib/stripe-env";
 
 async function recordMembershipEvent(input: {
   userId: string;
@@ -29,7 +30,7 @@ async function recordMembershipEvent(input: {
 }
 
 function isStripeConfigured() {
-  return Boolean(process.env.STRIPE_SECRET_KEY);
+  return isStripeSecretConfigured();
 }
 
 export async function pauseMemberMembership(input: {

@@ -3,9 +3,10 @@ import { confirmBooking, expireStalePendingBookings } from "@/lib/booking-servic
 import { BOOKING_STATUS } from "@/lib/booking-config";
 import { db } from "@/lib/db";
 import { getStripeClient } from "@/lib/stripe";
+import { isStripeSecretConfigured } from "@/lib/stripe-env";
 
 function stripePaymentsEnabled() {
-  return Boolean(process.env.STRIPE_SECRET_KEY);
+  return isStripeSecretConfigured();
 }
 
 export async function finalizeBookingPayment(bookingId: string) {

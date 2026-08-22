@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { isStripeConfigured } from "@/lib/booking-config";
 import { isEmailConfigured } from "@/lib/email";
 import {
@@ -6,6 +5,7 @@ import {
   resolveFourWeekCoursePricePence,
 } from "@/lib/studio-pricing-service";
 import { formatMoneyFromPence } from "@/lib/booking-config";
+import { getStripePublishableKey } from "@/lib/stripe-env";
 
 export async function GET() {
   const [amountPence, courseAmountPence] = await Promise.all([
@@ -24,7 +24,7 @@ export async function GET() {
     depositAmountPence: amountPence,
     depositLabel: priceLabel,
     stripeEnabled: isStripeConfigured(),
-    stripePublishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "",
+    stripePublishableKey: getStripePublishableKey(),
     emailEnabled: isEmailConfigured(),
   });
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isStripeConfigured } from "@/lib/booking-config";
 import { getMemberSession } from "@/lib/member-auth";
 import { createMemberSubscriptionIntent } from "@/lib/membership-billing";
+import { isStripePublishableConfigured } from "@/lib/stripe-env";
 import { db } from "@/lib/db";
 
 export async function POST() {
@@ -10,7 +11,7 @@ export async function POST() {
     return NextResponse.json({ error: "You must be signed in." }, { status: 401 });
   }
 
-  if (!isStripeConfigured() || !process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+  if (!isStripeConfigured() || !isStripePublishableConfigured()) {
     return NextResponse.json(
       { error: "Online membership payments are not configured yet." },
       { status: 503 },

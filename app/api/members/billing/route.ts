@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isStripeConfigured } from "@/lib/booking-config";
 import { getMemberSession } from "@/lib/member-auth";
 import { getMemberBillingSummary } from "@/lib/membership-billing";
+import { getStripePublishableKey } from "@/lib/stripe-env";
 
 export async function GET() {
   const session = await getMemberSession();
@@ -13,7 +14,7 @@ export async function GET() {
     return NextResponse.json({
       billing: {
         configured: false,
-        publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "",
+        publishableKey: getStripePublishableKey(),
         paymentMethods: [],
         invoices: [],
         canSubscribe: false,

@@ -8,6 +8,7 @@ import {
 } from "@/lib/membership-stripe";
 import { db } from "@/lib/db";
 import { getStripeClient } from "@/lib/stripe";
+import { getStripePublishableKey } from "@/lib/stripe-env";
 import { resolveMonthlyMembershipPricePence } from "@/lib/studio-pricing-service";
 
 export type BillingPaymentMethod = {
@@ -39,7 +40,7 @@ export type MemberBillingSummary = {
 };
 
 function getPublishableKey() {
-  return process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
+  return getStripePublishableKey();
 }
 
 function getInvoiceClientSecret(invoice: Stripe.Invoice) {

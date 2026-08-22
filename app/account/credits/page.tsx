@@ -4,6 +4,7 @@ import { MemberCreditsDashboard } from "@/app/components/member-credits-dashboar
 import { getMemberSession } from "@/lib/member-auth";
 import { getMemberCreditsOverview } from "@/lib/member-credits-service";
 import { isStripeConfigured } from "@/lib/booking-config";
+import { getStripePublishableKey } from "@/lib/stripe-env";
 
 export const dynamic = "force-dynamic";
 
@@ -48,7 +49,7 @@ export default async function AccountCreditsPage({
       <MemberCreditsDashboard
         overview={overview}
         stripeEnabled={isStripeConfigured()}
-        publishableKey={process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ""}
+        publishableKey={getStripePublishableKey()}
         resumePurchaseId={resumePurchaseId}
       />
     </div>

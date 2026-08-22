@@ -1,3 +1,5 @@
+import { isStripeSecretConfigured } from "@/lib/stripe-env";
+
 export const BOOKING_STATUS = {
   pending: "pending",
   confirmed: "confirmed",
@@ -112,7 +114,7 @@ export function ukLocalToUtc(
 }
 
 export function isStripeConfigured() {
-  return Boolean(process.env.STRIPE_SECRET_KEY);
+  return isStripeSecretConfigured();
 }
 
 export function formatSessionDateTime(value: Date | string | number) {
