@@ -7,11 +7,13 @@ export function AdminCollapsibleSection({
   children,
   defaultOpen = false,
   empty,
+  summary,
 }: {
   title: string;
   children: React.ReactNode;
   defaultOpen?: boolean;
   empty?: boolean;
+  summary?: string;
 }) {
   const [open, setOpen] = useState(defaultOpen);
 
@@ -32,7 +34,8 @@ export function AdminCollapsibleSection({
         children
       ) : (
         <p className="mt-3 text-sm text-muted">
-          {empty ? "No admin actions logged yet." : "Hidden to keep the dashboard lighter."}
+          {summary ??
+            (empty ? "No admin actions logged yet." : "Hidden to keep the dashboard lighter.")}
         </p>
       )}
     </section>
