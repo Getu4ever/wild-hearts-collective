@@ -238,6 +238,8 @@ export function SiteFooter() {
                 <a
                   key={link.label}
                   href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   aria-label={link.cta}
                   className={`flex w-full items-center gap-3 rounded-sm px-3.5 py-3 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 ${
                     link.label === "Instagram"
