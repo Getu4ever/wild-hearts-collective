@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 import {
   getAdminTutor,
   removeAdminTutor,
@@ -9,7 +10,7 @@ import {
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(_request: Request, context: RouteContext) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin(ADMIN_PERMISSIONS.tutors);
   if (!admin.authed) return admin.response;
 
   const { id } = await context.params;
@@ -27,7 +28,7 @@ export async function GET(_request: Request, context: RouteContext) {
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin(ADMIN_PERMISSIONS.tutors);
   if (!admin.authed) return admin.response;
 
   const { id } = await context.params;
@@ -60,7 +61,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin(ADMIN_PERMISSIONS.tutors);
   if (!admin.authed) return admin.response;
 
   const { id } = await context.params;

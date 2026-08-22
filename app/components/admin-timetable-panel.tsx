@@ -77,14 +77,18 @@ function toPayload(days: DayDraft[]): TimetableDay[] {
 export function AdminTimetablePanel({
   initialDays,
   initialSource,
+  initialVisible = true,
 }: {
   initialDays: TimetableDay[];
   initialSource: "database" | "default";
+  initialVisible?: boolean;
 }) {
   const router = useRouter();
   const [days, setDays] = useState(() => toDraft(initialDays));
   const [source, setSource] = useState(initialSource);
+  const [visible, setVisible] = useState(initialVisible);
   const [loading, setLoading] = useState(false);
+  const [visibilityLoading, setVisibilityLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [savedOpen, setSavedOpen] = useState(false);
@@ -173,7 +177,7 @@ export function AdminTimetablePanel({
       const response = await fetch("/api/admin/timetable", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ days: payload }),
+        body: JSON.stringify({ days: payload, visible }),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -182,13 +186,42 @@ export function AdminTimetablePanel({
 
       setDays(toDraft(data.days));
       setSource(data.source ?? "database");
-      setMessage("Marketing timetable saved. Homepage /#timetable will show the update.");
+      if (typeof data.visible === "boolean") setVisible(data.visible);
+      setMessage("Marketing timetable saved. The homepage will show this version.");
       setSavedOpen(true);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to save timetable.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleVisibilityToggle(nextVisible: boolean) {
+    setVisibilityLoading(true);
+    setError("");
+    setMessage("");
+    try {
+      const response = await fetch("/api/admin/timetable", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visible: nextVisible }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error ?? "Unable to update visibility.");
+      }
+      setVisible(typeof data.visible === "boolean" ? data.visible : nextVisible);
+      setMessage(
+        nextVisible
+          ? "Homepage timetable is now visible."
+          : "Homepage timetable is now hidden.",
+      );
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to update visibility.");
+    } finally {
+      setVisibilityLoading(false);
     }
   }
 
@@ -207,6 +240,27 @@ export function AdminTimetablePanel({
           {error || message}
         </div>
       )}
+
+      <div className="flex flex-col gap-4 rounded-lg border border-plum/10 bg-surface p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-plum">Show on homepage</p>
+          <p className="mt-1 text-sm text-muted">
+            When off, the timetable section is hidden on the public homepage.
+          </p>
+        </div>
+        <label className="inline-flex cursor-pointer items-center gap-3 text-sm font-semibold text-plum">
+          <span className="text-xs uppercase tracking-wider text-muted">
+            {visible ? "Visible" : "Hidden"}
+          </span>
+          <input
+            type="checkbox"
+            className="h-5 w-5 accent-sage"
+            checked={visible}
+            disabled={visibilityLoading || loading}
+            onChange={(event) => handleVisibilityToggle(event.target.checked)}
+          />
+        </label>
+      </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-muted">

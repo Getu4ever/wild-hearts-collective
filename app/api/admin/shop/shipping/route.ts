@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 import type { ShopShippingBand } from "@/lib/shop-shipping";
 import {
   getShopShippingBands,
@@ -7,7 +8,7 @@ import {
 } from "@/lib/shop-shipping-service";
 
 export async function GET() {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin(ADMIN_PERMISSIONS.shop);
   if (!admin.authed) return admin.response;
 
   const bands = await getShopShippingBands();
@@ -15,7 +16,7 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin(ADMIN_PERMISSIONS.shop);
   if (!admin.authed) return admin.response;
 
   try {

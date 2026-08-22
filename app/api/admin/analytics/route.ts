@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { getAdminAnalytics } from "@/lib/analytics-service";
 import { requireAdmin } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 
 export async function GET() {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin(ADMIN_PERMISSIONS.analytics);
   if (!admin.authed) return admin.response;
 
   try {

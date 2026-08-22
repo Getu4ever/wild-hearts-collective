@@ -1,9 +1,14 @@
 import Link from "next/link";
+import {
+  ADMIN_PERMISSIONS,
+  type AdminPermission,
+  canAccessAdminSection,
+} from "@/lib/admin-permissions";
 
-export function AdminNav({
-  active,
-}: {
-  active:
+const links: {
+  href: string;
+  label: string;
+  id:
     | "dashboard"
     | "schedule"
     | "bookings"
@@ -12,23 +17,86 @@ export function AdminNav({
     | "shop"
     | "pricing"
     | "timetable"
-    | "analytics";
+    | "analytics"
+    | "staff";
+  permission: AdminPermission;
+}[] = [
+  {
+    href: "/admin",
+    label: "Dashboard",
+    id: "dashboard",
+    permission: ADMIN_PERMISSIONS.dashboard,
+  },
+  {
+    href: "/admin/schedule",
+    label: "Schedule",
+    id: "schedule",
+    permission: ADMIN_PERMISSIONS.schedule,
+  },
+  {
+    href: "/admin/bookings",
+    label: "Bookings",
+    id: "bookings",
+    permission: ADMIN_PERMISSIONS.bookings,
+  },
+  {
+    href: "/admin/members",
+    label: "Members",
+    id: "members",
+    permission: ADMIN_PERMISSIONS.members,
+  },
+  {
+    href: "/admin/tutors",
+    label: "Instructors",
+    id: "tutors",
+    permission: ADMIN_PERMISSIONS.tutors,
+  },
+  {
+    href: "/admin/shop",
+    label: "Shop",
+    id: "shop",
+    permission: ADMIN_PERMISSIONS.shop,
+  },
+  {
+    href: "/admin/pricing",
+    label: "Passes & pricing",
+    id: "pricing",
+    permission: ADMIN_PERMISSIONS.pricing,
+  },
+  {
+    href: "/admin/timetable",
+    label: "Timetable",
+    id: "timetable",
+    permission: ADMIN_PERMISSIONS.timetable,
+  },
+  {
+    href: "/admin/analytics",
+    label: "Analytics",
+    id: "analytics",
+    permission: ADMIN_PERMISSIONS.analytics,
+  },
+  {
+    href: "/admin/staff",
+    label: "Staff",
+    id: "staff",
+    permission: ADMIN_PERMISSIONS.staff,
+  },
+];
+
+export function AdminNav({
+  active,
+  permissions,
+}: {
+  active: (typeof links)[number]["id"];
+  permissions: readonly AdminPermission[];
 }) {
-  const links = [
-    { href: "/admin", label: "Dashboard", id: "dashboard" as const },
-    { href: "/admin/schedule", label: "Schedule", id: "schedule" as const },
-    { href: "/admin/bookings", label: "Bookings", id: "bookings" as const },
-    { href: "/admin/members", label: "Members", id: "members" as const },
-    { href: "/admin/tutors", label: "Instructors", id: "tutors" as const },
-    { href: "/admin/shop", label: "Shop", id: "shop" as const },
-    { href: "/admin/pricing", label: "Passes & pricing", id: "pricing" as const },
-    { href: "/admin/timetable", label: "Timetable", id: "timetable" as const },
-    { href: "/admin/analytics", label: "Analytics", id: "analytics" as const },
-  ];
+  const visible = links.filter((link) =>
+    canAccessAdminSection(permissions, link.permission),
+  );
 
   return (
     <nav aria-label="Admin sections" className="mt-6 flex flex-wrap gap-2">
-      {links.map((link) => {
+      {visible.map((link) => {
         const isActive = active === link.id;
 
         return (

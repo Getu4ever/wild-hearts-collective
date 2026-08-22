@@ -36,6 +36,27 @@ model Tutor {
   @@index([active])
 }
 
+/** Studio staff accounts for /admin (master / director / employee). */
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  /** master | director | employee */
+  role         String   @default("employee")
+  /**
+   * When null, role default permissions apply.
+   * When set, this list replaces the role template (except master always has all).
+   */
+  permissions  Json?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([role])
+  @@index([active])
+}
+
 model Session {
   id                String          @id @default(cuid())
   classId           String

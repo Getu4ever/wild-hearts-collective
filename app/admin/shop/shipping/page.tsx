@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { AdminLogoutButton } from "@/app/components/admin-logout-button";
 import { AdminNav } from "@/app/components/admin-nav";
 import { AdminShopNav } from "@/app/components/admin-shop-nav";
 import { AdminShopShippingForm } from "@/app/components/admin-shop-shipping-form";
-import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { requireAdminPage } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 import { getShopShippingBands } from "@/lib/shop-shipping-service";
 
 export const metadata: Metadata = {
@@ -13,8 +13,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminShopShippingPage() {
-  const authed = await isAdminAuthenticated();
-  if (!authed) redirect("/admin/login");
+  const session = await requireAdminPage(ADMIN_PERMISSIONS.shop);
 
   const bands = await getShopShippingBands();
 
@@ -28,7 +27,7 @@ export default async function AdminShopShippingPage() {
             Set UK delivery rates by total basket weight. Customers can still choose
             free Collect from studio at checkout.
           </p>
-          <AdminNav active="shop" />
+          <AdminNav active="shop" permissions={session.permissions} />
           <AdminShopNav active="shipping" />
         </div>
         <AdminLogoutButton />

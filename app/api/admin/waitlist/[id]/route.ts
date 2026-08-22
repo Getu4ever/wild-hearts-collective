@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 import { WAITLIST_STATUS } from "@/lib/booking-config";
 import { db } from "@/lib/db";
 
@@ -8,7 +9,7 @@ type RouteContext = {
 };
 
 export async function PATCH(request: Request, context: RouteContext) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin(ADMIN_PERMISSIONS.bookings);
   if (!admin.authed) return admin.response;
 
   const { id } = await context.params;

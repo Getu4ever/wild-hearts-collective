@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 import {
   cancelAdminSession,
   getAdminSessionRoster,
@@ -11,7 +12,10 @@ type RouteContext = {
 };
 
 export async function GET(_request: Request, context: RouteContext) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin([
+    ADMIN_PERMISSIONS.schedule,
+    ADMIN_PERMISSIONS.checkin,
+  ]);
   if (!admin.authed) return admin.response;
 
   const { id } = await context.params;
@@ -32,7 +36,7 @@ export async function GET(_request: Request, context: RouteContext) {
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin(ADMIN_PERMISSIONS.schedule);
   if (!admin.authed) return admin.response;
 
   const { id } = await context.params;
@@ -99,7 +103,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(request: Request, context: RouteContext) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin(ADMIN_PERMISSIONS.schedule);
   if (!admin.authed) return admin.response;
 
   const { id } = await context.params;

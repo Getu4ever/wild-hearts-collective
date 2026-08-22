@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 import {
   archiveAdminShopProduct,
   deleteAdminShopProduct,
@@ -33,7 +34,7 @@ function parseVariants(body: Record<string, unknown>) {
 }
 
 export async function GET(_request: Request, context: RouteContext) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin(ADMIN_PERMISSIONS.shop);
   if (!admin.authed) return admin.response;
 
   const { id } = await context.params;
@@ -51,7 +52,7 @@ export async function GET(_request: Request, context: RouteContext) {
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin(ADMIN_PERMISSIONS.shop);
   if (!admin.authed) return admin.response;
 
   const { id } = await context.params;
@@ -138,7 +139,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(request: Request, context: RouteContext) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin(ADMIN_PERMISSIONS.shop);
   if (!admin.authed) return admin.response;
 
   const { id } = await context.params;
@@ -160,7 +161,7 @@ export async function DELETE(request: Request, context: RouteContext) {
 }
 
 export async function POST(request: Request, context: RouteContext) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin(ADMIN_PERMISSIONS.shop);
   if (!admin.authed) return admin.response;
 
   const { id } = await context.params;

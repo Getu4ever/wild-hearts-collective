@@ -131,7 +131,10 @@ export async function seedDatabaseIfEmpty(client: PrismaClient) {
     where: { startsAt: { gte: new Date() } },
   });
 
-  if (futureSessionCount > 0) {
+  // Never auto-create sample bookable sessions. After go-live cleanup the
+  // schedule must stay empty until the studio adds real classes in Admin.
+  // Set SEED_DEMO_SESSIONS=true only for local demos.
+  if (futureSessionCount > 0 || process.env.SEED_DEMO_SESSIONS !== "true") {
     return { seeded: false, futureSessionCount };
   }
 

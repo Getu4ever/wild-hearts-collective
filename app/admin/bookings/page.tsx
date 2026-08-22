@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { AdminBookingActions } from "@/app/components/admin-booking-actions";
 import { AdminCollapsibleSection } from "@/app/components/admin-collapsible-section";
 import { AdminLogoutButton } from "@/app/components/admin-logout-button";
 import { AdminNav } from "@/app/components/admin-nav";
 import { AdminWaitlistActions } from "@/app/components/admin-waitlist-actions";
-import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { requireAdminPage } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 import {
   BOOKING_STATUS,
   formatSessionDateTime,
@@ -217,11 +217,7 @@ function SummaryCard({ label, value }: { label: string; value: number }) {
 }
 
 export default async function AdminBookingsPage() {
-  const authed = await isAdminAuthenticated();
-
-  if (!authed) {
-    redirect("/admin/login");
-  }
+  const session = await requireAdminPage(ADMIN_PERMISSIONS.bookings);
 
   const now = new Date();
 
@@ -267,7 +263,7 @@ export default async function AdminBookingsPage() {
             stay available in a collapsible archive below. Use the status dropdown to cancel,
             or <strong>Delete</strong> to permanently remove test entries (no email sent).
           </p>
-          <AdminNav active="bookings" />
+          <AdminNav active="bookings" permissions={session.permissions} />
         </div>
         <AdminLogoutButton />
       </div>

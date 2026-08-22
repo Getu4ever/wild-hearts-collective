@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { AdminLogoutButton } from "@/app/components/admin-logout-button";
 import { AdminNav } from "@/app/components/admin-nav";
 import {
   AdminScheduleBoard,
   type AdminScheduleSession,
 } from "@/app/components/admin-schedule-board";
-import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { requireAdminPage } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 import {
   type AdminScheduleRange,
   listAdminSessions,
@@ -27,8 +27,7 @@ function parseRange(value: string | undefined): AdminScheduleRange {
 }
 
 export default async function AdminSchedulePage({ searchParams }: PageProps) {
-  const authed = await isAdminAuthenticated();
-  if (!authed) redirect("/admin/login");
+  const session = await requireAdminPage(ADMIN_PERMISSIONS.schedule);
 
   const params = await searchParams;
   const range = parseRange(params.range);
@@ -44,7 +43,7 @@ export default async function AdminSchedulePage({ searchParams }: PageProps) {
             Live studio monitor — today&apos;s classes stay visible after they finish so
             you can complete check-in. Use Past to reopen earlier sessions.
           </p>
-          <AdminNav active="schedule" />
+          <AdminNav active="schedule" permissions={session.permissions} />
         </div>
         <AdminLogoutButton />
       </div>

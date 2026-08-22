@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 import {
   createAdminSession,
   listAdminSessions,
 } from "@/lib/admin-session-service";
 
 export async function GET(request: Request) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin([
+    ADMIN_PERMISSIONS.schedule,
+    ADMIN_PERMISSIONS.checkin,
+  ]);
   if (!admin.authed) return admin.response;
 
   const { searchParams } = new URL(request.url);
@@ -43,7 +47,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin(ADMIN_PERMISSIONS.schedule);
   if (!admin.authed) return admin.response;
 
   try {

@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { AdminLogoutButton } from "@/app/components/admin-logout-button";
 import { AdminNav } from "@/app/components/admin-nav";
 import { AdminSessionForm } from "@/app/components/admin-session-form";
-import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { requireAdminPage } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 
 export const metadata: Metadata = {
   title: "Schedule New Class",
@@ -12,8 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminNewSessionPage() {
-  const authed = await isAdminAuthenticated();
-  if (!authed) redirect("/admin/login");
+  const session = await requireAdminPage(ADMIN_PERMISSIONS.schedule, { strict: true });
 
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -31,7 +30,7 @@ export default async function AdminNewSessionPage() {
             Add a new session to the studio timetable. Capacity is capped by equipment limits
             for each class type.
           </p>
-          <AdminNav active="schedule" />
+          <AdminNav active="schedule" permissions={session.permissions} />
         </div>
         <div className="flex flex-wrap items-center gap-4">
           <Link

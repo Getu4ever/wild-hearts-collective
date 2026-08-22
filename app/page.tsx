@@ -11,16 +11,26 @@ import { WhyChooseUs } from "./components/why-choose-us";
 import { VideoHero } from "./components/video-hero";
 import { SectionHeading } from "./components/section-heading";
 import { Timetable } from "./components/timetable";
-import { getMarketingTimetable } from "@/lib/marketing-timetable-service";
+import {
+  getMarketingTimetable,
+  getMarketingTimetableVisibility,
+} from "@/lib/marketing-timetable-service";
 import { classes, siteConfig } from "@/lib/site-data";
 import { classSlugToHero, type HeroImageKey } from "@/lib/hero-images";
+
+/** Always read the latest admin-saved timetable from the database. */
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 function getClassHeroKey(slug: string): HeroImageKey {
   return classSlugToHero[slug] ?? "community";
 }
 
 export default async function Home() {
-  const timetableDays = await getMarketingTimetable();
+  const [timetableDays, timetableVisible] = await Promise.all([
+    getMarketingTimetable(),
+    getMarketingTimetableVisibility(),
+  ]);
 
   return (
     <>
@@ -79,9 +89,11 @@ export default async function Home() {
         </ul>
       </ContentSection>
 
-      <ContentSection id="timetable" className="bg-pink-soft scroll-mt-24">
-        <Timetable days={timetableDays} />
-      </ContentSection>
+      {timetableVisible ? (
+        <ContentSection id="timetable" className="bg-pink-soft scroll-mt-24">
+          <Timetable days={timetableDays} />
+        </ContentSection>
+      ) : null}
 
       <FaqPreview />
     </>

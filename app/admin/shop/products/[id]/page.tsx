@@ -4,7 +4,8 @@ import { AdminLogoutButton } from "@/app/components/admin-logout-button";
 import { AdminNav } from "@/app/components/admin-nav";
 import { AdminShopNav } from "@/app/components/admin-shop-nav";
 import { AdminShopProductForm } from "@/app/components/admin-shop-product-form";
-import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { requireAdminPage } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 import { getShopCategories } from "@/lib/shop-categories-service";
 import { getShopProductById } from "@/lib/shop-catalog-service";
 
@@ -18,8 +19,7 @@ type PageProps = {
 };
 
 export default async function AdminShopProductEditPage({ params }: PageProps) {
-  const authed = await isAdminAuthenticated();
-  if (!authed) redirect("/admin/login");
+  const session = await requireAdminPage(ADMIN_PERMISSIONS.shop);
 
   const { id } = await params;
   const [product, categories] = await Promise.all([
@@ -37,7 +37,7 @@ export default async function AdminShopProductEditPage({ params }: PageProps) {
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
             Update {product.name} — changes go live on the shop as soon as you save.
           </p>
-          <AdminNav active="shop" />
+          <AdminNav active="shop" permissions={session.permissions} />
           <AdminShopNav active="products" />
         </div>
         <AdminLogoutButton />

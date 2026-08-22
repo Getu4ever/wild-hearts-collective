@@ -5,7 +5,8 @@ import { AdminCapacityBadge } from "@/app/components/admin-capacity-badge";
 import { AdminCollapsibleSection } from "@/app/components/admin-collapsible-section";
 import { AdminLogoutButton } from "@/app/components/admin-logout-button";
 import { AdminNav } from "@/app/components/admin-nav";
-import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { requireAdminPage } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 import { getAdminDashboardStats } from "@/lib/admin-dashboard-service";
 import { formatSessionDateTime, formatUkDateShort, formatUkDateTimeShort } from "@/lib/booking-config";
 import {
@@ -20,11 +21,29 @@ export const metadata: Metadata = {
 };
 
 
-export default async function AdminDashboardPage() {
-  const authed = await isAdminAuthenticated();
-  if (!authed) redirect("/admin/login");
+export default async function AdminDashboardPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ denied?: string }>;
+}) {
+  const session = await requireAdminPage();
+  const params = searchParams ? await searchParams : {};
+
+  if (!session.permissions.includes(ADMIN_PERMISSIONS.dashboard)) {
+    if (session.permissions.includes(ADMIN_PERMISSIONS.checkin)) {
+      redirect("/admin/schedule");
+    }
+    if (session.permissions.includes(ADMIN_PERMISSIONS.bookings)) {
+      redirect("/admin/bookings");
+    }
+    if (session.permissions.includes(ADMIN_PERMISSIONS.staff)) {
+      redirect("/admin/staff");
+    }
+    redirect("/admin/login");
+  }
 
   const stats = await getAdminDashboardStats();
+  const denied = params.denied === "1";
 
   return (
     <div className="mx-auto min-w-0 max-w-6xl overflow-x-hidden px-6 py-16 lg:px-8 lg:py-20">
@@ -34,12 +53,18 @@ export default async function AdminDashboardPage() {
           <h1 className="font-display text-4xl text-plum sm:text-5xl">Dashboard</h1>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
             Studio operations at a glance — membership health, today&apos;s classes, and
-            safety alerts.
+            safety alerts. Signed in as {session.name}.
           </p>
-          <AdminNav active="dashboard" />
+          <AdminNav active="dashboard" permissions={session.permissions} />
         </div>
         <AdminLogoutButton />
       </div>
+
+      {denied && (
+        <p className="mt-6 rounded-sm border border-brand/30 bg-pink-soft px-4 py-3 text-sm text-brand" role="alert">
+          You do not have access to that section.
+        </p>
+      )}
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Active members" value={stats.statusCounts.active} />

@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { AdminLogoutButton } from "@/app/components/admin-logout-button";
 import { AdminNav } from "@/app/components/admin-nav";
 import { AdminShopNav } from "@/app/components/admin-shop-nav";
 import { AdminShopProductsPanel } from "@/app/components/admin-shop-products-panel";
-import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { requireAdminPage } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 import { listAdminShopProducts } from "@/lib/shop-catalog-service";
 import { getShopCategories } from "@/lib/shop-categories-service";
 
@@ -15,8 +15,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminShopProductsPage() {
-  const authed = await isAdminAuthenticated();
-  if (!authed) redirect("/admin/login");
+  const session = await requireAdminPage(ADMIN_PERMISSIONS.shop);
 
   const [products, categories] = await Promise.all([
     listAdminShopProducts({ includeArchived: true }),
@@ -33,7 +32,7 @@ export default async function AdminShopProductsPage() {
             Manage your product catalog, pricing, and availability — then track sales in
             the sales dashboard.
           </p>
-          <AdminNav active="shop" />
+          <AdminNav active="shop" permissions={session.permissions} />
           <AdminShopNav active="products" />
         </div>
         <div className="flex flex-col items-start gap-3 sm:items-end">

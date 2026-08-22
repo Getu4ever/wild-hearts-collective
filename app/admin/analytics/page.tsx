@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { AdminAnalyticsDashboard } from "@/app/components/admin-analytics-dashboard";
 import { AdminWinbackPanel } from "@/app/components/admin-winback-panel";
 import { AdminLogoutButton } from "@/app/components/admin-logout-button";
 import { AdminNav } from "@/app/components/admin-nav";
-import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { requireAdminPage } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 
 export const metadata: Metadata = {
   title: "Admin Analytics",
@@ -12,8 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminAnalyticsPage() {
-  const authed = await isAdminAuthenticated();
-  if (!authed) redirect("/admin/login");
+  const session = await requireAdminPage(ADMIN_PERMISSIONS.analytics);
 
   return (
     <div className="mx-auto min-w-0 max-w-6xl overflow-x-hidden px-6 py-16 lg:px-8 lg:py-20">
@@ -26,7 +25,7 @@ export default async function AdminAnalyticsPage() {
             retention, and engagement activity over the last 30 days. Below you can turn
             reward emails on or off and edit the win-back offer sequence.
           </p>
-          <AdminNav active="analytics" />
+          <AdminNav active="analytics" permissions={session.permissions} />
         </div>
         <AdminLogoutButton />
       </div>

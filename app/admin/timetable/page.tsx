@@ -5,11 +5,11 @@
  */
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { AdminLogoutButton } from "@/app/components/admin-logout-button";
 import { AdminNav } from "@/app/components/admin-nav";
 import { AdminTimetablePanel } from "@/app/components/admin-timetable-panel";
-import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { requireAdminPage } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 import { getOrSeedMarketingTimetable } from "@/lib/marketing-timetable-service";
 
 export const metadata: Metadata = {
@@ -18,10 +18,9 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminTimetablePage() {
-  const authed = await isAdminAuthenticated();
-  if (!authed) redirect("/admin/login");
+  const session = await requireAdminPage(ADMIN_PERMISSIONS.timetable);
 
-  const { days, source } = await getOrSeedMarketingTimetable();
+  const { days, source, visible } = await getOrSeedMarketingTimetable();
 
   return (
     <div className="mx-auto min-w-0 max-w-6xl overflow-x-hidden px-6 py-16 lg:px-8 lg:py-20">
@@ -36,7 +35,7 @@ export default async function AdminTimetablePage() {
             beneath the seven-day pattern for dated courses or special events. This is
             separate from live bookable sessions — manage those under Schedule.
           </p>
-          <AdminNav active="timetable" />
+          <AdminNav active="timetable" permissions={session.permissions} />
         </div>
         <div className="flex flex-col items-start gap-3 sm:items-end">
           <AdminLogoutButton />
@@ -50,7 +49,11 @@ export default async function AdminTimetablePage() {
       </div>
 
       <div className="mt-10">
-        <AdminTimetablePanel initialDays={days} initialSource={source} />
+        <AdminTimetablePanel
+          initialDays={days}
+          initialSource={source}
+          initialVisible={visible}
+        />
       </div>
     </div>
   );

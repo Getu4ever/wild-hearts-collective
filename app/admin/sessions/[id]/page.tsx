@@ -10,7 +10,8 @@ import {
   AdminForceBookForm,
   AdminSessionRosterPanel,
 } from "@/app/components/admin-session-roster-panel";
-import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { requireAdminPage } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 import { formatSessionTimeRange, SESSION_STATUS } from "@/lib/admin-studio-config";
 import { formatSessionDateTime, UK_TIMEZONE } from "@/lib/booking-config";
 import { getAdminSessionRoster } from "@/lib/admin-session-service";
@@ -39,8 +40,10 @@ function toUkTime(date: Date) {
 }
 
 export default async function AdminSessionDetailPage({ params }: PageProps) {
-  const authed = await isAdminAuthenticated();
-  if (!authed) redirect("/admin/login");
+  const adminSession = await requireAdminPage(ADMIN_PERMISSIONS.schedule);
+  const canManageSchedule = adminSession.permissions.includes(
+    ADMIN_PERMISSIONS.schedule,
+  );
 
   const { id } = await params;
   const roster = await getAdminSessionRoster(id);
@@ -103,7 +106,7 @@ export default async function AdminSessionDetailPage({ params }: PageProps) {
               status={session.status}
             />
           </div>
-          <AdminNav active="schedule" />
+          <AdminNav active="schedule" permissions={adminSession.permissions} />
         </div>
         <div className="flex flex-wrap items-center gap-4">
           <Link
@@ -124,7 +127,7 @@ export default async function AdminSessionDetailPage({ params }: PageProps) {
           sessionStartsAt={session.startsAt}
         />
 
-        {!cancelled && (
+        {!cancelled && canManageSchedule && (
           <>
             <section id="edit">
               <h2 className="font-display text-3xl text-plum">Edit session</h2>

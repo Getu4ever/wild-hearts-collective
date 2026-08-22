@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { AdminLogoutButton } from "@/app/components/admin-logout-button";
 import { AdminNav } from "@/app/components/admin-nav";
 import { AdminTutorsPanel } from "@/app/components/admin-tutors-panel";
-import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { requireAdminPage } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 import { listAllAdminTutors } from "@/lib/admin-session-service";
 
 export const metadata: Metadata = {
@@ -12,8 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminTutorsPage() {
-  const authed = await isAdminAuthenticated();
-  if (!authed) redirect("/admin/login");
+  const session = await requireAdminPage(ADMIN_PERMISSIONS.tutors);
 
   const tutors = await listAllAdminTutors();
 
@@ -27,7 +26,7 @@ export default async function AdminTutorsPage() {
             Add and manage teaching staff. Assign an instructor when creating or editing a
             session so their name appears on the public booking schedule.
           </p>
-          <AdminNav active="tutors" />
+          <AdminNav active="tutors" permissions={session.permissions} />
         </div>
         <AdminLogoutButton />
       </div>

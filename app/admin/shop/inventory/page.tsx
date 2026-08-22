@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { AdminLogoutButton } from "@/app/components/admin-logout-button";
 import { AdminNav } from "@/app/components/admin-nav";
 import { AdminShopInventoryPanel } from "@/app/components/admin-shop-inventory-panel";
 import { AdminShopNav } from "@/app/components/admin-shop-nav";
-import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { requireAdminPage } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 import { getAdminShopInventoryOverview } from "@/lib/shop-catalog-service";
 import { getShopCategories } from "@/lib/shop-categories-service";
 
@@ -14,8 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminShopInventoryPage() {
-  const authed = await isAdminAuthenticated();
-  if (!authed) redirect("/admin/login");
+  const session = await requireAdminPage(ADMIN_PERMISSIONS.shop);
 
   const [data, categories] = await Promise.all([
     getAdminShopInventoryOverview(),
@@ -31,7 +30,7 @@ export default async function AdminShopInventoryPage() {
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
             Track stock levels, see what has sold, and restock before items run out.
           </p>
-          <AdminNav active="shop" />
+          <AdminNav active="shop" permissions={session.permissions} />
           <AdminShopNav active="inventory" />
         </div>
         <AdminLogoutButton />

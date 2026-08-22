@@ -565,6 +565,30 @@ async function main() {
     'CREATE INDEX IF NOT EXISTS "Session_courseSeriesId_idx" ON "Session"("courseSeriesId")',
   );
 
+  await run(`
+    CREATE TABLE IF NOT EXISTS "AdminUser" (
+      "id" TEXT NOT NULL,
+      "email" TEXT NOT NULL,
+      "name" TEXT NOT NULL,
+      "passwordHash" TEXT NOT NULL,
+      "role" TEXT NOT NULL DEFAULT 'employee',
+      "permissions" JSONB,
+      "active" BOOLEAN NOT NULL DEFAULT true,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "AdminUser_pkey" PRIMARY KEY ("id")
+    )
+  `);
+  await runOptional(
+    'CREATE UNIQUE INDEX IF NOT EXISTS "AdminUser_email_key" ON "AdminUser"("email")',
+  );
+  await runOptional(
+    'CREATE INDEX IF NOT EXISTS "AdminUser_role_idx" ON "AdminUser"("role")',
+  );
+  await runOptional(
+    'CREATE INDEX IF NOT EXISTS "AdminUser_active_idx" ON "AdminUser"("active")',
+  );
+
   console.log("Schema sync complete.");
 }
 

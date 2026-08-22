@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { redirect } from "next/navigation";
 import { AdminLogoutButton } from "@/app/components/admin-logout-button";
 import { AdminMemberAvatar } from "@/app/components/admin-member-avatar";
 import { AdminMemberFilters } from "@/app/components/admin-member-filters";
 import { AdminNav } from "@/app/components/admin-nav";
-import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { requireAdminPage } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 import {
   membershipPlanLabel,
   membershipStatusLabel,
@@ -30,8 +30,7 @@ type PageProps = {
 };
 
 export default async function AdminMembersPage({ searchParams }: PageProps) {
-  const authed = await isAdminAuthenticated();
-  if (!authed) redirect("/admin/login");
+  const session = await requireAdminPage(ADMIN_PERMISSIONS.members);
 
   const params = await searchParams;
   const query = params.q?.trim() ?? "";
@@ -77,7 +76,7 @@ export default async function AdminMembersPage({ searchParams }: PageProps) {
             Search, filter, and manage member profiles. Click a member to view safety details
             and membership controls.
           </p>
-          <AdminNav active="members" />
+          <AdminNav active="members" permissions={session.permissions} />
         </div>
         <AdminLogoutButton />
       </div>

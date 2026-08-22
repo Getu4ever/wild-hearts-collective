@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 import { removeBookingAsAdmin, deleteBookingAsAdmin } from "@/lib/admin-booking-service";
 import { ATTENDANCE_STATUS } from "@/lib/booking-advanced-config";
 import { BOOKING_STATUS } from "@/lib/booking-config";
@@ -13,9 +14,6 @@ type RouteContext = {
 };
 
 export async function PATCH(request: Request, context: RouteContext) {
-  const admin = await requireAdmin();
-  if (!admin.authed) return admin.response;
-
   const { id } = await context.params;
 
   let status = "";
@@ -32,6 +30,14 @@ export async function PATCH(request: Request, context: RouteContext) {
   } catch {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
+
+  const needed =
+    attendance && !action && !status
+      ? [ADMIN_PERMISSIONS.checkin, ADMIN_PERMISSIONS.bookings]
+      : ADMIN_PERMISSIONS.bookings;
+
+  const admin = await requireAdmin(needed);
+  if (!admin.authed) return admin.response;
 
   if (action === "remove") {
     try {

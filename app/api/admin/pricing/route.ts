@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 import { revalidateMembershipPricingPages } from "@/lib/revalidate-public-pages";
 import {
   createAdminClassPack,
@@ -9,7 +10,7 @@ import {
 } from "@/lib/studio-pricing-service";
 
 export async function GET() {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin(ADMIN_PERMISSIONS.pricing);
   if (!admin.authed) return admin.response;
 
   try {
@@ -28,7 +29,7 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin(ADMIN_PERMISSIONS.pricing);
   if (!admin.authed) return admin.response;
 
   try {
@@ -94,7 +95,7 @@ export async function PATCH(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin(ADMIN_PERMISSIONS.pricing);
   if (!admin.authed) return admin.response;
 
   try {

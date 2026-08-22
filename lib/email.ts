@@ -67,7 +67,7 @@ function getResendClient() {
 function getFromAddress() {
   return (
     process.env.EMAIL_FROM ??
-    "Wild Hearts Collective <info@karoldigital.co.uk>"
+    "Wild Hearts Collective <hello@wildheartscollective.org>"
   );
 }
 

@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { AdminLogoutButton } from "@/app/components/admin-logout-button";
 import { AdminNav } from "@/app/components/admin-nav";
 import { AdminShopNav } from "@/app/components/admin-shop-nav";
 import { AdminShopProductForm } from "@/app/components/admin-shop-product-form";
-import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { requireAdminPage } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 import { getShopCategories } from "@/lib/shop-categories-service";
 
 export const metadata: Metadata = {
@@ -13,8 +13,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminShopProductNewPage() {
-  const authed = await isAdminAuthenticated();
-  if (!authed) redirect("/admin/login");
+  const session = await requireAdminPage(ADMIN_PERMISSIONS.shop);
 
   const categories = await getShopCategories();
 
@@ -27,7 +26,7 @@ export default async function AdminShopProductNewPage() {
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
             Create a new shop item with pricing, description, and availability controls.
           </p>
-          <AdminNav active="shop" />
+          <AdminNav active="shop" permissions={session.permissions} />
           <AdminShopNav active="products" />
         </div>
         <AdminLogoutButton />

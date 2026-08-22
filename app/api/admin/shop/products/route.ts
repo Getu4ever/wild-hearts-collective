@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 import {
   createAdminShopProduct,
   listAdminShopProducts,
@@ -28,7 +29,7 @@ function parseVariants(body: Record<string, unknown>) {
 }
 
 export async function GET(request: Request) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin(ADMIN_PERMISSIONS.shop);
   if (!admin.authed) return admin.response;
 
   const url = new URL(request.url);
@@ -44,7 +45,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin(ADMIN_PERMISSIONS.shop);
   if (!admin.authed) return admin.response;
 
   try {

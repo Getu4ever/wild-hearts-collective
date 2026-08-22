@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { AdminLogoutButton } from "@/app/components/admin-logout-button";
 import { AdminNav } from "@/app/components/admin-nav";
 import { AdminPricingPanel } from "@/app/components/admin-pricing-panel";
-import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { requireAdminPage } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 import {
   getStudioPricingSettings,
   listAdminClassPacks,
@@ -18,8 +18,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminPricingPage() {
-  const authed = await isAdminAuthenticated();
-  if (!authed) redirect("/admin/login");
+  const session = await requireAdminPage(ADMIN_PERMISSIONS.pricing);
 
   let settings: StudioPricingSettings | null = null;
   let packs: AdminClassPack[] = [];
@@ -48,7 +47,7 @@ export default async function AdminPricingPage() {
           {loadError ||
             "Unable to load pricing right now. This is usually a brief database connection drop — refresh the page and try again."}
         </p>
-        <AdminNav active="pricing" />
+        <AdminNav active="pricing" permissions={session.permissions} />
       </div>
     );
   }
@@ -65,7 +64,7 @@ export default async function AdminPricingPage() {
             Update drop-in and membership prices, plus class pass prices, credit volume,
             and validity. Schedule sessions separately under Schedule.
           </p>
-          <AdminNav active="pricing" />
+          <AdminNav active="pricing" permissions={session.permissions} />
         </div>
         <div className="flex flex-col items-start gap-3 sm:items-end">
           <AdminLogoutButton />

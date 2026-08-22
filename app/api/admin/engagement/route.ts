@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 import {
   getRewardCampaignSettings,
   normalizeMilestoneSteps,
@@ -10,7 +11,7 @@ import {
 } from "@/lib/reward-campaign-settings";
 
 export async function GET() {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin(ADMIN_PERMISSIONS.analytics);
   if (!admin.authed) return admin.response;
 
   try {
@@ -26,7 +27,7 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin(ADMIN_PERMISSIONS.analytics);
   if (!admin.authed) return admin.response;
 
   try {

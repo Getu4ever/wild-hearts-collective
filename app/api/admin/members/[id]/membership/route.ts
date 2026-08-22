@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 import {
   cancelMemberMembership,
   pauseMemberMembership,
@@ -21,7 +22,7 @@ type MembershipActionBody = {
 };
 
 export async function POST(request: Request, context: RouteContext) {
-  const admin = await requireAdmin();
+  const admin = await requireAdmin(ADMIN_PERMISSIONS.members);
   if (!admin.authed) return admin.response;
 
   const { id } = await context.params;

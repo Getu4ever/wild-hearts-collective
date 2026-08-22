@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { AdminLogoutButton } from "@/app/components/admin-logout-button";
 import { AdminNav } from "@/app/components/admin-nav";
 import { AdminShopCategoriesForm } from "@/app/components/admin-shop-categories-form";
 import { AdminShopNav } from "@/app/components/admin-shop-nav";
-import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { requireAdminPage } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 import {
   countProductsInCategory,
   getOrSeedShopCategories,
@@ -16,8 +16,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminShopCategoriesPage() {
-  const authed = await isAdminAuthenticated();
-  if (!authed) redirect("/admin/login");
+  const session = await requireAdminPage(ADMIN_PERMISSIONS.shop);
 
   const { categories } = await getOrSeedShopCategories();
   const withCounts = await Promise.all(
@@ -37,7 +36,7 @@ export default async function AdminShopCategoriesPage() {
             Full control over shop categories — add new ones or remove unused ones
             without a code deploy.
           </p>
-          <AdminNav active="shop" />
+          <AdminNav active="shop" permissions={session.permissions} />
           <AdminShopNav active="categories" />
         </div>
         <AdminLogoutButton />

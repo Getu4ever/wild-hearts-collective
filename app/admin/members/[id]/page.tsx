@@ -4,7 +4,8 @@ import { notFound, redirect } from "next/navigation";
 import { AdminLogoutButton } from "@/app/components/admin-logout-button";
 import { AdminMemberDetail } from "@/app/components/admin-member-detail";
 import { AdminNav } from "@/app/components/admin-nav";
-import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { requireAdminPage } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 import { profileSelectFields, toMemberProfile } from "@/lib/member-profile-service";
 import { getParQStatus } from "@/lib/parq-service";
 import { db } from "@/lib/db";
@@ -19,8 +20,7 @@ type PageProps = {
 };
 
 export default async function AdminMemberDetailPage({ params }: PageProps) {
-  const authed = await isAdminAuthenticated();
-  if (!authed) redirect("/admin/login");
+  const session = await requireAdminPage(ADMIN_PERMISSIONS.members);
 
   const { id } = await params;
 
@@ -73,7 +73,7 @@ export default async function AdminMemberDetailPage({ params }: PageProps) {
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
             Full member profile, safety information, and membership lifecycle controls.
           </p>
-          <AdminNav active="members" />
+          <AdminNav active="members" permissions={session.permissions} />
         </div>
         <AdminLogoutButton />
       </div>

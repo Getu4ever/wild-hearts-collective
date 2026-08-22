@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { AdminLogoutButton } from "@/app/components/admin-logout-button";
 import { AdminNav } from "@/app/components/admin-nav";
 import { AdminShopDashboard } from "@/app/components/admin-shop-dashboard";
 import { AdminShopNav } from "@/app/components/admin-shop-nav";
-import { isAdminAuthenticated } from "@/lib/admin-auth";
+import { requireAdminPage } from "@/lib/admin-api";
+import { ADMIN_PERMISSIONS } from "@/lib/admin-permissions";
 import { getAdminShopOverview } from "@/lib/admin-shop-service";
 
 export const metadata: Metadata = {
@@ -13,8 +13,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminShopPage() {
-  const authed = await isAdminAuthenticated();
-  if (!authed) redirect("/admin/login");
+  const session = await requireAdminPage(ADMIN_PERMISSIONS.shop);
 
   const data = await getAdminShopOverview();
 
@@ -28,7 +27,7 @@ export default async function AdminShopPage() {
             Shop sales and gift voucher activity — every paid checkout, outstanding
             balances, and redemptions. Manage products in the Products tab.
           </p>
-          <AdminNav active="shop" />
+          <AdminNav active="shop" permissions={session.permissions} />
           <AdminShopNav active="sales" />
         </div>
         <AdminLogoutButton />

@@ -15,6 +15,7 @@ import {
 import { getClassTypeOption } from "@/lib/admin-studio-config";
 
 export const MARKETING_TIMETABLE_SETTING_KEY = "marketing_timetable";
+export const MARKETING_TIMETABLE_VISIBLE_KEY = "marketing_timetable_visible";
 
 export type { TimetableClass, TimetableDay };
 
@@ -133,108 +134,53 @@ async function readStoredTimetable(): Promise<TimetableDay[] | null> {
 }
 
 /**
- * Cream overlay cards cover the baked-in PNG text. Restore site defaults when
- * the stored weekly grid is empty or only has untimed one-word labels — those
- * blank out times on the homepage poster.
- */
-function weeklyNeedsDefaultRepair(days: TimetableDay[]): boolean {
-  const weekly = days.slice(0, 7);
-  if (weekly.length === 0) return true;
-
-  const classes = weekly.flatMap((day) => day.classes);
-  if (classes.length === 0) return true;
-
-  const timedCount = classes.filter((item) => item.time?.trim()).length;
-  if (timedCount === 0) return true;
-
-  return weekly.some((day) => day.classes.length === 0);
-}
-
-function withDefaultWeeklyClasses(days: TimetableDay[]): TimetableDay[] {
-  const defaults = cloneDefaultTimetable();
-  const weeklyDefaults = defaults.slice(0, 7);
-  const weeklyStored = days.slice(0, 7);
-  const promotions = days.slice(7);
-
-  if (weeklyNeedsDefaultRepair(days)) {
-    return [...weeklyDefaults, ...promotions];
-  }
-
-  const mergedWeekly = weeklyDefaults.map((fallback, index) => {
-    const stored = weeklyStored[index];
-    if (!stored) return fallback;
-    if (stored.classes.length === 0) {
-      return { day: stored.day || fallback.day, classes: fallback.classes };
-    }
-    return {
-      day: stored.day || fallback.day,
-      classes: stored.classes,
-    };
-  });
-
-  // Keep any extra stored weekdays beyond Mon–Sun, plus promotions.
-  return [...mergedWeekly, ...weeklyStored.slice(7), ...promotions];
-}
-
-/**
- * Public homepage timetable. Uses DB when present; otherwise site-data defaults.
- * Never throws — falls back so the marketing page stays available.
- * If the stored weekly block is empty, restore defaults so cream overlays do not
- * blank out the poster.
+ * Public homepage timetable. Uses the exact admin-saved grid when present.
+ * Falls back to site-data defaults only when nothing has been saved yet.
  */
 export async function getMarketingTimetable(): Promise<TimetableDay[]> {
   const stored = await readStoredTimetable();
   if (!stored) return cloneDefaultTimetable();
+  return stored;
+}
 
-  const repaired = withDefaultWeeklyClasses(stored);
-  const wasEmpty = weeklyNeedsDefaultRepair(stored);
-
-  if (wasEmpty) {
-    try {
-      await db.studioSetting.upsert({
-        where: { key: MARKETING_TIMETABLE_SETTING_KEY },
-        create: {
-          key: MARKETING_TIMETABLE_SETTING_KEY,
-          value: JSON.stringify(repaired),
-        },
-        update: { value: JSON.stringify(repaired) },
-      });
-    } catch (error) {
-      console.error("[marketing-timetable] failed to repair empty timetable:", error);
-    }
+export async function getMarketingTimetableVisibility(): Promise<boolean> {
+  try {
+    const row = await db.studioSetting.findUnique({
+      where: { key: MARKETING_TIMETABLE_VISIBLE_KEY },
+    });
+    if (!row?.value?.trim()) return true;
+    return row.value.trim().toLowerCase() !== "false";
+  } catch (error) {
+    console.error("[marketing-timetable] failed to read visibility:", error);
+    return true;
   }
+}
 
-  return repaired;
+export async function setMarketingTimetableVisibility(visible: boolean) {
+  await db.studioSetting.upsert({
+    where: { key: MARKETING_TIMETABLE_VISIBLE_KEY },
+    create: {
+      key: MARKETING_TIMETABLE_VISIBLE_KEY,
+      value: visible ? "true" : "false",
+    },
+    update: { value: visible ? "true" : "false" },
+  });
+  return visible;
 }
 
 /**
- * Admin load: return DB timetable, seeding from site-data defaults on first use.
- * If the stored weekly block was saved empty, repair it from defaults so Admin
- * and the homepage stay in sync.
+ * Admin load: return DB timetable, seeding from site-data defaults only when
+ * the setting key is missing. Never overwrite an existing saved timetable.
  */
 export async function getOrSeedMarketingTimetable(): Promise<{
   days: TimetableDay[];
   source: "database" | "default";
+  visible: boolean;
 }> {
+  const visible = await getMarketingTimetableVisibility();
   const stored = await readStoredTimetable();
   if (stored) {
-    const repaired = withDefaultWeeklyClasses(stored);
-    const wasEmpty = weeklyNeedsDefaultRepair(stored);
-    if (wasEmpty) {
-      try {
-        await db.studioSetting.upsert({
-          where: { key: MARKETING_TIMETABLE_SETTING_KEY },
-          create: {
-            key: MARKETING_TIMETABLE_SETTING_KEY,
-            value: JSON.stringify(repaired),
-          },
-          update: { value: JSON.stringify(repaired) },
-        });
-      } catch (error) {
-        console.error("[marketing-timetable] failed to repair empty timetable:", error);
-      }
-    }
-    return { days: repaired, source: "database" };
+    return { days: stored, source: "database", visible };
   }
 
   const days = cloneDefaultTimetable();
@@ -245,18 +191,19 @@ export async function getOrSeedMarketingTimetable(): Promise<{
         key: MARKETING_TIMETABLE_SETTING_KEY,
         value: JSON.stringify(days),
       },
-      update: { value: JSON.stringify(days) },
+      update: {},
     });
-    return { days, source: "database" };
+    return { days, source: "database", visible };
   } catch (error) {
     console.error("[marketing-timetable] failed to seed timetable:", error);
-    return { days, source: "default" };
+    return { days, source: "default", visible };
   }
 }
 
 export async function updateMarketingTimetable(raw: unknown): Promise<{
   days: TimetableDay[];
   source: "database";
+  visible: boolean;
 }> {
   const days = normalizeMarketingTimetable(raw);
 
@@ -269,5 +216,6 @@ export async function updateMarketingTimetable(raw: unknown): Promise<{
     update: { value: JSON.stringify(days) },
   });
 
-  return { days, source: "database" };
+  const visible = await getMarketingTimetableVisibility();
+  return { days, source: "database", visible };
 }

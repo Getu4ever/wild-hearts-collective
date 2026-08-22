@@ -9,6 +9,7 @@ export function revalidateMembershipPricingPages() {
 
 /** Bust homepage marketing timetable after Admin → Timetable saves. */
 export function revalidateMarketingTimetablePages() {
+  revalidatePath("/", "layout");
   revalidatePath("/");
 }
 
