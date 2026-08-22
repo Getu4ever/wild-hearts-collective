@@ -24,7 +24,8 @@ type BookingWithSession = {
   session: {
     startsAt: Date;
     courseWeek: number | null;
-    class: { title: string };
+    courseSeriesId: string | null;
+    class: { title: string; slug: string };
   };
 };
 
