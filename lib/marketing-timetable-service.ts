@@ -133,21 +133,30 @@ async function readStoredTimetable(): Promise<TimetableDay[] | null> {
 }
 
 /**
- * Cream overlay cards cover the baked-in PNG text. If a weekday was saved with
- * no classes (or the whole weekly block is empty), fall back to site defaults
- * so the homepage never shows blank day cards.
+ * Cream overlay cards cover the baked-in PNG text. Restore site defaults when
+ * the stored weekly grid is empty or only has untimed one-word labels — those
+ * blank out times on the homepage poster.
  */
+function weeklyNeedsDefaultRepair(days: TimetableDay[]): boolean {
+  const weekly = days.slice(0, 7);
+  if (weekly.length === 0) return true;
+
+  const classes = weekly.flatMap((day) => day.classes);
+  if (classes.length === 0) return true;
+
+  const timedCount = classes.filter((item) => item.time?.trim()).length;
+  if (timedCount === 0) return true;
+
+  return weekly.some((day) => day.classes.length === 0);
+}
+
 function withDefaultWeeklyClasses(days: TimetableDay[]): TimetableDay[] {
   const defaults = cloneDefaultTimetable();
   const weeklyDefaults = defaults.slice(0, 7);
   const weeklyStored = days.slice(0, 7);
   const promotions = days.slice(7);
 
-  const weeklyClassCount = weeklyStored.reduce(
-    (sum, day) => sum + day.classes.length,
-    0,
-  );
-  if (weeklyStored.length === 0 || weeklyClassCount === 0) {
+  if (weeklyNeedsDefaultRepair(days)) {
     return [...weeklyDefaults, ...promotions];
   }
 
@@ -178,8 +187,7 @@ export async function getMarketingTimetable(): Promise<TimetableDay[]> {
   if (!stored) return cloneDefaultTimetable();
 
   const repaired = withDefaultWeeklyClasses(stored);
-  const wasEmpty =
-    stored.slice(0, 7).reduce((sum, day) => sum + day.classes.length, 0) === 0;
+  const wasEmpty = weeklyNeedsDefaultRepair(stored);
 
   if (wasEmpty) {
     try {
@@ -211,8 +219,7 @@ export async function getOrSeedMarketingTimetable(): Promise<{
   const stored = await readStoredTimetable();
   if (stored) {
     const repaired = withDefaultWeeklyClasses(stored);
-    const wasEmpty =
-      stored.slice(0, 7).reduce((sum, day) => sum + day.classes.length, 0) === 0;
+    const wasEmpty = weeklyNeedsDefaultRepair(stored);
     if (wasEmpty) {
       try {
         await db.studioSetting.upsert({

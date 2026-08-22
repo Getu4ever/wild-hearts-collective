@@ -18,6 +18,7 @@ const raleway = Raleway({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.wildheartscollective.org"),
   title: {
     default: "Wild Hearts Collective | Pole & Aerial Classes in Mansfield",
     template: "%s | Wild Hearts Collective",

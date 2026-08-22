@@ -5,6 +5,7 @@ import {
   formatUkDateLong,
   getAppBaseUrl,
   getStudioEmail,
+  getStudioEmailCopies,
 } from "@/lib/booking-config";
 import {
   buildBrandedEmail,
@@ -66,24 +67,35 @@ function getResendClient() {
 function getFromAddress() {
   return (
     process.env.EMAIL_FROM ??
-    "Wild Hearts Collective <onboarding@resend.dev>"
+    "Wild Hearts Collective <info@karoldigital.co.uk>"
   );
+}
+
+function studioNotify() {
+  const copies = getStudioEmailCopies();
+  return {
+    to: getStudioEmail(),
+    ...(copies.length > 0 ? { cc: copies } : {}),
+  };
 }
 
 async function sendEmail({
   to,
+  cc,
   subject,
   html,
 }: {
   to: string | string[];
+  cc?: string | string[];
   subject: string;
   html: string;
 }) {
   const resend = getResendClient();
+  const copies = cc == null ? [] : Array.isArray(cc) ? cc.filter(Boolean) : [cc];
 
   if (!resend) {
     if (process.env.NODE_ENV === "development") {
-      console.info("[email:dev]", subject, to);
+      console.info("[email:dev]", subject, to, copies.length ? copies : undefined);
     }
     return { ok: false as const, skipped: true as const };
   }
@@ -92,6 +104,7 @@ async function sendEmail({
     await resend.emails.send({
       from: getFromAddress(),
       to,
+      ...(copies.length > 0 ? { cc: copies } : {}),
       subject,
       html,
     });
@@ -143,7 +156,7 @@ export async function sendBookingReceivedEmails(
       }),
     }),
     sendEmail({
-      to: getStudioEmail(),
+      ...studioNotify(),
       subject: `New booking received — ${customer.name}`,
       html: buildBrandedEmail({
         previewText: `New booking received from ${customer.name}.`,
@@ -228,7 +241,7 @@ export async function sendBookingConfirmedEmails(
       }),
     }),
     sendEmail({
-      to: getStudioEmail(),
+      ...studioNotify(),
       subject: `Booking confirmed — ${customer.name}`,
       html: buildBrandedEmail({
         previewText: `Booking confirmed for ${customer.name}.`,
@@ -311,7 +324,7 @@ export async function sendBookingCancelledEmails(
       }),
     }),
     sendEmail({
-      to: getStudioEmail(),
+      ...studioNotify(),
       subject: `Booking cancelled — ${customer.name}`,
       html: buildBrandedEmail({
         previewText: `${customer.name} cancelled ${session.classTitle}.`,
@@ -355,7 +368,7 @@ export async function sendUnpaidBookingExpiredAdminEmail(
   session: SessionDetails,
 ) {
   await sendEmail({
-    to: getStudioEmail(),
+    ...studioNotify(),
     subject: `Unpaid booking released — ${customer.name}`,
     html: buildBrandedEmail({
       previewText: `${customer.name} did not complete payment for ${session.classTitle}.`,
@@ -425,7 +438,7 @@ export async function sendWaitlistJoinedEmails(
       }),
     }),
     sendEmail({
-      to: getStudioEmail(),
+      ...studioNotify(),
       subject: `Waitlist signup — ${customer.name}`,
       html: buildBrandedEmail({
         previewText: `Waitlist signup from ${customer.name}.`,
@@ -527,7 +540,7 @@ export async function sendNewMemberRegisteredEmail(member: NewMemberDetails) {
   const verifiedLabel = member.emailVerified ? "Verified" : "Pending verification";
 
   await sendEmail({
-    to: getStudioEmail(),
+    ...studioNotify(),
     subject: `New member registered — ${member.name}`,
     html: buildBrandedEmail({
       previewText: `${member.name} just joined Wild Hearts Collective.`,
@@ -722,7 +735,7 @@ export async function sendClassPackPurchaseEmails(
       }),
     }),
     sendEmail({
-      to: getStudioEmail(),
+      ...studioNotify(),
       subject: `Class pack purchased — ${customer.name}`,
       html: buildBrandedEmail({
         previewText: `${customer.name} purchased ${pack.packName}.`,
@@ -789,7 +802,7 @@ export async function sendMembershipWelcomeEmails(
       }),
     }),
     sendEmail({
-      to: getStudioEmail(),
+      ...studioNotify(),
       subject: `New monthly membership — ${customer.name}`,
       html: buildBrandedEmail({
         previewText: `${customer.name} subscribed to Monthly Membership.`,
@@ -832,7 +845,7 @@ export async function sendMembershipCancelledAdminEmail(
     : "—";
 
   await sendEmail({
-    to: getStudioEmail(),
+    ...studioNotify(),
     subject: `Membership cancelled — ${customer.name}`,
     html: buildBrandedEmail({
       previewText: `${customer.name} cancelled their membership.`,
@@ -869,7 +882,7 @@ export async function sendMembershipPausedAdminEmail(
     : "Open-ended";
 
   await sendEmail({
-    to: getStudioEmail(),
+    ...studioNotify(),
     subject: `Membership paused — ${customer.name}`,
     html: buildBrandedEmail({
       previewText: `${customer.name} paused their membership.`,
@@ -1016,7 +1029,7 @@ export async function sendShopGiftVoucherEmail(
       }),
     }),
     sendEmail({
-      to: getStudioEmail(),
+      ...studioNotify(),
       subject: `Shop voucher order — ${summary}`.slice(0, 120),
       html: buildBrandedEmail({
         previewText: `${customer.name} purchased ${summary}`,
@@ -1126,7 +1139,7 @@ export async function sendShopProductOrderEmail(
       }),
     }),
     sendEmail({
-      to: getStudioEmail(),
+      ...studioNotify(),
       subject: `Shop product order — ${summary}`.slice(0, 120),
       html: buildBrandedEmail({
         previewText: `${customer.name} purchased ${summary}`,
@@ -1176,7 +1189,7 @@ export async function sendLowStockAlertEmail(alert: LowStockAlertDetails) {
     : `Low stock — ${alert.productName}`;
 
   await sendEmail({
-    to: getStudioEmail(),
+    ...studioNotify(),
     subject,
     html: buildBrandedEmail({
       previewText: `${alert.productName} has ${alert.stockQuantity} unit${alert.stockQuantity === 1 ? "" : "s"} left (alert at ${alert.lowStockThreshold}).`,

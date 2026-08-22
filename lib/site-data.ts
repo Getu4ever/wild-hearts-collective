@@ -13,7 +13,7 @@ export const siteConfig = {
 
 export const contact = {
   name: "Wild Hearts Collective",
-  phone: "0115 8453325",
+  phone: "0115 871 8090",
   email: "hello@wildheartscollective.org",
   website: "www.wildheartscollective.org",
   addressLines: [

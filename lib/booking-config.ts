@@ -42,17 +42,41 @@ export function formatMoneyFromPence(pence: number) {
   }).format(pence / 100);
 }
 
+/** Canonical public site — Stripe redirects, emails, and OAuth callbacks. */
+export const LIVE_SITE_URL = "https://www.wildheartscollective.org";
+
+function hostnameOf(url: string) {
+  try {
+    return new URL(url.includes("://") ? url : `https://${url}`).hostname;
+  } catch {
+    return "";
+  }
+}
+
+function normalizeAppBaseUrl(url: string) {
+  const clean = url.replace(/\/$/, "");
+  const host = hostnameOf(clean);
+  if (process.env.VERCEL_ENV === "production" && host.endsWith(".vercel.app")) {
+    return LIVE_SITE_URL;
+  }
+  return clean;
+}
+
 export function getAppBaseUrl() {
   const configured =
     process.env.NEXT_PUBLIC_APP_URL?.trim() || process.env.APP_URL?.trim();
 
   if (configured) {
-    return configured.replace(/\/$/, "");
+    return normalizeAppBaseUrl(configured);
+  }
+
+  if (process.env.VERCEL_ENV === "production") {
+    return LIVE_SITE_URL;
   }
 
   const vercelProduction = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
   if (vercelProduction) {
-    return `https://${vercelProduction.replace(/\/$/, "")}`;
+    return normalizeAppBaseUrl(`https://${vercelProduction.replace(/\/$/, "")}`);
   }
 
   const vercelUrl = process.env.VERCEL_URL?.trim();
@@ -66,7 +90,27 @@ export function getAppBaseUrl() {
 export const UK_TIMEZONE = "Europe/London";
 
 export function getStudioEmail() {
-  return process.env.STUDIO_EMAIL ?? "info@karoldigital.co.uk";
+  return process.env.STUDIO_EMAIL?.trim() || "hello@wildheartscollective.org";
+}
+
+/** Temporary extra copy of studio notifications until the Gmail address is retired. */
+const DEFAULT_STUDIO_EMAIL_CC = "getu4ever@gmail.com";
+
+/** Extra recipients for admin/studio notification emails (comma-separated). */
+export function getStudioEmailCopies() {
+  const raw = process.env.STUDIO_EMAIL_CC;
+  const value = (raw === undefined ? DEFAULT_STUDIO_EMAIL_CC : raw).trim();
+  if (!value) return [];
+
+  const primary = getStudioEmail().toLowerCase();
+  return [
+    ...new Set(
+      value
+        .split(",")
+        .map((email) => email.trim())
+        .filter((email) => email && email.toLowerCase() !== primary),
+    ),
+  ];
 }
 
 function toDate(value: Date | string | number) {
