@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Raleway, Satisfy } from "next/font/google";
+import { getLocalBusinessJsonLd } from "@/lib/local-business-jsonld";
 import { CookieConsent } from "./components/cookie-consent";
 import { SiteFooter } from "./components/site-footer";
 import { SiteHeader } from "./components/site-header";
@@ -39,12 +40,20 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const jsonLd = getLocalBusinessJsonLd();
+
   return (
     <html
       lang="en"
       className={`${satisfy.variable} ${raleway.variable} h-full scroll-smooth antialiased`}
     >
       <body className="flex min-h-full flex-col font-body">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+          }}
+        />
         <SiteHeader />
         <main className="flex-1">{children}</main>
         <SiteFooter />

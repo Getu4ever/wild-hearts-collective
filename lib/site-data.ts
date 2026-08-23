@@ -36,9 +36,16 @@ export const contact = {
    */
   latitude: 53.15648,
   longitude: -1.18832,
-  /** Google Maps directions / pin (coords + Block 7 address label). */
+  /**
+   * Official Google Business Profile listing (Place ID).
+   * Share link from the client: https://share.google/pKCNS8RJoPN6Z3aiR
+   */
+  googlePlaceId: "ChIJnUo26Vq9eUgRPdyFssMZa_c",
+  googleCid: "17828371878180674621",
+  googleBusinessUrl: "https://share.google/pKCNS8RJoPN6Z3aiR",
+  /** Google Maps — opens the claimed business profile, not a nameless coordinate pin. */
   mapsUrl:
-    "https://www.google.com/maps?q=53.15648,-1.18832+(Wild%20Hearts%20Collective%2C%20Unit%2025%20Block%207%20Hallam%20Way)&ll=53.15648,-1.18832&z=18",
+    "https://www.google.com/maps/search/?api=1&query=Wild+Hearts+Collective&query_place_id=ChIJnUo26Vq9eUgRPdyFssMZa_c",
   /** Google Maps embed — coordinate pin so geocoding cannot drift. */
   mapsEmbedUrl:
     "https://www.google.com/maps?q=53.15648,-1.18832+(Wild%20Hearts%20Collective%2C%20Unit%2025%20Block%207%20Hallam%20Way)&z=18&output=embed",
@@ -267,9 +274,10 @@ export const socialLinks = [
   },
 ] as const;
 
-/** Google Business “Write a review” link — update when the client provides it. */
+/** Google Business “Write a review” — Place ID from the client listing. */
 export const googleReviewLink = {
-  href: "#", // TODO: Google review URL from client
+  href: "https://search.google.com/local/writereview?placeid=ChIJnUo26Vq9eUgRPdyFssMZa_c",
+  profileHref: "https://share.google/pKCNS8RJoPN6Z3aiR",
   label: "Leave a Google review",
   cta: "Share your experience on Google",
   description:
