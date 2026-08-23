@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { formatCredits } from "@/lib/credit-units";
 
 type Pack = {
   id: string;
@@ -104,7 +105,7 @@ export function BundlePurchaseGrid({
               {pack.priceLabel}
             </p>
             <p className="mt-2 text-sm text-muted">
-              {pack.credits} class credits · valid for {pack.validDays} days
+              {formatCredits(pack.credits)} class credits · valid for {pack.validDays} days
             </p>
             {pack.description && (
               <p className="mt-4 flex-1 text-sm leading-relaxed text-muted">{pack.description}</p>

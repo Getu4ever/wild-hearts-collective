@@ -8,6 +8,7 @@ import {
   getStripeSecretKey,
   getStripeWebhookSecret,
 } from "@/lib/stripe-env";
+import { formatCredits } from "@/lib/credit-units";
 import { resolveClassPaymentAmountPence } from "@/lib/studio-pricing-service";
 
 let stripeClient: Stripe | null = null;
@@ -150,7 +151,7 @@ export async function createClassPackCheckoutSession(
           currency: "gbp",
           unit_amount: amount,
           product_data: {
-            name: `${pack.packName} — ${pack.credits} class credits`,
+            name: `${pack.packName} — ${formatCredits(pack.credits)} class credits`,
             description: options?.giftAmountApplied
               ? `Class credit bundle — ${formatMoneyFromPence(options.giftAmountApplied)} applied from gift card`
               : "Class credit bundle for Wild Hearts Collective",

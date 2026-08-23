@@ -10,6 +10,7 @@ import {
 import {
   buildBrandedEmail,
   calendarLinksBlock,
+  escapeHtml,
   sessionDetailBlock,
 } from "@/lib/email-template";
 import {
@@ -17,6 +18,7 @@ import {
   buildGoogleCalendarUrl,
   resolveSessionEndsAt,
 } from "@/lib/calendar-links";
+import { formatCredits } from "@/lib/credit-units";
 import { contact } from "@/lib/site-data";
 import { resolveEmailProductImageUrl } from "@/lib/email-product-image";
 import {
@@ -82,11 +84,13 @@ function studioNotify() {
 async function sendEmail({
   to,
   cc,
+  replyTo,
   subject,
   html,
 }: {
   to: string | string[];
   cc?: string | string[];
+  replyTo?: string;
   subject: string;
   html: string;
 }) {
@@ -101,13 +105,19 @@ async function sendEmail({
   }
 
   try {
-    await resend.emails.send({
+    const { error } = await resend.emails.send({
       from: getFromAddress(),
       to,
       ...(copies.length > 0 ? { cc: copies } : {}),
+      ...(replyTo ? { replyTo } : {}),
       subject,
       html,
     });
+
+    if (error) {
+      console.error("[email:send]", subject, to, error);
+      return { ok: false as const, skipped: false as const };
+    }
 
     return { ok: true as const, skipped: false as const };
   } catch (error) {
@@ -568,6 +578,71 @@ export function isEmailConfigured() {
   return Boolean(process.env.RESEND_API_KEY);
 }
 
+export type ContactEnquiry = {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+};
+
+export async function sendContactEnquiryEmails(enquiry: ContactEnquiry) {
+  const safeName = escapeHtml(enquiry.name);
+  const safeEmail = escapeHtml(enquiry.email);
+  const safeSubject = escapeHtml(enquiry.subject);
+  const safeMessage = escapeHtml(enquiry.message).replaceAll("\n", "<br />");
+
+  const [admin, visitor] = await Promise.all([
+    sendEmail({
+      ...studioNotify(),
+      replyTo: enquiry.email,
+      subject: `Website enquiry — ${enquiry.subject} from ${enquiry.name}`,
+      html: buildBrandedEmail({
+        previewText: `${enquiry.name} sent a message via the website contact form.`,
+        heading: "New website enquiry",
+        bodyHtml: `
+          <p>A new message has been submitted on the Wild Hearts Collective contact form.</p>
+          <p>
+            <strong>Name:</strong> ${safeName}<br />
+            <strong>Email:</strong> <a href="mailto:${safeEmail}">${safeEmail}</a><br />
+            <strong>Subject:</strong> ${safeSubject}
+          </p>
+          <p><strong>Message:</strong></p>
+          <p>${safeMessage}</p>
+          <p>You can reply directly to this email to contact ${safeName}.</p>
+        `,
+      }),
+    }),
+    sendEmail({
+      to: enquiry.email,
+      subject: "Thank you for contacting Wild Hearts Collective",
+      html: buildBrandedEmail({
+        previewText:
+          "We've received your message and will get back to you shortly.",
+        heading: "We've received your message",
+        bodyHtml: `
+          <p>Hi ${safeName},</p>
+          <p>
+            Thank you for getting in touch with Wild Hearts Collective. We have
+            received your message and will get back to you shortly.
+          </p>
+          <p>
+            <strong>Subject:</strong> ${safeSubject}
+          </p>
+          <p>
+            If your enquiry is urgent, you can also call us on
+            ${escapeHtml(contact.phone)} or email
+            <a href="mailto:${escapeHtml(contact.email)}">${escapeHtml(contact.email)}</a>.
+          </p>
+          <p>We look forward to speaking with you.</p>
+          <p>Wild Hearts Collective</p>
+        `,
+      }),
+    }),
+  ]);
+
+  return { admin, visitor };
+}
+
 export async function getDefaultClassPaymentPence() {
   return resolveClassPaymentAmountPence();
 }
@@ -709,7 +784,7 @@ export async function sendClassPackPurchaseEmails(
       to: customer.email,
       subject: `Your ${pack.packName} is ready`,
       html: buildBrandedEmail({
-        previewText: `Your ${pack.packName} purchase is confirmed — ${pack.credits} credits added.`,
+        previewText: `Your ${pack.packName} purchase is confirmed — ${formatCredits(pack.credits)} credits added.`,
         heading: "Class pack confirmed",
         bodyHtml: `
           <p>Hi ${customer.name},</p>
@@ -719,7 +794,7 @@ export async function sendClassPackPurchaseEmails(
           </p>
           <p>
             <strong>Pack:</strong> ${pack.packName}<br />
-            <strong>Credits added:</strong> ${pack.credits}<br />
+            <strong>Credits added:</strong> ${formatCredits(pack.credits)}<br />
             <strong>Amount paid:</strong> ${priceLabel}<br />
             <strong>Credits expire:</strong> ${expiresLabel}<br />
             <strong>Current balance:</strong> ${pack.balanceAfter} credit${pack.balanceAfter === 1 ? "" : "s"}
@@ -746,7 +821,7 @@ export async function sendClassPackPurchaseEmails(
             <strong>Name:</strong> ${customer.name}<br />
             <strong>Email:</strong> ${customer.email}<br />
             <strong>Pack:</strong> ${pack.packName}<br />
-            <strong>Credits:</strong> ${pack.credits}<br />
+            <strong>Credits:</strong> ${formatCredits(pack.credits)}<br />
             <strong>Amount paid:</strong> ${priceLabel}<br />
             <strong>Expires:</strong> ${expiresLabel}
           </p>

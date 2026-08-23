@@ -1,4 +1,5 @@
 import { formatMoneyFromPence, getEnvClassPaymentAmountPence } from "@/lib/booking-config";
+import { parseCreditAmount } from "@/lib/credit-units";
 import { db } from "@/lib/db";
 import { isCourseClassSlug } from "@/lib/gift-redeem-scope";
 import { getEnvMonthlyMembershipPricePence } from "@/lib/membership-config";
@@ -339,9 +340,9 @@ function validatePackInput(input: AdminClassPackInput) {
   const name = input.name.trim();
   if (!name) throw new Error("Pack name is required.");
 
-  const credits = Math.round(input.credits);
+  const credits = parseCreditAmount(input.credits);
   if (!Number.isFinite(credits) || credits <= 0) {
-    throw new Error("Credits must be at least 1.");
+    throw new Error("Credits must be greater than zero.");
   }
 
   const pricePence = Math.round(input.pricePence);

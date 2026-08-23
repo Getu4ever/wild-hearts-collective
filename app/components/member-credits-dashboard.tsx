@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { BookingEmbeddedCheckout } from "@/app/components/booking-embedded-checkout";
 import { MemberCollapsibleSection } from "@/app/components/member-collapsible-section";
 import { BOOKING_URL } from "@/lib/constants";
+import { formatCredits } from "@/lib/credit-units";
 import type { MemberCreditsOverview } from "@/lib/member-credits-service";
 
 type PendingCheckout = {
@@ -164,7 +165,7 @@ export function MemberCreditsDashboard({
           </p>
           <h2 className="mt-2 font-display text-3xl text-plum">{pendingCheckout.packName}</h2>
           <p className="mt-2 text-sm text-muted">
-            {pendingCheckout.credits} class credits will be added to your account after payment.
+            {formatCredits(pendingCheckout.credits)} class credits will be added to your account after payment.
           </p>
           {giftNotice && (
             <p className="mt-3 rounded-lg bg-pink-soft/50 px-4 py-3 text-sm text-plum">{giftNotice}</p>
@@ -340,7 +341,7 @@ export function MemberCreditsDashboard({
                 <h3 className="font-display text-2xl text-plum">{pack.name}</h3>
                 <p className="mt-2 font-display text-3xl text-brand">{pack.priceLabel}</p>
                 <p className="mt-2 text-sm text-muted">
-                  {pack.credits} class credits · valid for {pack.validDays} days
+                  {formatCredits(pack.credits)} class credits · valid for {pack.validDays} days
                 </p>
                 {pack.description && (
                   <p className="mt-4 flex-1 text-sm leading-relaxed text-muted">

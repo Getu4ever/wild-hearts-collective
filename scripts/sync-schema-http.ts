@@ -44,7 +44,7 @@ async function main() {
       "slug" TEXT NOT NULL,
       "name" TEXT NOT NULL,
       "description" TEXT,
-      "credits" INTEGER NOT NULL,
+      "credits" DOUBLE PRECISION NOT NULL,
       "pricePence" INTEGER NOT NULL,
       "validDays" INTEGER NOT NULL DEFAULT 90,
       "active" BOOLEAN NOT NULL DEFAULT true,
@@ -547,6 +547,9 @@ async function main() {
   );
   await runOptional(
     'ALTER TABLE "ClassPackPurchase" ALTER COLUMN "creditsRemaining" TYPE DOUBLE PRECISION USING ("creditsRemaining"::double precision)',
+  );
+  await runOptional(
+    'ALTER TABLE "ClassPack" ALTER COLUMN "credits" TYPE DOUBLE PRECISION USING ("credits"::double precision)',
   );
   await runOptional(
     'ALTER TABLE "CreditTransaction" ALTER COLUMN "amount" TYPE DOUBLE PRECISION USING ("amount"::double precision)',

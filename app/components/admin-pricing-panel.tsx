@@ -185,7 +185,7 @@ export function AdminPricingPanel({
         body: JSON.stringify({
           name: draft.name,
           description: draft.description,
-          credits: Number.parseInt(draft.credits, 10),
+          credits: Number.parseFloat(draft.credits),
           pricePounds: Number.parseFloat(draft.pricePounds),
           validDays: Number.parseInt(draft.validDays, 10),
           sortOrder: Number.parseInt(draft.sortOrder, 10) || 0,
@@ -227,7 +227,7 @@ export function AdminPricingPanel({
         body: JSON.stringify({
           name: newPack.name,
           description: newPack.description,
-          credits: Number.parseInt(newPack.credits, 10),
+          credits: Number.parseFloat(newPack.credits),
           pricePounds: Number.parseFloat(newPack.pricePounds),
           validDays: Number.parseInt(newPack.validDays, 10),
           sortOrder: Number.parseInt(newPack.sortOrder, 10) || 0,
@@ -566,11 +566,12 @@ function PackFields({
         </span>
         <input
           required
-          inputMode="numeric"
+          inputMode="decimal"
           value={draft.credits}
           onChange={(event) => onChange({ credits: event.target.value })}
           className="mt-1.5 w-full rounded-sm border border-plum/15 bg-white px-3 py-2.5 text-sm text-plum outline-none focus:border-pink focus:ring-2 focus:ring-pink/20"
         />
+        <p className="mt-1 text-xs text-muted">Decimals allowed, e.g. 5.5</p>
       </label>
 
       <label className="block">

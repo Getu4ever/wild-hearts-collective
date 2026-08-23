@@ -22,15 +22,22 @@ export function formatCreditLabel(amount: number) {
   return Number(formatted) === 1 ? "1 class credit" : `${formatted} class credits`;
 }
 
-export function parseCreditInput(value: unknown, fallback = DEFAULT_CREDIT_COST) {
+/** Parse a credit amount to 2 decimal places. Returns NaN when invalid. */
+export function parseCreditAmount(value: unknown) {
   const parsed =
     typeof value === "number"
       ? value
       : typeof value === "string" && value.trim()
         ? Number.parseFloat(value)
         : Number.NaN;
-  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  if (!Number.isFinite(parsed)) return Number.NaN;
   return Math.round(parsed * 100) / 100;
+}
+
+export function parseCreditInput(value: unknown, fallback = DEFAULT_CREDIT_COST) {
+  const parsed = parseCreditAmount(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return parsed;
 }
 
 export function hasEnoughCredits(balance: number, cost: number) {

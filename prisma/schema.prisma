@@ -216,7 +216,8 @@ model ClassPack {
   slug        String              @unique
   name        String
   description String?
-  credits     Int
+  /** Pack credit volume (supports fractions e.g. 5.5). */
+  credits     Float
   pricePence  Int
   validDays   Int                 @default(90)
   active      Boolean             @default(true)

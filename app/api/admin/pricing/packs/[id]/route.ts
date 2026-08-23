@@ -25,7 +25,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       payload.credits =
         typeof body.credits === "number"
           ? body.credits
-          : Number.parseInt(String(body.credits), 10);
+          : Number.parseFloat(String(body.credits));
     }
     if (body.pricePounds != null) {
       const pricePounds =

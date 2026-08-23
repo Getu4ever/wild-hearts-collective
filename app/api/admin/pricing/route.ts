@@ -120,7 +120,7 @@ export async function POST(request: Request) {
       credits:
         typeof body.credits === "number"
           ? body.credits
-          : Number.parseInt(String(body.credits ?? ""), 10),
+          : Number.parseFloat(String(body.credits ?? "")),
       pricePence: Math.round(pricePounds * 100),
       validDays:
         typeof body.validDays === "number"
